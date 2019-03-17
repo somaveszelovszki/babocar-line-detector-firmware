@@ -39,19 +39,21 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f0xx_hal.h"
-#include "i2c.h"
+#include "dma.h"
 #include "spi.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "linepanel.h"
+#include "linepos.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+volatile uint8_t newCmd = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,9 +97,20 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_SPI1_Init();
-  MX_I2C1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  uint8_t *rxBuffer[1];
+  HAL_UART_Receive_DMA(&huart1, rxBuffer, 1);
+
+  static const uint8_t ACK[4 * MAX_LINES + 1] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+  uint8_t sendLines = 0;
+  LinePosCalc linesData;
+  uint8_t measurements[NUM_OPTOS];
+  uint8_t leds[NUM_OPTOS / 8] = { 0, 0, 0, 0 };
+  line_panel_initialize();
 
   /* USER CODE END 2 */
 
@@ -105,6 +118,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+      if (newCmd) {
+          newCmd = 0;
+          if (rxBuffer[0] == 'S') { // Start command
+              HAL_UART_Transmit(&huart1, ACK, 4 * MAX_LINES + 1, 10);
+              sendLines = 1;
+          }
+      }
+
+      linepanel_read_optos(measurements);
+      linepos_calc(&linesData, measurements);
+
+      if (sendLines) {
+          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), 4 * MAX_LINES + 1);
+      }
+
+      linepos_set_leds(&linesData, leds);
+      linepanel_write_leds(leds);
 
   /* USER CODE END WHILE */
 
@@ -153,8 +183,8 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_I2C1;
-  PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_HSI;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1;
+  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK1;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -173,6 +203,12 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    if (huart == &huart1) {
+        newCmd = 1;
+    }
+}
 
 /* USER CODE END 4 */
 
