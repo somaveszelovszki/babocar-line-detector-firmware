@@ -5,7 +5,7 @@
 static const float DIST_OPTO_CM = 22.472f / 31;
 static const float MID_OPTO_POS = NUM_OPTOS / 2 + 0.5f;
 
-static inline float opto_idx_to_pos_cm(float32_t optoIdx) {
+static inline float opto_idx_to_pos_cm(float optoIdx) {
     return (optoIdx - MID_OPTO_POS) * DIST_OPTO_CM;
 }
 
@@ -29,6 +29,8 @@ void linepos_calc(LinePosCalc *data, const uint8_t *measurements) {
     uint8_t cntrBlackLocal = 0;  // Counts the values above the comparator level corresponding to the same line.
 
     uint8_t prevIsBlack = 0;
+
+    data->lines.numLines = 0;
 
     for (uint8_t i = 0; i < NUM_OPTOS; ++i) {
         const uint8_t meas = measurements[i];
@@ -73,9 +75,26 @@ void linepos_calc(LinePosCalc *data, const uint8_t *measurements) {
 }
 
 void linepos_set_leds(LinePosCalc *data, uint8_t *leds) {
-    memset(leds, 0, NUM_OPTOS / 8);
-    for (uint8_t i = 0; i < data->lines.numLines; ++i) {
-        const uint8_t optoIdx = pos_cm_to_opto_idx(data->lines.positions_cm[i]);
-        leds[optoIdx / 8] |= (1 << (optoIdx % 8));  // sets correspondent bit
+    static uint8_t idx = 0;
+
+    static int dir = 0;
+    if (idx == 0) dir = 0;
+    else if (idx == 31) dir = 1;
+//    memset(leds, 0, NUM_OPTOS / 8);
+//    for (uint8_t i = 0; i < data->lines.numLines; ++i) {
+//        const uint8_t optoIdx = pos_cm_to_opto_idx(data->lines.positions_cm[i]);
+//        leds[optoIdx / 8] |= (1 << (optoIdx % 8));  // sets correspondent bit
+//    }
+
+    uint8_t ledIdx = 3 - idx / 8;
+
+    for (uint8_t i = 0; i < 4; ++i) {
+        if (i == ledIdx) {
+            leds[i] = 1 << (idx % 8);
+        } else {
+            leds[i] = 0x00;
+        }
     }
+
+    idx = dir ? idx - 1 : idx + 1;
 }

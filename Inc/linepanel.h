@@ -3,10 +3,12 @@
 
 #include "common.h"
 
-void linepanel_initialize();
+#include "stm32f0xx_hal.h"
 
-void linepanel_read_optos(uint8_t *result);
+HAL_StatusTypeDef linepanel_initialize();
 
-void linepanel_write_leds(const uint8_t *leds);
+HAL_StatusTypeDef linepanel_read_optos(uint8_t *result);
+
+HAL_StatusTypeDef linepanel_write_leds(const uint8_t *leds);
 
 #endif /* LINEPANEL_H_ */

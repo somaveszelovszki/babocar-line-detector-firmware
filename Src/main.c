@@ -101,7 +101,7 @@ int main(void)
   MX_SPI1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t *rxBuffer[1];
+  uint8_t rxBuffer[1];
   HAL_UART_Receive_DMA(&huart1, rxBuffer, 1);
 
   static const uint8_t ACK[4 * MAX_LINES + 1] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -110,7 +110,10 @@ int main(void)
   LinePosCalc linesData;
   uint8_t measurements[NUM_OPTOS];
   uint8_t leds[NUM_OPTOS / 8] = { 0, 0, 0, 0 };
-  line_panel_initialize();
+  linepanel_initialize();
+
+  uint32_t errCntr_read_optos = 0;
+  uint32_t errCntr_write_leds = 0;
 
   /* USER CODE END 2 */
 
@@ -118,24 +121,29 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      if (newCmd) {
-          newCmd = 0;
-          if (rxBuffer[0] == 'S') { // Start command
-              HAL_UART_Transmit(&huart1, ACK, 4 * MAX_LINES + 1, 10);
-              sendLines = 1;
-          }
-      }
+//      if (newCmd) {
+//          newCmd = 0;
+//          if (rxBuffer[0] == 'S') { // Start command
+//              HAL_UART_Transmit(&huart1, ACK, 4 * MAX_LINES + 1, 10);
+//              sendLines = 1;
+//          }
+//      }
 
-      linepanel_read_optos(measurements);
-      linepos_calc(&linesData, measurements);
-
-      if (sendLines) {
-          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), 4 * MAX_LINES + 1);
-      }
+//      if (linepanel_read_optos(measurements) != HAL_OK) {
+//          ++errCntr_read_optos;
+//      }
+//      linepos_calc(&linesData, measurements);
+//
+//      if (sendLines) {
+//          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), 4 * MAX_LINES + 1);
+//      }
 
       linepos_set_leds(&linesData, leds);
-      linepanel_write_leds(leds);
+      if (linepanel_write_leds(leds) != HAL_OK) {
+          ++errCntr_write_leds;
+      }
 
+      HAL_Delay(20);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
