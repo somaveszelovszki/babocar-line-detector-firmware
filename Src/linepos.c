@@ -15,7 +15,7 @@ static inline uint8_t pos_cm_to_opto_idx(float pos_cm) {
 
 void linepos_calc(LinePosCalc *data, const uint8_t *measurements) {
 
-    static const float comp_w_black = 0.75f;                // Weight of the black component when recalculating comparator level.
+    static const float comp_w_black = 0.5f;                // Weight of the black component when recalculating comparator level.
     static const float comp_w_white = 1.0f - comp_w_black;  // Weight of the white component when recalculating comparator level.
 
     uint32_t sumWhite = 0;  // The sum of the measurements under the comparator level.
@@ -75,26 +75,9 @@ void linepos_calc(LinePosCalc *data, const uint8_t *measurements) {
 }
 
 void linepos_set_leds(LinePosCalc *data, uint8_t *leds) {
-    static uint8_t idx = 0;
-
-    static int dir = 0;
-    if (idx == 0) dir = 0;
-    else if (idx == 31) dir = 1;
-//    memset(leds, 0, NUM_OPTOS / 8);
-//    for (uint8_t i = 0; i < data->lines.numLines; ++i) {
-//        const uint8_t optoIdx = pos_cm_to_opto_idx(data->lines.positions_cm[i]);
-//        leds[optoIdx / 8] |= (1 << (optoIdx % 8));  // sets correspondent bit
-//    }
-
-    uint8_t ledIdx = 3 - idx / 8;
-
-    for (uint8_t i = 0; i < 4; ++i) {
-        if (i == ledIdx) {
-            leds[i] = 1 << (idx % 8);
-        } else {
-            leds[i] = 0x00;
-        }
+    memset(leds, 0, NUM_OPTOS / 8);
+    for (uint8_t i = 0; i < data->lines.numLines; ++i) {
+        const uint8_t optoIdx = pos_cm_to_opto_idx(data->lines.positions_cm[i]);
+        leds[(NUM_OPTOS / 8 - 1) - optoIdx / 8] |= (1 << (optoIdx % 8));  // sets correspondent bit
     }
-
-    idx = dir ? idx - 1 : idx + 1;
 }

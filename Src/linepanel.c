@@ -41,6 +41,9 @@ static inline void select_ADC(uint8_t idx) {
 }
 
 static inline HAL_StatusTypeDef write_OPTO(uint8_t optoIdx) {
+//    static uint8_t buf[8] = { 0x55, 0x55, 0x55, 0x55, 0x05, 0x05, 0x00, 0x00 };
+//    return HAL_SPI_Transmit(SPI_INSTANCE, buf, 8, 2);  // selects every 8th optical sensor
+
     return HAL_SPI_Transmit(SPI_INSTANCE, (uint8_t*)OPTO_BUFFERS[optoIdx], NUM_OPTOS / 8, 2);  // selects every 8th optical sensor
 }
 
@@ -51,11 +54,10 @@ static inline HAL_StatusTypeDef write_IND(const uint8_t *leds) {
     // (the LED drivers are connected in a series, values have to be shifted through the optical sensor LED drivers)
     memcpy(ind_buffer, leds, NUM_OPTOS / 8);
 
-    //return HAL_SPI_Transmit(SPI_INSTANCE, ind_buffer, NUM_OPTOS / 8 * 2, 2);
-    return HAL_SPI_Transmit(SPI_INSTANCE, ind_buffer, 6, 2);    // TODO why?
+    return HAL_SPI_Transmit(SPI_INSTANCE, ind_buffer, NUM_OPTOS / 8 * 2, 2);
 }
 
-static inline uint8_t read_ADC(uint8_t channel) {
+static inline HAL_StatusTypeDef read_ADC(uint8_t channel, uint8_t *p_result) {
     uint8_t adc_buffer[3];
 
     // Control byte: | START | SEL2 | SEL1 | SEL0 | UNI/BIP | SGL/DIF | PD1 | PD0 |
@@ -67,9 +69,9 @@ static inline uint8_t read_ADC(uint8_t channel) {
     // @see MAX1110CAP+ datasheet for details
     adc_buffer[0] =  0b10001111 | ((channel & 0b00000001) << 6) | ((channel & 0b00000010) << 3) | ((channel & 0b00000100) << 3);
     adc_buffer[1] = adc_buffer[2] = 0x00;
-    HAL_SPI_TransmitReceive(SPI_INSTANCE, adc_buffer, adc_buffer, 3, 2);
-
-    return (adc_buffer[1] << 2) | (adc_buffer[2] >> 6); // ADC value format: 00000000 00XXXXXX XX000000
+    HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(SPI_INSTANCE, adc_buffer, adc_buffer, 3, 2);
+    *p_result = (adc_buffer[1] << 2) | (adc_buffer[2] >> 6); // ADC value format: 00000000 00XXXXXX XX000000
+    return status;
 }
 
 static inline void end_comm_OPTO() {
@@ -110,23 +112,23 @@ HAL_StatusTypeDef linepanel_initialize() {
 }
 
 HAL_StatusTypeDef linepanel_read_optos(uint8_t *result) {
-    HAL_StatusTypeDef status = HAL_OK;
+    HAL_StatusTypeDef status;
     for (uint8_t optoIdx = 0; optoIdx < 8; ++optoIdx) {
-        start_comm_OPTO();
         status = write_OPTO(optoIdx);
         end_comm_OPTO();
 
         if (status == HAL_OK) {
-            // TODO delay if needed
-
             for (uint8_t adcIdx = 0; adcIdx < NUM_OPTOS / 8; ++adcIdx) {
                 select_ADC(adcIdx);
+                uint8_t ADC_value;
+                status = read_ADC(optoIdx, &ADC_value);
+                end_comm_ADC();
 
-                const uint8_t ADC_value = read_ADC(optoIdx);
-                const uint8_t idx = adcIdx * 8 + optoIdx;
-                result[idx] = ADC_value;
-
-                end_comm_ADC(adcIdx);
+                if (status == HAL_OK) {
+                    result[adcIdx * 8 + optoIdx] = ADC_value;
+                } else {
+                    break;
+                }
             }
         } else {
             break;
