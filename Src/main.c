@@ -121,17 +121,18 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//      if (newCmd) {
-//          newCmd = 0;
-//          if (rxBuffer[0] == 'S') { // Start command
-//              HAL_UART_Transmit(&huart1, ACK, 4 * MAX_LINES + 1, 10);
-//              sendLines = 1;
-//          }
-//      }
+      if (newCmd) {
+          newCmd = 0;
+          if (rxBuffer[0] == 'S') { // Start command
+              HAL_UART_Transmit(&huart1, ACK, 4 * MAX_LINES + 1, 10);
+              sendLines = 1;
+          }
+      }
 
       if (linepanel_read_optos(measurements) != HAL_OK) {
           ++errCntr_read_optos;
       }
+
       linepos_calc(&linesData, measurements);
 
       if (sendLines) {
