@@ -104,16 +104,19 @@ int main(void)
   uint8_t rxBuffer[1];
   HAL_UART_Receive_DMA(&huart1, rxBuffer, 1);
 
-  static const uint8_t ACK[4 * MAX_LINES + 1] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+  static const uint8_t ACK[MAX_LINES + 1] = { 0, 0, 0, 0 };
 
   uint8_t sendLines = 0;
   LinePosCalc linesData;
   uint8_t measurements[NUM_OPTOS];
   uint8_t leds[NUM_OPTOS / 8] = { 0, 0, 0, 0 };
   linepanel_initialize();
+  linepos_initialize(&linesData);
 
   uint32_t errCntr_read_optos = 0;
   uint32_t errCntr_write_leds = 0;
+
+  const uint32_t siz = sizeof(Lines);
 
   /* USER CODE END 2 */
 
@@ -124,7 +127,7 @@ int main(void)
       if (newCmd) {
           newCmd = 0;
           if (rxBuffer[0] == 'S') { // Start command
-              HAL_UART_Transmit(&huart1, ACK, 4 * MAX_LINES + 1, 10);
+              HAL_UART_Transmit(&huart1, ACK, MAX_LINES + 1, 2);
               sendLines = 1;
           }
       }
@@ -136,7 +139,7 @@ int main(void)
       linepos_calc(&linesData, measurements);
 
       if (sendLines) {
-          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), 4 * MAX_LINES + 1);
+          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), MAX_LINES + 1);
       }
 
       linepos_set_leds(&linesData, leds);

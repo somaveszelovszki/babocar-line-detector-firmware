@@ -8,16 +8,19 @@
 #define MAX_LINES 3
 
 typedef struct {
-    float positions_cm[MAX_LINES];
     uint8_t numLines;
+    int8_t positions_mm[MAX_LINES];
 } Lines;
 
 typedef struct {
-    uint8_t comparator; // Comparator level for separating black and white.
+    uint8_t comparator_black;   // Comparator level for separating black.
+    uint8_t comparator_grey;    // Comparator level for separating grey.
     uint8_t avgWhite;   // Average white value of the previous measurement.
-    uint8_t avgBlack;   // Average black value of the previous measurement.
+    uint8_t avgDark;   // Average dark value of the previous measurement.
     Lines lines;
 } LinePosCalc;
+
+void linepos_initialize(LinePosCalc *data);
 
 void linepos_calc(LinePosCalc *data, const uint8_t *measurements);
 
