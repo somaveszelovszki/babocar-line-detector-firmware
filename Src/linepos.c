@@ -104,3 +104,20 @@ void linepos_set_leds(const Lines *lines, uint8_t *leds) {
         leds[(NUM_OPTOS / 8 - 1) - optoIdx / 8] |= (1 << (optoIdx % 8));  // sets correspondent bit
     }
 }
+
+void linepos_set_display(const Lines *lines, char *str) {
+    uint8_t lineIdx = 0;
+    uint8_t strIdx = 0;
+    str[strIdx++] = '|';
+    for (uint8_t i = 0; i < NUM_OPTOS; ++i) {
+        if (lineIdx < lines->numLines && pos_mm_to_opto_idx(lines->positions_mm[lineIdx]) == i) {
+            str[strIdx++] = 'M';
+            lineIdx++;
+        } else {
+            str[strIdx++] = ' ';
+        }
+    }
+    str[strIdx++] = '|';
+    str[strIdx++] = '\n';
+
+}

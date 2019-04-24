@@ -26,4 +26,6 @@ void linepos_calc(LinePosCalc *data, const uint8_t *measurements);
 
 void linepos_set_leds(const Lines *lines, uint8_t *leds);
 
+void linepos_set_display(const Lines *lines, char *str);
+
 #endif /* LINEPOS_H_ */
