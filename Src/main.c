@@ -116,8 +116,7 @@ int main(void)
   uint32_t errCntr_read_optos = 0;
   uint32_t errCntr_write_leds = 0;
 
-  char charsToSend[NUM_OPTOS + 3] = "Started!";
-  charsToSend[8] = '\n';
+  char charsToSend[100] = "Started!\n";
 
   /* USER CODE END 2 */
 
@@ -138,12 +137,12 @@ int main(void)
           ++errCntr_read_optos;
       }
 
-      linepos_calc(&linesData, measurements);
+      linepos_calc2(&linesData, measurements);
 
       if (sendLines) {
-          //HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), MAX_LINES + 1);
-          linepos_set_display(&linesData.lines, charsToSend);
-          HAL_UART_Transmit(&huart1, (uint8_t*)charsToSend, NUM_OPTOS + 3, 10);
+          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), MAX_LINES + 1);
+          //linepos_set_display(&linesData.lines, charsToSend);
+          //HAL_UART_Transmit(&huart1, (uint8_t*)charsToSend, strlen(charsToSend), 10);
       }
 
       linepos_set_leds(&linesData.lines, leds);
