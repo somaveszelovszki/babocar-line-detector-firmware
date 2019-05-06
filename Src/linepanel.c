@@ -116,7 +116,6 @@ HAL_StatusTypeDef linepanel_read_optos(uint8_t *result) {
     for (uint8_t optoIdx = 0; optoIdx < 8; ++optoIdx) {
         status = write_OPTO(optoIdx);
         end_comm_OPTO();
-
         if (status == HAL_OK) {
             for (uint8_t adcIdx = 0; adcIdx < NUM_OPTOS / 8; ++adcIdx) {
                 select_ADC(adcIdx);
@@ -125,7 +124,9 @@ HAL_StatusTypeDef linepanel_read_optos(uint8_t *result) {
                 end_comm_ADC();
 
                 if (status == HAL_OK) {
-                    result[adcIdx * 8 + optoIdx] = ADC_value;
+                    //result[adcIdx * 8 + optoIdx] = ADC_value;
+                    // TODO why? ADC#2 (3rd ADC) shows smaller (0.5 scale) values
+                    result[adcIdx * 8 + optoIdx] = adcIdx == 2 ? ADC_value * 2 : ADC_value;
                 } else {
                     break;
                 }

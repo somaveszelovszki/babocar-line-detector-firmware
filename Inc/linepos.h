@@ -1,16 +1,7 @@
 #ifndef LINEPOS_H_
 #define LINEPOS_H_
 
-#include "common.h"
-
-#include <assert.h>
-
-#define MAX_LINES 3
-
-typedef struct {
-    uint8_t numLines;
-    int8_t positions_mm[MAX_LINES];
-} Lines;
+#include <lines.h>
 
 typedef struct {
     uint8_t comparator_black;   // Comparator level for separating BLACK.
@@ -25,6 +16,8 @@ void linepos_initialize(LinePosCalc *data);
 void linepos_calc(LinePosCalc *data, const uint8_t *measurements);
 
 void linepos_calc2(LinePosCalc *data, const uint8_t *measurements);
+
+void linepos_calc3(LinePosCalc *data, const uint8_t *measurements);
 
 void linepos_set_leds(const Lines *lines, uint8_t *leds);
 

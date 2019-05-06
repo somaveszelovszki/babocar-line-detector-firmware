@@ -47,6 +47,7 @@
 /* USER CODE BEGIN Includes */
 #include "linepanel.h"
 #include "linepos.h"
+#include "linefilter.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -104,14 +105,19 @@ int main(void)
   uint8_t rxBuffer[2];
   HAL_UART_Receive_DMA(&huart1, rxBuffer, 2);
 
-  static const uint8_t ACK[MAX_LINES + 1] = { 0, 0, 0, 0 };
+  static const uint8_t ACK[4] = { 0, 0, 0, 0 };
 
   uint8_t sendLines = 0;
+
   LinePosCalc linesData;
+  LineFilterCalc lineFilter;
+
   uint8_t measurements[NUM_OPTOS];
   uint8_t leds[NUM_OPTOS / 8] = { 0, 0, 0, 0 };
+
   linepanel_initialize();
   linepos_initialize(&linesData);
+  linefilter_initialize(&lineFilter);
 
   uint32_t errCntr_read_optos = 0;
   uint32_t errCntr_write_leds = 0;
@@ -138,9 +144,14 @@ int main(void)
       }
 
       linepos_calc2(&linesData, measurements);
+      linefilter_apply(&lineFilter, &linesData.lines);
+
+      if (linesData.lines.numLines > 1) {
+          linesData.lines.numLines = 1; // TODO 2 lines: 7 and 14 mm?
+      }
 
       if (sendLines) {
-          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), MAX_LINES + 1);
+          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), MAX_NUM_LINES + 1);
           //linepos_set_display(&linesData.lines, charsToSend);
           //HAL_UART_Transmit(&huart1, (uint8_t*)charsToSend, strlen(charsToSend), 10);
       }
