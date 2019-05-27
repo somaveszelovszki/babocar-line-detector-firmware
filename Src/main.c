@@ -143,17 +143,13 @@ int main(void)
           ++errCntr_read_optos;
       }
 
-      linepos_calc2(&linesData, measurements);
+      linepos_calc4(&linesData, measurements);
       linefilter_apply(&lineFilter, &linesData.lines);
 
-      if (linesData.lines.numLines > 1) {
-          linesData.lines.numLines = 1; // TODO 2 lines: 7 and 14 mm?
-      }
-
       if (sendLines) {
-          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), MAX_NUM_LINES + 1);
-          //linepos_set_display(&linesData.lines, charsToSend);
-          //HAL_UART_Transmit(&huart1, (uint8_t*)charsToSend, strlen(charsToSend), 10);
+          //HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), MAX_NUM_LINES + 1);
+          linepos_set_display(&linesData.lines, charsToSend);
+          HAL_UART_Transmit(&huart1, (uint8_t*)charsToSend, strlen(charsToSend), 10);
       }
 
       linepos_set_leds(&linesData.lines, leds);

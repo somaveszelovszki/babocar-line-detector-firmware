@@ -22,3 +22,15 @@ void array_average_min_max(const uint8_t *data, uint32_t size, uint8_t *avg_, ui
 
     *avg_ = sum / size;
 }
+
+void sort(uint8_t *data, uint32_t size) {
+    for (uint32_t i = 0; i < size - 1; ++i) {
+        for (uint32_t j = i + 1; j < size - i; ++j) {
+            if (data[i] > data[j]) {
+                uint8_t temp = data[i];
+                data[i] = data[j];
+                data[j] = temp;
+            }
+        }
+    }
+}

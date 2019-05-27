@@ -19,6 +19,8 @@ void linepos_calc2(LinePosCalc *data, const uint8_t *measurements);
 
 void linepos_calc3(LinePosCalc *data, const uint8_t *measurements);
 
+void linepos_calc4(LinePosCalc *data, const uint8_t *measurements);
+
 void linepos_set_leds(const Lines *lines, uint8_t *leds);
 
 void linepos_set_display(const Lines *lines, char *str);
