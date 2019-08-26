@@ -142,7 +142,7 @@ void linepos_calc2(LinePosCalc *data, const uint8_t *measurements) {
     } Color;
 
     static const uint8_t black_delta = 70;
-    static const uint8_t grey_delta = black_delta / 2;
+    static const uint8_t grey_delta  = 35;
 
     uint32_t sumWhite = 0;      // The sum of the WHITE measurements (under the GREY comparator level).
     uint8_t cntrWhite = 0;      // Counts the WHITE values.
