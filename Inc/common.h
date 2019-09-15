@@ -2,8 +2,7 @@
 #define COMMON_H_
 
 #include <stdint.h>
-
-#define NUM_OPTOS 32
+#include <stdbool.h>
 
 int32_t round_to_int(float value);
 

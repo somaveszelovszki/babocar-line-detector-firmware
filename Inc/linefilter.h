@@ -1,7 +1,7 @@
 #ifndef LINEFILTER_H_
 #define LINEFILTER_H_
 
-#include <lines.h>
+#include <micro/panel/lines.h>
 
 typedef enum {
     VALID,

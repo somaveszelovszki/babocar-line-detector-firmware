@@ -45,9 +45,12 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
+#include "config.h"
 #include "linepanel.h"
 #include "linepos.h"
 #include "linefilter.h"
+
+#include <micro/panel/LineDetectPanelData.h>
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -102,12 +105,10 @@ int main(void)
   MX_SPI1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t rxBuffer[2];
-  HAL_UART_Receive_DMA(&huart1, rxBuffer, 2);
+  lineDetectPanelDataIn_t inData;
+  HAL_UART_Receive_DMA(&huart1, &inData, sizeof(lineDetectPanelDataIn_t));
 
-  static const uint8_t ACK[4] = { 0, 0, 0, 0 };
-
-  uint8_t sendLines = 0;
+  bool sendLines = false;
 
   LinePosCalc linesData;
   LineFilterCalc lineFilter;
@@ -122,8 +123,6 @@ int main(void)
   uint32_t errCntr_read_optos = 0;
   uint32_t errCntr_write_leds = 0;
 
-  char charsToSend[100] = "Started!\n";
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -132,9 +131,7 @@ int main(void)
   {
       if (newCmd) {
           newCmd = 0;
-          if (rxBuffer[0] == 'S') { // Start command
-              //HAL_UART_Transmit(&huart1, (uint8_t*)ACK, MAX_LINES + 1, 2);
-              HAL_UART_Transmit(&huart1, (uint8_t*)charsToSend, 9, 10);
+          if (inData.command == 'S') { // Start command
               sendLines = 1;
           }
       }
@@ -143,13 +140,11 @@ int main(void)
           ++errCntr_read_optos;
       }
 
-      linepos_calc4(&linesData, measurements);
+      linepos_calc(&linesData, measurements);
       linefilter_apply(&lineFilter, &linesData.lines);
 
       if (sendLines) {
-          //HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), MAX_NUM_LINES + 1);
-          linepos_set_display(&linesData.lines, charsToSend);
-          HAL_UART_Transmit(&huart1, (uint8_t*)charsToSend, strlen(charsToSend), 10);
+          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), sizeof(Lines));
       }
 
       linepos_set_leds(&linesData.lines, leds);

@@ -1,4 +1,5 @@
 #include "linefilter.h"
+#include "config.h"
 #include <math.h>
 
 static void add_line(LineFilterCalc *data, const Line *line) {
@@ -46,11 +47,11 @@ void linefilter_apply(LineFilterCalc *data, Lines *lines) {
         }
     }
 
-    // iterates through previous lines, updates counters and removes disappeared lines
+    // iterates through previous lines, updates counters and removes lines that have disappeared
     for (uint8_t i = 0; i < data->numLines; ++i) {
         FilteredLine *fl= &data->values[i];
 
-        //finds nearest line in the previous line set (if present)
+        //finds nearest line in the current line set (if present)
         int32_t min_dist = -1;
         for (uint8_t j = 0; j < lines->numLines; ++j) {
             const int32_t dist = abs(fl->line.pos_mm - lines->values[j].pos_mm);
