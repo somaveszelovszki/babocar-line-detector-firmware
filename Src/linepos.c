@@ -16,41 +16,41 @@ static inline uint8_t pos_mm_to_opto_idx(float pos_mm) {
 }
 
 static const uint8_t OFFSETS[NUM_OPTOS] = {
-    24,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    30,
-    30,
-    30,
-    30,
-    30,
-    30,
-    30,
-    30,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12
+    12, // 0
+    12, // 1
+    12, // 2
+    12, // 3
+    12, // 4
+    12, // 5
+    12, // 6
+    12, // 7
+    12, // 8
+    12, // 9
+    12, // 10
+    12, // 11
+    12, // 12
+    12, // 13
+    12, // 14
+    12, // 15
+    30, // 16
+    30, // 17
+    30, // 18
+    30, // 19
+    30, // 20
+    30, // 21
+    30, // 22
+    30, // 23
+    12, // 24
+    12, // 25
+    12, // 26
+    12, // 27
+    12, // 28
+    12, // 29
+    12, // 30
+    12  // 31
 };
 
-void linepos_initialize(LinePosCalc *data) {
+void linepos_initialize(linePosCalc_t *data) {
     data->avgBlack = data->avgWhite = 0;
     data->comparator_black = 100;
     data->comparator_grey = 50;
@@ -60,13 +60,13 @@ void linepos_initialize(LinePosCalc *data) {
     }
 }
 
-void linepos_calc(LinePosCalc *data, const uint8_t *measurements) {
+void linepos_calc(linePosCalc_t *data, const uint8_t *measurements) {
 
     typedef enum {
         Color_WHITE = 0,
         Color_GREY,
         Color_BLACK
-    } Color;
+    } color_t;
 
     static const uint8_t black_delta = 70;
     static const uint8_t grey_delta = 30;
@@ -82,7 +82,7 @@ void linepos_calc(LinePosCalc *data, const uint8_t *measurements) {
     uint8_t cntrBlackLocal = 0; // Counts the BLACK values corresponding to the same line.
     uint8_t cntrDarkLocal = 0;  // Counts the dark values corresponding to the same line.
 
-    Color prevColor = Color_WHITE;
+    color_t prevColor = Color_WHITE;
 
     data->lines.numLines = 0;
 
@@ -100,13 +100,9 @@ void linepos_calc(LinePosCalc *data, const uint8_t *measurements) {
     sort(sorted_measurements, NUM_OPTOS);
     const uint8_t white_avg = sorted_measurements[(uint32_t)(NUM_OPTOS * 0.3f)];
 
-    if (max_ - min_ < black_delta) { // no peaks
-        return;
-    }
-
     for (uint8_t i = 0; i < NUM_OPTOS + 1; ++i) {
         const uint8_t meas = i < NUM_OPTOS ? meas_without_offset[i] : 0;
-        const Color color = meas >= white_avg + black_delta ? Color_BLACK : meas >= white_avg + grey_delta ? Color_GREY : Color_WHITE;
+        const color_t color = meas >= white_avg + black_delta ? Color_BLACK : meas >= white_avg + grey_delta ? Color_GREY : Color_WHITE;
 
         if (color >= Color_GREY) {
             if (prevColor == Color_WHITE) { // rising edge - new line
@@ -128,7 +124,7 @@ void linepos_calc(LinePosCalc *data, const uint8_t *measurements) {
 
         } else {
             if (prevColor >= Color_GREY) {  // falling edge - line ended
-                if (cntrBlackLocal >= 1) {
+                if (cntrDarkLocal >= 2) {
                     const float optoPos = (float)sumDarkLocalW / sumDarkLocal;
                     if (data->lines.numLines < MAX_NUM_LINES) {
                         data->lines.values[data->lines.numLines++].pos_mm = opto_idx_to_pos_mm(optoPos);
@@ -145,7 +141,7 @@ void linepos_calc(LinePosCalc *data, const uint8_t *measurements) {
 }
 
 
-void linepos_set_leds(const Lines *lines, uint8_t *leds) {
+void linepos_set_leds(const linePositions_t *lines, uint8_t *leds) {
     memset(leds, 0, NUM_OPTOS / 8);
     for (uint8_t i = 0; i < lines->numLines; ++i) {
         const uint8_t optoIdx = pos_mm_to_opto_idx(lines->values[i].pos_mm);

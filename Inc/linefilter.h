@@ -6,22 +6,22 @@
 typedef enum {
     VALID,
     INVALID
-} FitleredLineState;
+} fitleredLineState_t;
 
 typedef struct {
-    Line line;
+    linePosition_t line;
     int8_t cntr;
-} FilteredLine;
+} filteredLinePosition_t;
 
 #define MAX_NUM_FILTERED_LINES (MAX_NUM_LINES * 2)
 
 typedef struct {
     uint8_t numLines;
-    FilteredLine values[MAX_NUM_FILTERED_LINES];
-} LineFilterCalc;
+    filteredLinePosition_t values[MAX_NUM_FILTERED_LINES];
+} lineFilterCalc_t;
 
-void linefilter_initialize(LineFilterCalc *data);
+void linefilter_initialize(lineFilterCalc_t *data);
 
-void linefilter_apply(LineFilterCalc *data, Lines *lines);
+void linefilter_apply(lineFilterCalc_t *data, linePositions_t *lines);
 
 #endif /* LINEFILTER_H_ */

@@ -57,7 +57,12 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-volatile uint8_t newCmd = 0;
+static volatile bool newCmd = false;
+
+static lineDetectPanelDataIn_t inData;
+static bool sendLines = false;
+static bool indicatorLedsEnabled = false;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -65,6 +70,13 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+
+void handle_cmd(void) {
+
+    __disable_irq();
+    indicatorLedsEnabled = !!(inData.flags & LINE_DETECT_PANEL_FLAG_INDICATOR_LEDS_ENABLED);
+    __enable_irq();
+}
 
 /* USER CODE END PFP */
 
@@ -105,13 +117,10 @@ int main(void)
   MX_SPI1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  lineDetectPanelDataIn_t inData;
-  HAL_UART_Receive_DMA(&huart1, &inData, sizeof(lineDetectPanelDataIn_t));
+  HAL_UART_Receive_DMA(&huart1, (uint8_t*)&inData, sizeof(lineDetectPanelDataIn_t));
 
-  bool sendLines = false;
-
-  LinePosCalc linesData;
-  LineFilterCalc lineFilter;
+  linePosCalc_t linesData;
+  lineFilterCalc_t lineFilter;
 
   uint8_t measurements[NUM_OPTOS];
   uint8_t leds[NUM_OPTOS / 8] = { 0, 0, 0, 0 };
@@ -130,10 +139,9 @@ int main(void)
   while (1)
   {
       if (newCmd) {
-          newCmd = 0;
-          if (inData.command == 'S') { // Start command
-              sendLines = 1;
-          }
+          newCmd = false;
+          sendLines = true;
+          handle_cmd();
       }
 
       if (linepanel_read_optos(measurements) != HAL_OK) {
@@ -144,13 +152,16 @@ int main(void)
       linefilter_apply(&lineFilter, &linesData.lines);
 
       if (sendLines) {
-          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), sizeof(Lines));
+          HAL_UART_Transmit_DMA(&huart1, (uint8_t*)(&linesData.lines), sizeof(linePositions_t));
       }
 
-      linepos_set_leds(&linesData.lines, leds);
-      if (linepanel_write_leds(leds) != HAL_OK) {
-          ++errCntr_write_leds;
+      if (indicatorLedsEnabled) {
+          linepos_set_leds(&linesData.lines, leds);
+          if (linepanel_write_leds(leds) != HAL_OK) {
+              ++errCntr_write_leds;
+          }
       }
+
 
   /* USER CODE END WHILE */
 
@@ -222,7 +233,7 @@ void SystemClock_Config(void)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart == &huart1) {
-        newCmd = 1;
+        newCmd = true;
     }
 }
 
