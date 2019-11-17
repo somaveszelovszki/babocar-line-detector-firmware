@@ -174,6 +174,9 @@ int main(void)
           while (HAL_OK != HAL_UART_Receive(uart_cmd, (uint8_t*)&startData, dataSize_panelStartData, 250) && PANEL_START != startData.cmd) {}
           HAL_UART_Receive_DMA(uart_cmd, (uint8_t*)&inData, dataSize_lineDetectPanelDataIn);
 
+          lineDetectPanelDataOut_t dataOut;
+          dataOut.lines = linesData.lines;
+          HAL_UART_Transmit_DMA(uart_cmd, (uint8_t*)(&dataOut), dataSize_lineDetectPanelDataOut);
           connected = true;
           lastCmdTime = currentTime;
       }
