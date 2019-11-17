@@ -32,6 +32,7 @@
 #include "linepos.h"
 #include "linefilter.h"
 
+#include <micro/panel/panelData.h>
 #include <micro/panel/LineDetectPanelData.h>
 /* USER CODE END Includes */
 
@@ -55,10 +56,11 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 static volatile bool newCmd = false;
+static volatile uint32_t lastCmdTime = 0;
 
-lineDetectPanelDataIn_t inData = { 3 };
-static bool sendLines = true;
-static bool indicatorLedsEnabled = true;
+lineDetectPanelDataIn_t inData = { 0 };
+static bool sendLines = false;
+static bool indicatorLedsEnabled = false;
 
 /* USER CODE END PV */
 
@@ -114,7 +116,6 @@ int main(void)
   MX_SPI1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_DMA(uart_cmd, (uint8_t*)&inData, sizeof(lineDetectPanelDataIn_t));
 
   linePosCalc_t linesData;
   lineFilterCalc_t lineFilter;
@@ -129,14 +130,20 @@ int main(void)
   uint32_t errCntr_read_optos = 0;
   uint32_t errCntr_write_leds = 0;
 
+  bool connected = false;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+      const uint32_t currentTime = HAL_GetTick();
+
       if (newCmd) {
           newCmd = false;
+          lastCmdTime = currentTime;
+          connected = true;
           sendLines = true;
           handle_cmd();
       }
@@ -148,8 +155,27 @@ int main(void)
       linepos_calc(&linesData, measurements);
       linefilter_apply(&lineFilter, &linesData.lines);
 
-      if (sendLines) {
-          HAL_UART_Transmit_DMA(uart_cmd, (uint8_t*)(&linesData.lines), sizeof(linePositions_t));
+      if (connected) {
+          if (currentTime - lastCmdTime > MAX_CMD_DELAY_MS) {
+              HAL_UART_AbortReceive_IT(uart_cmd);
+              connected = false;
+              indicatorLedsEnabled = false;
+              sendLines = false;
+          }
+
+          if (sendLines) {
+              lineDetectPanelDataOut_t dataOut;
+              dataOut.lines = linesData.lines;
+              HAL_UART_Transmit_DMA(uart_cmd, (uint8_t*)(&dataOut), dataSize_lineDetectPanelDataOut);
+          }
+
+      } else {
+          panelStartData_t startData;
+          while (HAL_OK != HAL_UART_Receive(uart_cmd, (uint8_t*)&startData, dataSize_panelStartData, 250) && PANEL_START != startData.cmd) {}
+          HAL_UART_Receive_DMA(uart_cmd, (uint8_t*)&inData, dataSize_lineDetectPanelDataIn);
+
+          connected = true;
+          lastCmdTime = currentTime;
       }
 
       if (indicatorLedsEnabled) {
@@ -158,6 +184,8 @@ int main(void)
               ++errCntr_write_leds;
           }
       }
+
+
 
 
     /* USER CODE END WHILE */
