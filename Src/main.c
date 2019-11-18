@@ -171,7 +171,7 @@ int main(void)
 
       } else {
           panelStartData_t startData;
-          while (HAL_OK != HAL_UART_Receive(uart_cmd, (uint8_t*)&startData, dataSize_panelStartData, 250) && PANEL_START != startData.cmd) {}
+          while (HAL_OK != HAL_UART_Receive(uart_cmd, (uint8_t*)&startData, dataSize_panelStartData, 250) || PANEL_START != startData.cmd) {}
           HAL_UART_Receive_DMA(uart_cmd, (uint8_t*)&inData, dataSize_lineDetectPanelDataIn);
 
           lineDetectPanelDataOut_t dataOut;
