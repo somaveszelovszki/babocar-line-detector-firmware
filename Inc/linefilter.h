@@ -9,8 +9,9 @@ typedef enum {
 } fitleredLineState_t;
 
 typedef struct {
-    linePosition_t line;
-    int8_t cntr;
+    linePosition_t current;
+    linePosition_t prev;
+    int16_t cntr;
 } filteredLinePosition_t;
 
 #define MAX_NUM_FILTERED_LINES (MAX_NUM_LINES * 2)
@@ -18,10 +19,10 @@ typedef struct {
 typedef struct {
     uint8_t numLines;
     filteredLinePosition_t values[MAX_NUM_FILTERED_LINES];
-} lineFilterCalc_t;
+} lineFilter_t;
 
-void linefilter_initialize(lineFilterCalc_t *data);
+void linefilter_initialize(lineFilter_t *lineFilter);
 
-void linefilter_apply(lineFilterCalc_t *data, linePositions_t *lines);
+void linefilter_apply(lineFilter_t *lineFilter, linePositions_t *lines);
 
 #endif /* LINEFILTER_H_ */

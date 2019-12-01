@@ -42,9 +42,6 @@ static inline void select_ADC(uint8_t idx) {
 }
 
 static inline HAL_StatusTypeDef write_OPTO(uint8_t optoIdx) {
-//    static uint8_t buf[8] = { 0x55, 0x55, 0x55, 0x55, 0x05, 0x05, 0x00, 0x00 };
-//    return HAL_SPI_Transmit(SPI_INSTANCE, buf, 8, 2);  // selects every 8th optical sensor
-
     return HAL_SPI_Transmit(SPI_INSTANCE, (uint8_t*)OPTO_BUFFERS[optoIdx], NUM_OPTOS / 8, 2);  // selects every 8th optical sensor
 }
 
@@ -125,9 +122,7 @@ HAL_StatusTypeDef linepanel_read_optos(uint8_t *result) {
                 end_comm_ADC();
 
                 if (status == HAL_OK) {
-                    //result[adcIdx * 8 + optoIdx] = ADC_value;
-                    // TODO why? ADC#2 (3rd ADC) shows smaller (0.5 scale) values
-                    result[adcIdx * 8 + optoIdx] = adcIdx == 2 ? ADC_value * 2 : ADC_value;
+                    result[adcIdx * 8 + optoIdx] = ADC_value;
                 } else {
                     break;
                 }

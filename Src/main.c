@@ -117,8 +117,8 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  linePosCalc_t linesData;
-  lineFilterCalc_t lineFilter;
+  linePos_t linesData;
+  lineFilter_t lineFilter;
 
   uint8_t measurements[NUM_OPTOS];
   uint8_t leds[NUM_OPTOS / 8] = { 0, 0, 0, 0 };
@@ -138,11 +138,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      const uint32_t currentTime = HAL_GetTick();
-
       if (newCmd) {
           newCmd = false;
-          lastCmdTime = currentTime;
+          lastCmdTime = HAL_GetTick();
           connected = true;
           sendLines = true;
           handle_cmd();
@@ -156,7 +154,7 @@ int main(void)
       linefilter_apply(&lineFilter, &linesData.lines);
 
       if (connected) {
-          if (currentTime - lastCmdTime > MAX_CMD_DELAY_MS) {
+          if (HAL_GetTick() - lastCmdTime > MAX_CMD_DELAY_MS) {
               HAL_UART_AbortReceive_IT(uart_cmd);
               connected = false;
               indicatorLedsEnabled = false;
@@ -171,14 +169,22 @@ int main(void)
 
       } else {
           panelStartData_t startData;
-          while (HAL_OK != HAL_UART_Receive(uart_cmd, (uint8_t*)&startData, dataSize_panelStartData, 250) || PANEL_START != startData.cmd) {}
-          HAL_UART_Receive_DMA(uart_cmd, (uint8_t*)&inData, dataSize_lineDetectPanelDataIn);
-
+          for (uint8_t i = 0; i < NUM_OPTOS / 8; ++i) {
+              leds[i] = 0x00;
+          }
+          while (HAL_OK != HAL_UART_Receive(uart_cmd, (uint8_t*)&startData, dataSize_panelStartData, 250) || PANEL_START != startData.cmd) {
+              leds[0] = leds[0] == 0x00 ? 0x80 : 0x00;
+              linepanel_write_leds(leds);
+          }
+          leds[0] = 0x00;
           lineDetectPanelDataOut_t dataOut;
           dataOut.lines = linesData.lines;
           HAL_UART_Transmit_DMA(uart_cmd, (uint8_t*)(&dataOut), dataSize_lineDetectPanelDataOut);
+          HAL_Delay(5);
+          HAL_UART_Receive_DMA(uart_cmd, (uint8_t*)&inData, dataSize_lineDetectPanelDataIn);
+
           connected = true;
-          lastCmdTime = currentTime;
+          lastCmdTime = HAL_GetTick();
       }
 
       if (indicatorLedsEnabled) {
@@ -187,9 +193,6 @@ int main(void)
               ++errCntr_write_leds;
           }
       }
-
-
-
 
     /* USER CODE END WHILE */
 

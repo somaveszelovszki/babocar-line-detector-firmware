@@ -9,11 +9,11 @@ typedef struct {
     uint8_t avgWhite;           // Average WHITE value of the previous measurement.
     uint8_t avgBlack;           // Average BLACK value of the previous measurement.
     linePositions_t lines;      // The detected lines.
-} linePosCalc_t;
+} linePos_t;
 
-void linepos_initialize(linePosCalc_t *data);
+void linepos_initialize(linePos_t *linePos);
 
-void linepos_calc(linePosCalc_t *data, const uint8_t *measurements);
+void linepos_calc(linePos_t *linePos, const uint8_t *measurements);
 
 void linepos_set_leds(const linePositions_t *lines, uint8_t *leds);
 

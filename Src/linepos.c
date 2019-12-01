@@ -3,9 +3,9 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
-static const float DIST_OPTO_MM = 224.72f / 31;
-static const float MID_OPTO_POS = NUM_OPTOS / 2 - 0.5f;
+#define MID_OPTO_POS ((NUM_OPTOS / 2) - 0.5f)
 
 static inline int8_t opto_idx_to_pos_mm(float optoIdx) {
     return (int8_t)round_to_int((optoIdx - MID_OPTO_POS) * DIST_OPTO_MM);
@@ -32,14 +32,14 @@ static const uint8_t OFFSETS[NUM_OPTOS] = {
     12, // 13
     12, // 14
     12, // 15
-    30, // 16
-    30, // 17
-    30, // 18
-    30, // 19
-    30, // 20
-    30, // 21
-    30, // 22
-    30, // 23
+    12, // 16
+    12, // 17
+    12, // 18
+    12, // 19
+    12, // 20
+    12, // 21
+    12, // 22
+    12, // 23
     12, // 24
     12, // 25
     12, // 26
@@ -50,101 +50,158 @@ static const uint8_t OFFSETS[NUM_OPTOS] = {
     12  // 31
 };
 
-static void calc(linePosCalc_t *data, const uint8_t *meas_without_offset,
-    const uint8_t white_avg, const uint8_t black_delta, const uint8_t grey_delta, const uint8_t minBlack, const uint8_t minDark) {
+static const float MULTIPLIERS[NUM_OPTOS] = {
+    1.0f, // 0
+    1.0f, // 1
+    1.0f, // 2
+    1.0f, // 3
+    1.0f, // 4
+    1.0f, // 5
+    1.0f, // 6
+    1.0f, // 7
+    1.0f, // 8
+    1.0f, // 9
+    1.0f, // 10
+    1.0f, // 11
+    1.0f, // 12
+    1.0f, // 13
+    1.0f, // 14
+    1.0f, // 15
+    2.0f, // 16
+    2.0f, // 17
+    2.0f, // 18
+    2.0f, // 19
+    2.0f, // 20
+    2.0f, // 21
+    2.0f, // 22
+    2.0f, // 23
+    1.0f, // 24
+    1.0f, // 25
+    1.0f, // 26
+    1.0f, // 27
+    1.0f, // 28
+    1.0f, // 29
+    1.0f, // 30
+    1.0f  // 31
+};
 
-    typedef enum {
-        Color_WHITE = 0,
-        Color_GREY,
-        Color_BLACK
-    } color_t;
+static void calc(linePos_t *linePos, const uint8_t *meas_without_offset, const uint8_t *sorted_indexes, const uint8_t white_avg) {
 
-    uint32_t sumWhite = 0;      // The sum of the WHITE measurements (under the GREY comparator level).
-    uint8_t cntrWhite = 0;      // Counts the WHITE values.
+    linePos->lines.numLines = 0;
 
-    uint32_t sumBlack = 0;      // The sum of the BLACK measurements (above the BLACK comparator level).
-    uint8_t cntrBlack = 0;      // Counts the BLACK values.
+    if (white_avg < 25) {
 
-    uint32_t sumDarkLocal = 0;  // The sum of the GREY or BLACK measurements corresponding to the same line.
-    uint32_t sumDarkLocalW = 0; // The weighted sum of the GREY or BLACK measurements corresponding to the same line.
-    uint8_t cntrBlackLocal = 0; // Counts the BLACK values corresponding to the same line.
-    uint8_t cntrDarkLocal = 0;  // Counts the dark values corresponding to the same line.
+        uint8_t meas[NUM_OPTOS];
+        for (uint8_t i = 0; i < NUM_OPTOS; ++i) {
+            meas[i] = meas_without_offset[i] > white_avg ? meas_without_offset[i] - white_avg : 0;
+        }
 
-    color_t prevColor = Color_WHITE;
+        uint16_t pair_intensities[NUM_OPTOS - 1];
+        for (uint8_t i = 0; i < NUM_OPTOS - 1; ++i) {
+            pair_intensities[i] = (uint16_t)meas[i] + (uint16_t)meas[i + 1];
+        }
 
-    data->lines.numLines = 0;
+        uint16_t sorted_pair_intensities[NUM_OPTOS - 1];
+        memcpy(sorted_pair_intensities, pair_intensities, sizeof(uint16_t) * (NUM_OPTOS - 1));
+        uint8_t sorted_pair_intensity_indexes[NUM_OPTOS - 1];
+        for (uint8_t i = 0; i < NUM_OPTOS - 1; ++i) {
+            sorted_pair_intensity_indexes[i] = i;
+        }
 
-    for (uint8_t i = 0; i < NUM_OPTOS + 1; ++i) {
-        const uint8_t meas = i < NUM_OPTOS ? meas_without_offset[i] : 0;
-        const color_t color = meas >= white_avg + black_delta ? Color_BLACK : meas >= white_avg + grey_delta ? Color_GREY : Color_WHITE;
+        sort_u16(sorted_pair_intensities, sorted_pair_intensity_indexes, NUM_OPTOS - 1);
 
-        if (color >= Color_GREY) {
-            if (prevColor == Color_WHITE) { // rising edge - new line
-                sumDarkLocal = 0;
-                sumDarkLocalW = 0;
-                cntrBlackLocal = 0;
-                cntrDarkLocal = 0;
+        uint8_t max_idx_idx = NUM_OPTOS - 2;
+
+        uint16_t prev_max_pair_intensity = sorted_pair_intensities[NUM_OPTOS - 2];
+
+        while (linePos->lines.numLines < MAX_NUM_LINES) {
+
+            const uint8_t max_pair_idx = sorted_pair_intensity_indexes[max_idx_idx];
+            const uint16_t max_pair_intensity = pair_intensities[max_pair_idx];
+
+            if (max_pair_intensity < prev_max_pair_intensity / 4 || max_pair_intensity < 25) {
+                break;
             }
 
-            if (color == Color_BLACK) {
-                ++cntrBlackLocal;
-                ++cntrBlack;
-                sumBlack += meas;
+            static const uint8_t GROUP_RADIUS = 1;
+
+            const uint8_t max_idx = meas[max_pair_idx] >= meas[max_pair_idx + 1] ? max_pair_idx : max_pair_idx + 1;
+
+            const uint8_t calc_start_idx = max_idx > GROUP_RADIUS ? max_idx - GROUP_RADIUS : 0;
+            const uint8_t calc_end_idx   = max_idx + GROUP_RADIUS < NUM_OPTOS ? max_idx + GROUP_RADIUS : NUM_OPTOS - 1;
+
+            uint16_t sum = 0;
+            uint16_t sumW = 0;
+
+            for (uint8_t i = calc_start_idx; i <= calc_end_idx; ++i) {
+                const uint16_t m = (uint16_t)meas[i];
+                sum += m;
+                sumW += m * i;
             }
 
-            sumDarkLocal += meas;
-            sumDarkLocalW += meas * (uint32_t)i;
-            ++cntrDarkLocal;
+            const float optoPos = (float)sumW / sum;
+            const int8_t pos_mm = opto_idx_to_pos_mm(optoPos);
 
-        } else {
-            if (prevColor >= Color_GREY) {  // falling edge - line ended
-                if (cntrBlackLocal >= minBlack && cntrDarkLocal >= minDark) {
-                    const float optoPos = (float)sumDarkLocalW / sumDarkLocal;
-                    if (data->lines.numLines < MAX_NUM_LINES) {
-                        data->lines.values[data->lines.numLines++].pos_mm = opto_idx_to_pos_mm(optoPos);
-                    }
+            bool found = false;
+            for (uint8_t i = 0; i < linePos->lines.numLines; ++i) {
+                if (linePos->lines.values[i].pos_mm > pos_mm - 10 && linePos->lines.values[i].pos_mm < pos_mm + 10) {
+                    found = true;
+                    break;
                 }
             }
 
-            sumWhite += meas;
-            ++cntrWhite;
+            if (!found) {
+                linePos->lines.values[linePos->lines.numLines].pos_mm = opto_idx_to_pos_mm(optoPos);
+                ++linePos->lines.numLines;
+            }
+
+            if (max_idx_idx == 0) {
+                break;
+            } else {
+                --max_idx_idx;
+            }
+
+            prev_max_pair_intensity = max_pair_intensity;
         }
-
-        prevColor = color;
     }
 }
 
-void linepos_initialize(linePosCalc_t *data) {
-    data->avgBlack = data->avgWhite = 0;
-    data->comparator_black = 100;
-    data->comparator_grey = 50;
-    data->lines.numLines = 0;
+void linepos_initialize(linePos_t *linePos) {
+    linePos->avgBlack = linePos->avgWhite = 0;
+    linePos->comparator_black = 100;
+    linePos->comparator_grey = 50;
+    linePos->lines.numLines = 0;
     for (uint8_t i = 0; i < MAX_NUM_LINES; ++i) {
-        data->lines.values[i].pos_mm = 0;
+        linePos->lines.values[i].pos_mm = 0;
     }
 }
 
-void linepos_calc(linePosCalc_t *data, const uint8_t *measurements) {
+void linepos_calc(linePos_t *linePos, const uint8_t *measurements) {
 
     uint8_t avg_, min_, max_;
 
     uint8_t meas_without_offset[NUM_OPTOS];
-    for (uint32_t i = 0; i < NUM_OPTOS; ++i) {
+    for (uint8_t i = 0; i < NUM_OPTOS; ++i) {
         meas_without_offset[i] = measurements[i] > OFFSETS[i] ? measurements[i] - OFFSETS[i] : 0;
+        meas_without_offset[i] = meas_without_offset[i] * MULTIPLIERS[i] >= 255.0f ? 255 : meas_without_offset[i] * MULTIPLIERS[i];
+    }
+
+    if (meas_without_offset[0] > 40 && meas_without_offset[1] < 10) {
+        meas_without_offset[0] = meas_without_offset[1];
     }
 
     array_average_min_max(meas_without_offset, NUM_OPTOS, &avg_, &min_, &max_);
 
     uint8_t sorted_measurements[NUM_OPTOS];
     memcpy(sorted_measurements, meas_without_offset, NUM_OPTOS);
-    sort(sorted_measurements, NUM_OPTOS);
+    uint8_t sorted_indexes[NUM_OPTOS];
+    for (uint8_t i = 0; i < NUM_OPTOS; ++i) {
+        sorted_indexes[i] = i;
+    }
+    sort_u8(sorted_measurements, sorted_indexes, NUM_OPTOS);
     const uint8_t white_avg = sorted_measurements[(uint32_t)(NUM_OPTOS * 0.3f)];
 
-    calc(data, meas_without_offset, white_avg, 70, 20, 0, 2);
-
-    if (!data->lines.numLines) {
-        calc(data, meas_without_offset, white_avg, 50, 10, 1, 0);
-    }
+    calc(linePos, meas_without_offset, sorted_indexes, white_avg);
 }
 
 

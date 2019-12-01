@@ -23,13 +23,33 @@ void array_average_min_max(const uint8_t *data, uint32_t size, uint8_t *avg_, ui
     *avg_ = sum / size;
 }
 
-void sort(uint8_t *data, uint32_t size) {
+void sort_u8(uint8_t *data, uint8_t *indexes, uint32_t size) {
     for (uint32_t i = 0; i < size - 1; ++i) {
-        for (uint32_t j = i + 1; j < size - i; ++j) {
+        for (uint32_t j = i + 1; j < size; ++j) {
             if (data[i] > data[j]) {
-                uint8_t temp = data[i];
+                const uint8_t tempData = data[i];
                 data[i] = data[j];
-                data[j] = temp;
+                data[j] = tempData;
+
+                const uint8_t tempIdx = indexes[i];
+                indexes[i] = indexes[j];
+                indexes[j] = tempIdx;
+            }
+        }
+    }
+}
+
+void sort_u16(uint16_t *data, uint8_t *indexes, uint32_t size) {
+    for (uint32_t i = 0; i < size - 1; ++i) {
+        for (uint32_t j = i + 1; j < size; ++j) {
+            if (data[i] > data[j]) {
+                const uint16_t tempData = data[i];
+                data[i] = data[j];
+                data[j] = tempData;
+
+                const uint8_t tempIdx = indexes[i];
+                indexes[i] = indexes[j];
+                indexes[j] = tempIdx;
             }
         }
     }
