@@ -27,6 +27,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "common.h"
 #include "config.h"
 #include "linepanel.h"
 #include "linepos.h"
@@ -76,24 +77,6 @@ static void handle_cmd(void) {
     __disable_irq();
     indicatorLedsEnabled = !!(inData.flags & LINE_DETECT_PANEL_FLAG_INDICATOR_LEDS_ENABLED);
     __enable_irq();
-}
-
-static void format_lines(linePositions_t * const lines) {
-    if (1 < lines->numLines) {
-        if (lines->values[0].pos_mm > lines->values[1].pos_mm) {
-            const linePosition_t temp = lines->values[0];
-            lines->values[0] = lines->values[1];
-            lines->values[1] = temp;
-        }
-    }
-
-    if (3 == lines->numLines) {
-        if (lines->values[1].pos_mm > lines->values[2].pos_mm) {
-            const linePosition_t temp = lines->values[1];
-            lines->values[1] = lines->values[2];
-            lines->values[2] = temp;
-        }
-    }
 }
 
 /* USER CODE END PFP */
@@ -184,7 +167,7 @@ int main(void)
           if (sendLines) {
               lineDetectPanelDataOut_t dataOut;
               dataOut.lines = linesData.lines;
-              format_lines(&dataOut.lines);
+              qsort(&dataOut.lines.values, linesData.lines.numLines, sizeof(linePosition_t), compare_i8);
               HAL_UART_Transmit_DMA(uart_cmd, (uint8_t*)(&dataOut), dataSize_lineDetectPanelDataOut);
           }
 
