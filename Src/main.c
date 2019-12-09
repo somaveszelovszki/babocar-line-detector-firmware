@@ -34,6 +34,8 @@
 
 #include <micro/panel/panelData.h>
 #include <micro/panel/LineDetectPanelData.h>
+
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -69,7 +71,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
-void handle_cmd(void) {
+static void handle_cmd(void) {
 
     __disable_irq();
     indicatorLedsEnabled = !!(inData.flags & LINE_DETECT_PANEL_FLAG_INDICATOR_LEDS_ENABLED);
@@ -164,6 +166,7 @@ int main(void)
           if (sendLines) {
               lineDetectPanelDataOut_t dataOut;
               dataOut.lines = linesData.lines;
+              qsort(dataOut.lines.values, dataOut.lines.numLines, sizeof(linePosition_t), compare_i8); // sorts output lines into ascending order
               HAL_UART_Transmit_DMA(uart_cmd, (uint8_t*)(&dataOut), dataSize_lineDetectPanelDataOut);
           }
 

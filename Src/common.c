@@ -23,34 +23,17 @@ void array_average_min_max(const uint8_t *data, uint32_t size, uint8_t *avg_, ui
     *avg_ = sum / size;
 }
 
-void sort_u8(uint8_t *data, uint8_t *indexes, uint32_t size) {
-    for (uint32_t i = 0; i < size - 1; ++i) {
-        for (uint32_t j = i + 1; j < size; ++j) {
-            if (data[i] > data[j]) {
-                const uint8_t tempData = data[i];
-                data[i] = data[j];
-                data[j] = tempData;
-
-                const uint8_t tempIdx = indexes[i];
-                indexes[i] = indexes[j];
-                indexes[j] = tempIdx;
-            }
-        }
-    }
+#define COMPARE_FUNCTION_DEF(_abbr_, _type_)              \
+int compare_ ## _abbr_(const void *a, const void *b) {    \
+    if (*(const _type_*)a < *(const _type_*)b) return -1; \
+    if (*(const _type_*)a > *(const _type_*)b) return 1;  \
+    return 0;                                             \
 }
 
-void sort_u16(uint16_t *data, uint8_t *indexes, uint32_t size) {
-    for (uint32_t i = 0; i < size - 1; ++i) {
-        for (uint32_t j = i + 1; j < size; ++j) {
-            if (data[i] > data[j]) {
-                const uint16_t tempData = data[i];
-                data[i] = data[j];
-                data[j] = tempData;
-
-                const uint8_t tempIdx = indexes[i];
-                indexes[i] = indexes[j];
-                indexes[j] = tempIdx;
-            }
-        }
-    }
-}
+COMPARE_FUNCTION_DEF(u8,    uint8_t)
+COMPARE_FUNCTION_DEF(u16,   uint8_t)
+COMPARE_FUNCTION_DEF(u32,   uint8_t)
+COMPARE_FUNCTION_DEF(i8,    int8_t)
+COMPARE_FUNCTION_DEF(i16,   int16_t)
+COMPARE_FUNCTION_DEF(i32,   int32_t)
+COMPARE_FUNCTION_DEF(float, float)
