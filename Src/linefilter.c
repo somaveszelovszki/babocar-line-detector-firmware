@@ -24,9 +24,11 @@ void linefilter_initialize(lineFilter_t *lineFilter) {
 
 void linefilter_apply(lineFilter_t *lineFilter, linePositions_t *lines) {
 
+    static const int32_t MAX_DIFF_MM = 5;
+
     for (uint8_t i = 0; i < lineFilter->numLines; ++i) {
         filteredLinePosition_t *fl = &lineFilter->values[i];
-        const int32_t diff = (int32_t)fl->current.pos_mm - (int32_t)fl->prev.pos_mm;
+        const int32_t diff = clamp((int32_t)fl->current.pos_mm - (int32_t)fl->prev.pos_mm, -MAX_DIFF_MM, MAX_DIFF_MM);
         fl->prev.pos_mm = fl->current.pos_mm;
         fl->current.pos_mm = clamp((int32_t)fl->current.pos_mm + diff, (int32_t)MIN_OPTO_POS_MM, (int32_t)MAX_OPTO_POS_MM);
     }

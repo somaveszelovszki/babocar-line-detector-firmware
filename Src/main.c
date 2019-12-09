@@ -78,6 +78,24 @@ static void handle_cmd(void) {
     __enable_irq();
 }
 
+static void format_lines(linePositions_t * const lines) {
+    if (1 < lines->numLines) {
+        if (lines->values[0].pos_mm > lines->values[1].pos_mm) {
+            const linePosition_t temp = lines->values[0];
+            lines->values[0] = lines->values[1];
+            lines->values[1] = temp;
+        }
+    }
+
+    if (3 == lines->numLines) {
+        if (lines->values[1].pos_mm > lines->values[2].pos_mm) {
+            const linePosition_t temp = lines->values[1];
+            lines->values[1] = lines->values[2];
+            lines->values[2] = temp;
+        }
+    }
+}
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -166,7 +184,7 @@ int main(void)
           if (sendLines) {
               lineDetectPanelDataOut_t dataOut;
               dataOut.lines = linesData.lines;
-              qsort(dataOut.lines.values, dataOut.lines.numLines, sizeof(linePosition_t), compare_i8); // sorts output lines into ascending order
+              format_lines(&dataOut.lines);
               HAL_UART_Transmit_DMA(uart_cmd, (uint8_t*)(&dataOut), dataSize_lineDetectPanelDataOut);
           }
 
