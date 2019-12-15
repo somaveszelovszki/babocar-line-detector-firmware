@@ -49,7 +49,7 @@ static void calc(linePos_t *linePos, const uint8_t *meas_without_offset) {
         const uint8_t max_pair_idx = sorted_pair_intensities[max_idx_idx].index;
         const uint16_t max_pair_intensity = pair_intensities[max_pair_idx];
 
-        if (max_pair_intensity < 100) {
+        if (max_pair_intensity < 70) {
             break;
         }
 
@@ -142,6 +142,6 @@ void linepos_set_leds(const linePositions_t *lines, uint8_t *leds) {
     memset(leds, 0, NUM_OPTOS / 8);
     for (uint8_t i = 0; i < lines->numLines; ++i) {
         const uint8_t optoIdx = pos_mm_to_opto_idx(lines->values[i].pos_mm);
-        leds[(NUM_OPTOS / 8 - 1) - optoIdx / 8] |= (1 << (optoIdx % 8));  // sets correspondent bit
+        leds[(NUM_OPTOS / 8 - 1) - optoIdx / 8] |= (uint8_t)(1 << (optoIdx % 8));  // sets correspondent bit
     }
 }
