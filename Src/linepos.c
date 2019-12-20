@@ -49,7 +49,7 @@ static void calc(linePos_t *linePos, const uint8_t *meas_without_offset) {
         const uint8_t max_pair_idx = sorted_pair_intensities[max_idx_idx].index;
         const uint16_t max_pair_intensity = pair_intensities[max_pair_idx];
 
-        if (max_pair_intensity < 70) {
+        if (max_pair_intensity < 75) {
             break;
         }
 
@@ -105,28 +105,41 @@ void linepos_initialize(linePos_t *linePos) {
 
 void linepos_calc(linePos_t *linePos, const uint8_t *measurements) {
 
-    static uint8_t white_avg = 0;
-    static uint8_t white_avg_cntr = 0;
-
-    if (0 == white_avg_cntr) {
-        white_avg_cntr = 100;
-
-        uint8_t sorted_measurements[NUM_OPTOS];
-        memcpy(sorted_measurements, measurements, NUM_OPTOS);
-        qsort(sorted_measurements, NUM_OPTOS, sizeof(uint8_t), compare_u8);
-        white_avg = sorted_measurements[NUM_OPTOS / 3];
-
-    } else {
-        --white_avg_cntr;
-    }
-
     uint8_t meas_without_offset[NUM_OPTOS];
     for (uint8_t i = 0; i < NUM_OPTOS; ++i) {
-        meas_without_offset[i] = measurements[i] > white_avg ? measurements[i] - white_avg : 0;
+        const uint8_t startIdx = i >= 2 ? i - 2 : 0;
+        const uint8_t endIdx = i < NUM_OPTOS - 2 ? i + 2 : NUM_OPTOS - 1;
+
+        uint16_t moving_min = 255;
+        for (uint8_t j = startIdx; j < endIdx; ++j) {
+            if (measurements[j] < moving_min) moving_min = measurements[j];
+        }
+
+        meas_without_offset[i] = measurements[i] > moving_min ? measurements[i] - moving_min : 0;
     }
 
+//    static uint8_t white_avg = 0;
+//    static uint8_t white_avg_cntr = 0;
+//
+//    if (0 == white_avg_cntr) {
+//        white_avg_cntr = 100;
+//
+//        uint8_t sorted_measurements[NUM_OPTOS];
+//        memcpy(sorted_measurements, measurements, NUM_OPTOS);
+//        qsort(sorted_measurements, NUM_OPTOS, sizeof(uint8_t), compare_u8);
+//        white_avg = sorted_measurements[NUM_OPTOS / 3];
+//
+//    } else {
+//        --white_avg_cntr;
+//    }
+//
+//    uint8_t meas_without_offset[NUM_OPTOS];
+//    for (uint8_t i = 0; i < NUM_OPTOS; ++i) {
+//        meas_without_offset[i] = measurements[i] > white_avg ? measurements[i] - white_avg : 0;
+//    }
+
     // removes edge peaks on both sides
-    if (meas_without_offset[0] > 40 && meas_without_offset[1] < 10) {
+    if (meas_without_offset[0] > 40 && meas_without_offset[1] < 40) {
         meas_without_offset[0] = meas_without_offset[1];
     }
 

@@ -28,7 +28,21 @@ void linefilter_apply(lineFilter_t *lineFilter, linePositions_t *lines) {
         filteredLinePosition_t *fl = &lineFilter->values[i];
         const int32_t diff = clamp((int32_t)fl->current.pos_mm - (int32_t)fl->prev.pos_mm, -MAX_LINE_JUMP_MM, MAX_LINE_JUMP_MM);
         fl->prev.pos_mm = fl->current.pos_mm;
-        fl->current.pos_mm = clamp((int32_t)fl->current.pos_mm + diff, (int32_t)MIN_OPTO_POS_MM, (int32_t)MAX_OPTO_POS_MM);
+        fl->current.pos_mm = (int8_t)clamp((int32_t)fl->current.pos_mm + diff, (int32_t)MIN_OPTO_POS_MM, (int32_t)MAX_OPTO_POS_MM);
+
+        for (uint8_t j = 0; j < lineFilter->numLines; ++j) {
+            if (i != j) {
+                filteredLinePosition_t *fl2 = &lineFilter->values[j];
+                if (abs((int32_t)fl->current.pos_mm - (int32_t)fl2->current.pos_mm) < MIN_LINE_DIST_MM) {
+                    fl->current.pos_mm = (int8_t)clamp(
+                        (int32_t)(fl->current.pos_mm > fl2->current.pos_mm ?
+                            fl2->current.pos_mm + MIN_LINE_DIST_MM :
+                            fl2->current.pos_mm - MIN_LINE_DIST_MM),
+                        (int32_t)MIN_OPTO_POS_MM,
+                        (int32_t)MAX_OPTO_POS_MM);
+                }
+            }
+        }
     }
 
     // iterates through current lines, updates counters for existing ones and adds new lines to the list
