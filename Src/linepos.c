@@ -81,8 +81,9 @@ static void calc(linePos_t *linePos, const uint8_t *meas_without_offset) {
         }
 
         if (!found) {
-            linePos->lines.values[linePos->lines.numLines].pos_mm = pos_mm;
-            ++linePos->lines.numLines;
+            line_t * const line = &linePos->lines.values[linePos->lines.numLines++];
+            line->pos_mm = pos_mm;
+            line->id = 0;
         }
 
         if (max_idx_idx == 0) {
@@ -151,7 +152,7 @@ void linepos_calc(linePos_t *linePos, const uint8_t *measurements) {
 }
 
 
-void linepos_set_leds(const linePositions_t *lines, uint8_t *leds) {
+void linepos_set_leds(const lines_t *lines, uint8_t *leds) {
     memset(leds, 0, NUM_OPTOS / 8);
     for (uint8_t i = 0; i < lines->numLines; ++i) {
         const uint8_t optoIdx = pos_mm_to_opto_idx(lines->values[i].pos_mm);
