@@ -1,7 +1,7 @@
 #ifndef LINEPANEL_H_
 #define LINEPANEL_H_
 
-#include "common.h"
+#include <micro/utils/types.h>
 
 #include "stm32f0xx_hal.h"
 

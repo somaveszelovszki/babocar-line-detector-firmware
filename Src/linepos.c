@@ -1,6 +1,8 @@
 #include "linepos.h"
 #include "config.h"
 
+#include <micro/math/numeric.h>
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -10,14 +12,15 @@ typedef struct {
     uint8_t index;
 } u16_indexed_t;
 
-#define MID_OPTO_POS ((NUM_OPTOS / 2) - 0.5f)
+static const float DIST_OPTO_MM = OPTO_ARRAY_LENGTH_MM / (NUM_OPTOS - 1);
+static const float MID_OPTO_POS = (NUM_OPTOS / 2) - 0.5f;
 
 static inline int8_t opto_idx_to_pos_mm(float optoIdx) {
     return (int8_t)round_to_int((optoIdx - MID_OPTO_POS) * DIST_OPTO_MM);
 }
 
 static inline uint8_t pos_mm_to_opto_idx(float pos_mm) {
-    return (uint8_t)clamp(round_to_int(MID_OPTO_POS + pos_mm / DIST_OPTO_MM), 0, NUM_OPTOS - 1);
+    return (uint8_t)CLAMP(round_to_int(MID_OPTO_POS + pos_mm / DIST_OPTO_MM), 0, NUM_OPTOS - 1);
 }
 
 static int cmp_u16_indexed(const void *a, const void *b) {

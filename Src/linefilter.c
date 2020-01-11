@@ -1,6 +1,8 @@
 #include "linefilter.h"
 #include "config.h"
 
+#include <micro/math/numeric.h>
+
 #include <stdlib.h>
 
 static void add_line(lineFilter_t *lineFilter, const line_t *line) {
@@ -26,22 +28,25 @@ void linefilter_initialize(lineFilter_t *lineFilter) {
 
 void linefilter_apply(lineFilter_t *lineFilter, lines_t *lines) {
 
+    static const int8_t MAX_OPTO_POS_MM = (int8_t)(OPTO_ARRAY_LENGTH_MM / 2);
+    static const int8_t MIN_OPTO_POS_MM = (int8_t)(-OPTO_ARRAY_LENGTH_MM / 2);
+
     for (uint8_t i = 0; i < lineFilter->numLines; ++i) {
         filteredLine_t *fl = &lineFilter->values[i];
-        const int32_t diff = clamp((int32_t)fl->current.pos_mm - (int32_t)fl->prev.pos_mm, -MAX_LINE_JUMP_MM, MAX_LINE_JUMP_MM);
+        const int32_t diff = CLAMP(fl->current.pos_mm - fl->prev.pos_mm, -MAX_LINE_JUMP_MM, MAX_LINE_JUMP_MM);
         fl->prev.pos_mm = fl->current.pos_mm;
-        fl->current.pos_mm = (int8_t)clamp((int32_t)fl->current.pos_mm + diff, (int32_t)MIN_OPTO_POS_MM, (int32_t)MAX_OPTO_POS_MM);
+        fl->current.pos_mm = CLAMP(fl->current.pos_mm + diff, MIN_OPTO_POS_MM, MAX_OPTO_POS_MM);
 
         for (uint8_t j = 0; j < lineFilter->numLines; ++j) {
             if (i != j) {
                 filteredLine_t *fl2 = &lineFilter->values[j];
                 if (abs((int32_t)fl->current.pos_mm - (int32_t)fl2->current.pos_mm) < MIN_LINE_DIST_MM) {
-                    fl->current.pos_mm = (int8_t)clamp(
-                        (int32_t)(fl->current.pos_mm > fl2->current.pos_mm ?
+                    fl->current.pos_mm = CLAMP(
+                        (fl->current.pos_mm > fl2->current.pos_mm ?
                             fl2->current.pos_mm + MIN_LINE_DIST_MM :
                             fl2->current.pos_mm - MIN_LINE_DIST_MM),
-                        (int32_t)MIN_OPTO_POS_MM,
-                        (int32_t)MAX_OPTO_POS_MM);
+                        MIN_OPTO_POS_MM,
+                        MAX_OPTO_POS_MM);
                 }
             }
         }

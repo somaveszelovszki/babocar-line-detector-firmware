@@ -27,16 +27,17 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "common.h"
 #include "config.h"
 #include "linepanel.h"
 #include "linepos.h"
 #include "linefilter.h"
 
+#include <micro/math/numeric.h>
 #include <micro/panel/panelLink.h>
 #include <micro/panel/LineDetectPanelData.h>
 
 #include <stdlib.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,7 +59,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-static bool indicatorLedsEnabled = true;
+static bool indicatorLedsEnabled = false;
 static panelLink_t panelLink;
 
 /* USER CODE END PV */
@@ -68,8 +69,16 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
-static void handleRxData(lineDetectPanelDataIn_t *rxData) {
+static void handleRxData(const lineDetectPanelDataIn_t *rxData) {
     indicatorLedsEnabled = !!(rxData->flags & LINE_DETECT_PANEL_FLAG_INDICATOR_LEDS_ENABLED);
+
+    if (rxData->flags == 'S') {
+        volatile int i = 0;
+    }
+}
+
+static void fillTxData(lineDetectPanelDataOut_t *txData, const lines_t *lines) {
+    memcpy(&txData->lines, lines, sizeof(lines_t));
 }
 
 /* USER CODE END PFP */
@@ -118,17 +127,20 @@ int main(void)
 
   uint8_t measurements[NUM_OPTOS];
   uint8_t leds[NUM_OPTOS / 8] = { 0, 0, 0, 0 };
-  uint32_t errCntr_read_optos = 0;
-  uint32_t errCntr_write_leds = 0;
   uint32_t nextLedToggleTime  = HAL_GetTick();
-
   lineDetectPanelDataIn_t rxData;
   lineDetectPanelDataOut_t txData;
+  bool prevConnected = false;
 
   linepanel_initialize();
   linepos_initialize(&linesData);
   linefilter_initialize(&lineFilter);
-  panelLink_initialize((panelLink_t*)&panelLink, uart_cmd, &rxData, sizeof(rxData), LINE_DETECT_PANEL_LINK_RECV_PERIOD_MS, &txData, sizeof(txData), LINE_DETECT_PANEL_LINK_SEND_PERIOD_MS);
+
+  lineDetectPanelDataIn_t rxDataBuffer;
+  lineDetectPanelDataOut_t txDataBuffer;
+  panelLink_initialize((panelLink_t*)&panelLink, PanelLinkRole_Slave, uart_cmd,
+      &rxDataBuffer, sizeof(lineDetectPanelDataIn_t), LINE_DETECT_PANEL_LINK_RX_PERIOD_MS,
+      &txDataBuffer, sizeof(lineDetectPanelDataOut_t), LINE_DETECT_PANEL_LINK_TX_PERIOD_MS);
 
   /* USER CODE END 2 */
 
@@ -137,35 +149,33 @@ int main(void)
 
   while (1) {
 
-      if (panelLink_checkAvailable((panelLink_t*)&panelLink)) {
+      panelLink_update((panelLink_t*)&panelLink);
+      const bool isConnected = panelLink_isConnected((const panelLink_t*)&panelLink);
+
+      if (panelLink_readAvailable((panelLink_t*)&panelLink, &rxData)) {
           handleRxData(&rxData);
       }
 
-      panelLink_checkConnection((panelLink_t*)&panelLink);
-
-      if (!panelLink.isConnected) {
-          indicatorLedsEnabled = false;
-      }
-
-      if (linepanel_read_optos(measurements) != HAL_OK) {
-          ++errCntr_read_optos;
-      }
-
+      linepanel_read_optos(measurements);
       linepos_calc(&linesData, measurements);
       linefilter_apply(&lineFilter, &linesData.lines);
 
       if (panelLink_shouldSend((panelLink_t*)&panelLink)) {
-          panelLink_send((panelLink_t*)&panelLink);
+          fillTxData(&txData, &linesData.lines);
+          panelLink_send((panelLink_t*)&panelLink, &txData);
       }
 
-      if (indicatorLedsEnabled) {
-          linepos_set_leds(&linesData.lines, leds);
-          if (linepanel_write_leds(leds) != HAL_OK) {
-              ++errCntr_write_leds;
+      if (isConnected) {
+          if (indicatorLedsEnabled) {
+              linepos_set_leds(&linesData.lines, leds);
+              linepanel_write_leds(leds);
+          } else if (!prevConnected) { // resets LEDS after blinking
+              for (uint8_t i = 0; i < NUM_OPTOS / 8; ++i) {
+                  leds[i] = 0x00;
+              }
+              linepanel_write_leds(leds);
           }
-      }
-
-      if (!panelLink.isConnected && HAL_GetTick() >= nextLedToggleTime) {
+      } else if (HAL_GetTick() >= nextLedToggleTime) {
           nextLedToggleTime += 250;
           for (uint8_t i = 1; i < NUM_OPTOS / 8; ++i) {
               leds[i] = 0x00;
@@ -173,6 +183,8 @@ int main(void)
           leds[0] = leds[0] == 0x00 ? 0x80 : 0x00;
           linepanel_write_leds(leds);
       }
+
+      prevConnected = isConnected;
 
     /* USER CODE END WHILE */
 
@@ -229,7 +241,7 @@ void SystemClock_Config(void)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart == &huart1) {
-        panelLink_onNewCmd((panelLink_t*)&panelLink);
+        panelLink_onNewRxData((panelLink_t*)&panelLink);
     }
 }
 
