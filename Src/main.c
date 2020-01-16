@@ -71,10 +71,6 @@ void SystemClock_Config(void);
 
 static void handleRxData(const lineDetectPanelDataIn_t *rxData) {
     indicatorLedsEnabled = !!(rxData->flags & LINE_DETECT_PANEL_FLAG_INDICATOR_LEDS_ENABLED);
-
-    if (rxData->flags == 'S') {
-        volatile int i = 0;
-    }
 }
 
 static void fillTxData(lineDetectPanelDataOut_t *txData, const lines_t *lines) {
@@ -139,8 +135,8 @@ int main(void)
   lineDetectPanelDataIn_t rxDataBuffer;
   lineDetectPanelDataOut_t txDataBuffer;
   panelLink_initialize((panelLink_t*)&panelLink, PanelLinkRole_Slave, uart_cmd,
-      &rxDataBuffer, sizeof(lineDetectPanelDataIn_t), LINE_DETECT_PANEL_LINK_RX_PERIOD_MS,
-      &txDataBuffer, sizeof(lineDetectPanelDataOut_t), LINE_DETECT_PANEL_LINK_TX_PERIOD_MS);
+      &rxDataBuffer, sizeof(lineDetectPanelDataIn_t), LINE_DETECT_PANEL_LINK_IN_TIMEOUT_MS,
+      &txDataBuffer, sizeof(lineDetectPanelDataOut_t), LINE_DETECT_PANEL_LINK_OUT_PERIOD_MS);
 
   /* USER CODE END 2 */
 
