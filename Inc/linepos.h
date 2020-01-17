@@ -1,7 +1,7 @@
 #ifndef LINEPOS_H_
 #define LINEPOS_H_
 
-#include <micro/panel/lines.h>
+#include <micro/panel/line.h>
 
 typedef struct {
     uint8_t comparator_black;   // Comparator level for separating BLACK.
@@ -15,6 +15,6 @@ void linepos_initialize(linePos_t *linePos);
 
 void linepos_calc(linePos_t *linePos, const uint8_t *measurements);
 
-void linepos_set_leds(const lines_t *lines, uint8_t *leds);
+void linepos_set_leds(const trackedLines_t *lines, uint8_t *leds);
 
 #endif /* LINEPOS_H_ */

@@ -73,8 +73,17 @@ static void handleRxData(const lineDetectPanelDataIn_t *rxData) {
     indicatorLedsEnabled = !!(rxData->flags & LINE_DETECT_PANEL_FLAG_INDICATOR_LEDS_ENABLED);
 }
 
-static void fillTxData(lineDetectPanelDataOut_t *txData, const lines_t *lines) {
-    memcpy(&txData->lines, lines, sizeof(lines_t));
+static void fillTxData(lineDetectPanelDataOut_t *txData, const trackedLines_t *lines) {
+
+    for (uint8_t i = 0; i < lines->numLines; ++i) {
+        txData->values[i] = lines->values[i];
+    }
+
+    for (uint8_t i = lines->numLines; i < MAX_NUM_LINES; ++i) {
+        trackedLine_t *l = &txData->values[i];
+        l->pos_mm = 0;
+        l->id = INVALID_LINE_IDX;
+    }
 }
 
 /* USER CODE END PFP */
@@ -127,6 +136,8 @@ int main(void)
   lineDetectPanelDataIn_t rxData;
   lineDetectPanelDataOut_t txData;
   bool prevConnected = false;
+  trackedLines_t trackedLines;
+  trackedLines.numLines = 0;
 
   linepanel_initialize();
   linepos_initialize(&linesData);
@@ -154,16 +165,16 @@ int main(void)
 
       linepanel_read_optos(measurements);
       linepos_calc(&linesData, measurements);
-      linefilter_apply(&lineFilter, &linesData.lines);
+      linefilter_apply(&lineFilter, &linesData.lines, &trackedLines);
 
       if (panelLink_shouldSend((panelLink_t*)&panelLink)) {
-          fillTxData(&txData, &linesData.lines);
+          fillTxData(&txData, &trackedLines);
           panelLink_send((panelLink_t*)&panelLink, &txData);
       }
 
       if (isConnected) {
           if (indicatorLedsEnabled) {
-              linepos_set_leds(&linesData.lines, leds);
+              linepos_set_leds(&trackedLines, leds);
               linepanel_write_leds(leds);
           } else if (!prevConnected) { // resets LEDS after blinking
               for (uint8_t i = 0; i < NUM_OPTOS / 8; ++i) {

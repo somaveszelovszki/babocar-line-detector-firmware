@@ -1,7 +1,7 @@
 #ifndef LINEFILTER_H_
 #define LINEFILTER_H_
 
-#include <micro/panel/lines.h>
+#include <micro/panel/line.h>
 
 typedef enum {
     VALID,
@@ -9,7 +9,7 @@ typedef enum {
 } fitleredLineState_t;
 
 typedef struct {
-    line_t current;
+    trackedLine_t current;
     line_t prev;
     int16_t cntr;
 } filteredLine_t;
@@ -24,6 +24,6 @@ typedef struct {
 
 void linefilter_initialize(lineFilter_t *lineFilter);
 
-void linefilter_apply(lineFilter_t *lineFilter, lines_t *lines);
+void linefilter_apply(lineFilter_t *lineFilter, const lines_t *detectedLines, trackedLines_t *filteredLines);
 
 #endif /* LINEFILTER_H_ */

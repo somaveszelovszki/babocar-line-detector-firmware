@@ -23,7 +23,7 @@ static inline uint8_t pos_mm_to_opto_idx(float pos_mm) {
     return (uint8_t)CLAMP(round_to_int(MID_OPTO_POS + pos_mm / DIST_OPTO_MM), 0, NUM_OPTOS - 1);
 }
 
-static int cmp_u16_indexed(const void *a, const void *b) {
+static int compare_u16_indexed(const void *a, const void *b) {
     return ((const u16_indexed_t*)a)->value < ((const u16_indexed_t*)b)->value ? -1 :
            ((const u16_indexed_t*)a)->value > ((const u16_indexed_t*)b)->value ? 1 : 0;
 }
@@ -43,7 +43,7 @@ static void calc(linePos_t *linePos, const uint8_t *meas_without_offset) {
         sorted_pair_intensities[i].index = i;
     }
 
-    qsort(sorted_pair_intensities, NUM_OPTOS - 1, sizeof(u16_indexed_t), cmp_u16_indexed);
+    qsort(sorted_pair_intensities, NUM_OPTOS - 1, sizeof(u16_indexed_t), compare_u16_indexed);
 
     uint8_t max_idx_idx = NUM_OPTOS - 2;
 
@@ -86,7 +86,6 @@ static void calc(linePos_t *linePos, const uint8_t *meas_without_offset) {
         if (!found) {
             line_t * const line = &linePos->lines.values[linePos->lines.numLines++];
             line->pos_mm = pos_mm;
-            line->id = 0;
         }
 
         if (max_idx_idx == 0) {
@@ -122,26 +121,6 @@ void linepos_calc(linePos_t *linePos, const uint8_t *measurements) {
         meas_without_offset[i] = measurements[i] > moving_min ? measurements[i] - moving_min : 0;
     }
 
-//    static uint8_t white_avg = 0;
-//    static uint8_t white_avg_cntr = 0;
-//
-//    if (0 == white_avg_cntr) {
-//        white_avg_cntr = 100;
-//
-//        uint8_t sorted_measurements[NUM_OPTOS];
-//        memcpy(sorted_measurements, measurements, NUM_OPTOS);
-//        qsort(sorted_measurements, NUM_OPTOS, sizeof(uint8_t), compare_u8);
-//        white_avg = sorted_measurements[NUM_OPTOS / 3];
-//
-//    } else {
-//        --white_avg_cntr;
-//    }
-//
-//    uint8_t meas_without_offset[NUM_OPTOS];
-//    for (uint8_t i = 0; i < NUM_OPTOS; ++i) {
-//        meas_without_offset[i] = measurements[i] > white_avg ? measurements[i] - white_avg : 0;
-//    }
-
     // removes edge peaks on both sides
     if (meas_without_offset[0] > 40 && meas_without_offset[1] < 40) {
         meas_without_offset[0] = meas_without_offset[1];
@@ -155,7 +134,7 @@ void linepos_calc(linePos_t *linePos, const uint8_t *measurements) {
 }
 
 
-void linepos_set_leds(const lines_t *lines, uint8_t *leds) {
+void linepos_set_leds(const trackedLines_t *lines, uint8_t *leds) {
     memset(leds, 0, NUM_OPTOS / 8);
     for (uint8_t i = 0; i < lines->numLines; ++i) {
         const uint8_t optoIdx = pos_mm_to_opto_idx(lines->values[i].pos_mm);

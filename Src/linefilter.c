@@ -7,10 +7,28 @@
 
 static void add_line(lineFilter_t *lineFilter, const line_t *line) {
     if (lineFilter->numLines < MAX_NUM_FILTERED_LINES) {
-        filteredLine_t *fl = &lineFilter->values[lineFilter->numLines++];
-        fl->current.pos_mm = fl->prev.pos_mm = line->pos_mm;
-        fl->current.id = fl->prev.id = (lineFilter->lastLineIdx = 255 == lineFilter->lastLineIdx ? 1 : lineFilter->lastLineIdx + 1);
-        fl->cntr = 1;
+
+        filteredLine_t *next = &lineFilter->values[lineFilter->numLines];
+
+        if (lineFilter->numLines > 0) {
+
+            // performs ordered insert: shifts all larger values to the right
+            for (uint8_t i = lineFilter->numLines - 1; i <= 0; --i) {
+                filteredLine_t *fl = &lineFilter->values[i];
+                if (fl->current.pos_mm > line->pos_mm) {
+                    *next = *fl;
+                } else {
+                    break;
+                }
+                next = fl;
+            }
+        }
+
+        next->current.pos_mm = next->prev.pos_mm = line->pos_mm;
+        next->current.id = (lineFilter->lastLineIdx = 255 == lineFilter->lastLineIdx ? 1 : lineFilter->lastLineIdx + 1);
+        next->cntr = 1;
+
+        ++lineFilter->numLines;
     }
 }
 
@@ -26,7 +44,7 @@ void linefilter_initialize(lineFilter_t *lineFilter) {
     lineFilter->lastLineIdx = 0;
 }
 
-void linefilter_apply(lineFilter_t *lineFilter, lines_t *lines) {
+void linefilter_apply(lineFilter_t *lineFilter, const lines_t *detectedLines, trackedLines_t *filteredLines) {
 
     static const int8_t MAX_OPTO_POS_MM = (int8_t)(OPTO_ARRAY_LENGTH_MM / 2);
     static const int8_t MIN_OPTO_POS_MM = (int8_t)(-OPTO_ARRAY_LENGTH_MM / 2);
@@ -53,8 +71,8 @@ void linefilter_apply(lineFilter_t *lineFilter, lines_t *lines) {
     }
 
     // iterates through current lines, updates counters for existing ones and adds new lines to the list
-    for (uint8_t i = 0; i < lines->numLines; ++i) {
-        const line_t *line = &lines->values[i];
+    for (uint8_t i = 0; i < detectedLines->numLines; ++i) {
+        const line_t *line = &detectedLines->values[i];
 
         //finds nearest line in the previous line set (if present)
         uint8_t min_idx = 255;
@@ -71,7 +89,7 @@ void linefilter_apply(lineFilter_t *lineFilter, lines_t *lines) {
             add_line(lineFilter, line);
         } else {    // line has been found in the previous line set
             filteredLine_t *fl = &lineFilter->values[min_idx];
-            fl->current = *line;
+            fl->current.pos_mm = line->pos_mm;
             fl->cntr = (fl->cntr < 0 || fl->cntr == MIN_LINE_SAMPLE_APPEAR) ? MIN_LINE_SAMPLE_APPEAR : fl->cntr + 1;
         }
     }
@@ -82,8 +100,8 @@ void linefilter_apply(lineFilter_t *lineFilter, lines_t *lines) {
 
         //finds nearest line in the current line set (if present)
         int32_t min_dist = -1;
-        for (uint8_t j = 0; j < lines->numLines; ++j) {
-            const int32_t dist = abs((int32_t)fl->current.pos_mm - (int32_t)lines->values[j].pos_mm);
+        for (uint8_t j = 0; j < detectedLines->numLines; ++j) {
+            const int32_t dist = abs((int32_t)fl->current.pos_mm - (int32_t)detectedLines->values[j].pos_mm);
             if (min_dist == -1 || dist <= min_dist) {
                 min_dist = dist;
             }
@@ -97,12 +115,12 @@ void linefilter_apply(lineFilter_t *lineFilter, lines_t *lines) {
         } // else: line has been found in the current line set -> already handled
     }
 
-    // refills lines from stored ones
-    lines->numLines = 0;
-    for (uint8_t i = 0; i < lineFilter->numLines && lines->numLines < MAX_NUM_LINES; ++i) {
+    // fills filtered line array from stored ones
+    filteredLines->numLines = 0;
+    for (uint8_t i = 0; i < lineFilter->numLines && filteredLines->numLines < MAX_NUM_LINES; ++i) {
         const filteredLine_t *fl = &lineFilter->values[i];
         if (fl->cntr == MIN_LINE_SAMPLE_APPEAR || (fl->cntr < 0 && fl->cntr > -MIN_LINE_SAMPLE_DISAPPEAR)) {
-            lines->values[lines->numLines++] = fl->current;
+            filteredLines->values[filteredLines->numLines++] = fl->current;
         }
     }
 }
