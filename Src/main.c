@@ -73,6 +73,11 @@ static void handleRxData(const lineDetectPanelDataIn_t *rxData) {
     indicatorLedsEnabled = !!(rxData->flags & LINE_DETECT_PANEL_FLAG_INDICATOR_LEDS_ENABLED);
 }
 
+static int compare_trackedLine(const void *a, const void *b) {
+    return ((const trackedLine_t*)a)->pos_mm < ((const trackedLine_t*)b)->pos_mm ? -1 :
+           ((const trackedLine_t*)a)->pos_mm > ((const trackedLine_t*)b)->pos_mm ? 1 : 0;
+}
+
 static void fillTxData(lineDetectPanelDataOut_t *txData, const trackedLines_t *lines) {
 
     for (uint8_t i = 0; i < lines->numLines; ++i) {
@@ -84,6 +89,8 @@ static void fillTxData(lineDetectPanelDataOut_t *txData, const trackedLines_t *l
         l->pos_mm = 0;
         l->id = INVALID_LINE_IDX;
     }
+
+    qsort(txData->values, lines->numLines, sizeof(trackedLine_t), compare_trackedLine);
 }
 
 /* USER CODE END PFP */
