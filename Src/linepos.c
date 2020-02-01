@@ -116,7 +116,7 @@ void linepos_calc(linePos_t *linePos, const uint8_t *measurements) {
     }
     average /= NUM_OPTOS;
 
-    if (average < 100) {
+    if (average < 150) {
         for (uint8_t i = 0; i < NUM_OPTOS; ++i) {
             const uint8_t startIdx = i >= 2 ? i - 2 : 0;
             const uint8_t endIdx = i < NUM_OPTOS - 2 ? i + 2 : NUM_OPTOS - 1;
