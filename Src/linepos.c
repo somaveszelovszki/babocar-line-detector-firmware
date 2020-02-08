@@ -52,7 +52,7 @@ static void calc(linePos_t *linePos, const uint8_t *meas_without_offset) {
         const uint8_t max_pair_idx = sorted_pair_intensities[max_idx_idx].index;
         const uint16_t max_pair_intensity = pair_intensities[max_pair_idx];
 
-        if (max_pair_intensity < 2 * 75) {
+        if (max_pair_intensity < 2 * 70) {
             break;
         }
 

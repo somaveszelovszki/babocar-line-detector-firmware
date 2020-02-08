@@ -150,10 +150,10 @@ int main(void)
   linepos_initialize(&linesData);
   linefilter_initialize(&lineFilter);
 
-  lineDetectPanelDataIn_t rxDataBuffer;
+  lineDetectPanelDataIn_t rxDataBuffer1, rxDataBuffer2;
   lineDetectPanelDataOut_t txDataBuffer;
   panelLink_initialize((panelLink_t*)&panelLink, PanelLinkRole_Slave, uart_cmd,
-      &rxDataBuffer, sizeof(lineDetectPanelDataIn_t), LINE_DETECT_PANEL_LINK_IN_TIMEOUT_MS,
+      &rxDataBuffer1, &rxDataBuffer2, sizeof(lineDetectPanelDataIn_t), LINE_DETECT_PANEL_LINK_IN_TIMEOUT_MS,
       &txDataBuffer, sizeof(lineDetectPanelDataOut_t), LINE_DETECT_PANEL_LINK_OUT_PERIOD_MS);
 
   /* USER CODE END 2 */
