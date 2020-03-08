@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>line-detector-stm32</name>
-	<comment />
+	<name>line-detector</name>
+	<comment></comment>
 	<projects>
 	</projects>
 	<buildSpec>
@@ -20,15 +20,22 @@
 	</buildSpec>
 	<natures>
 		<nature>org.eclipse.cdt.core.cnature</nature>
+		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 		<nature>fr.ac6.mcu.ide.core.MCUProjectNature</nature>
+		<nature>fr.ac6.mcu.ide.core.MCUSingleCoreProjectNature</nature>
 	</natures>
 	<linkedResources>
 		<link>
+			<name>micro-utils</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/micro-utils</locationURI>
+		</link>
+		<link>
 			<name>micro-utils-src</name>
 			<type>2</type>
-			<location>/home/soma/work/catkin_ws/src/robonaut2020/micro-utils/src</location>
+			<locationURI>PARENT-2-PROJECT_LOC/micro-utils/src</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
