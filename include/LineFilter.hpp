@@ -17,9 +17,11 @@ struct trackedLine_t {
     bool operator>(const trackedLine_t& other) const { return this->pos > other.pos; }
 };
 
+typedef micro::sorted_vec<trackedLine_t, cfg::MAX_NUM_LINES> trackedLines_t;
+
 class LineFilter {
 public:
-    micro::sorted_vec<trackedLine_t, cfg::MAX_NUM_LINES> update(const linePositions_t& detectedLines);
+    trackedLines_t update(const linePositions_t& detectedLines);
 
 private:
     struct filteredLine_t {

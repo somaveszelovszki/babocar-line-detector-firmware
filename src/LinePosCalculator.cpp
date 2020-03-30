@@ -6,7 +6,11 @@
 
 using namespace micro;
 
-linePositions_t LinePosCalculator::calculate(const uint8_t * const measurements) {
+constexpr uint8_t LinePosCalculator::INTENSITY_GROUP_RADIUS;
+constexpr uint8_t LinePosCalculator::POS_CALC_GROUP_RADIUS;
+constexpr uint8_t LinePosCalculator::NUM_GROUP_INTENSITIES;
+
+linePositions_t LinePosCalculator::calculate(const measurements_t& measurements) {
     linePositions_t positions;
     const uint16_t average = micro::accumulate(measurements, &measurements[cfg::NUM_SENSORS], static_cast<uint16_t>(0)) / cfg::NUM_SENSORS;
 

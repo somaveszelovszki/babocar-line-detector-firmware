@@ -1,6 +1,6 @@
 #include <cfg_board.h>
 #include <cfg_sensor.hpp>
-#include <LinePanel.hpp>
+#include <SensorHandler.hpp>
 
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_spi.h"
@@ -32,7 +32,10 @@ const std::pair<GPIO_TypeDef*, uint16_t> ADC_ENABLE_PINS[cfg::NUM_SENSORS / 8] =
 
 } // namespace
 
-SensorHandler::SensorHandler() {
+void SensorHandler::initialize() {
+    this->semaphore_ = xSemaphoreCreateBinaryStatic(&this->semaphoreBuffer_);
+    xSemaphoreGive(this->semaphore_);
+
     HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_OPTO, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_OPTO, GPIO_PIN_SET);
 
@@ -47,7 +50,7 @@ SensorHandler::SensorHandler() {
 void SensorHandler::readSensors(measurements_t& OUT measurements) {
     for (uint8_t optoIdx = 0; optoIdx < 8; ++optoIdx) {
 
-        HAL_SPI_Transmit(spi_Sensor, (uint8_t*)OPTO_BUFFERS[optoIdx], cfg::NUM_SENSORS / 8, 2);
+        HAL_SPI_Transmit_DMA(spi_Sensor, (uint8_t*)OPTO_BUFFERS[optoIdx], cfg::NUM_SENSORS / 8);
 
         HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_OPTO, GPIO_PIN_SET);
         HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_OPTO, GPIO_PIN_SET);
@@ -64,7 +67,24 @@ void SensorHandler::readSensors(measurements_t& OUT measurements) {
     }
 }
 
-uint8_t readAdc(const uint8_t channel) {
+void SensorHandler::writeLeds(const bool * const leds) {
+    uint8_t outBuffer[cfg::NUM_SENSORS / 8] = { 0, 0, 0, 0, 0, 0 };
+
+    for (uint32_t i = 0; i < cfg::NUM_SENSORS; ++i) {
+        if (leds[i]) {
+            outBuffer[i / 8] |= (1 << (i % 8));
+        }
+    }
+
+    HAL_SPI_Transmit_DMA(spi_Sensor, outBuffer, ARRAY_SIZE(outBuffer));
+
+    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_IND, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_IND, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_IND, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_IND, GPIO_PIN_RESET);
+}
+
+uint8_t SensorHandler::readAdc(const uint8_t channel) {
     uint8_t adcBuffer[3] = { 0, 0, 0 };
 
     // Control byte: | START | SEL2 | SEL1 | SEL0 | UNI/BIP | SGL/DIF | PD1 | PD0 |
@@ -75,23 +95,6 @@ uint8_t readAdc(const uint8_t channel) {
     //
     // @see MAX1110CAP+ datasheet for details
     adcBuffer[0] =  0b10001111 | ((channel & 0b00000001) << 6) | ((channel & 0b00000010) << 3) | ((channel & 0b00000100) << 3);
-    HAL_SPI_TransmitReceive(spi_Sensor, adcBuffer, adcBuffer, ARRAY_SIZE(adcBuffer), 2);
+    HAL_SPI_TransmitReceive_DMA(spi_Sensor, adcBuffer, adcBuffer, ARRAY_SIZE(adcBuffer));
     return (adcBuffer[1] << 2) | (adcBuffer[2] >> 6); // ADC value format: 00000000 00XXXXXX XX000000
-}
-
-void SensorHandler::writeLeds(const bool * const leds) {
-    uint8_t outBuffer[cfg::NUM_SENSORS / 8] = { 0, 0, 0, 0, 0, 0 };
-
-    for (uint32_t i = 0; i < cfg::NUM_SENSORS; ++i) {
-        if (leds[i]) {
-            outBuffer[i / 8] |= (1 << (i % 8));
-        }
-    }
-
-    HAL_SPI_Transmit(spi_Sensor, outBuffer, ARRAY_SIZE(outBuffer), 2);
-
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_IND, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_IND, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_IND, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_IND, GPIO_PIN_RESET);
 }

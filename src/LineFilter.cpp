@@ -31,7 +31,7 @@ using namespace micro;
 //    }
 //}
 
-sorted_vec<trackedLine_t, cfg::MAX_NUM_LINES> LineFilter::update(const linePositions_t& detectedLines) {
+trackedLines_t LineFilter::update(const linePositions_t& detectedLines) {
 
     sorted_map<linePositions_t::const_iterator, filteredLines_t::iterator, cfg::MAX_NUM_FILTERED_LINES> currentClosest;
     sorted_map<filteredLines_t::iterator, linePositions_t::const_iterator, cfg::MAX_NUM_FILTERED_LINES> prevClosest;

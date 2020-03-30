@@ -4,6 +4,7 @@
 #include <micro/utils/units.hpp>
 
 #include <cfg_sensor.hpp>
+#include <SensorHandler.hpp>
 
 struct linePosition_t {
     micro::millimeter_t pos;
@@ -17,7 +18,7 @@ typedef micro::sorted_vec<linePosition_t, cfg::MAX_NUM_LINES> linePositions_t;
 
 class LinePosCalculator {
 public:
-    linePositions_t calculate(const uint8_t * const measurements);
+    linePositions_t calculate(const measurements_t& measurements);
 
 private:
     static constexpr uint8_t INTENSITY_GROUP_RADIUS = 1;
