@@ -13,7 +13,7 @@ class SensorHandler {
 public:
     void initialize();
 
-    void readSensors(measurements_t& OUT measurements);
+    void readSensors(measurements_t& OUT measurements, const uint8_t first, const uint8_t last);
     void writeLeds(const bool * const leds);
 
     void onTxFinished() {

@@ -1,7 +1,7 @@
-#include <micro/utils/log.hpp>
 #include <micro/task/common.hpp>
 
 #include <cfg_board.h>
+#include <globals.hpp>
 #include <SensorHandler.hpp>
 
 #include <FreeRTOS.h>
@@ -30,7 +30,12 @@ extern "C" void runSensorTask(void) {
     measurements_t measurements;
 
     while (true) {
-        sensorHandler.readSensors(measurements);
+        vTaskSuspendAll();
+        const uint8_t first = globals::scanRangeRadius > 0 ? globals::scanRangeCenter - globals::scanRangeRadius : 0;
+        const uint8_t last  = globals::scanRangeRadius > 0 ? globals::scanRangeCenter + globals::scanRangeRadius : ARRAY_SIZE(measurements) - 1;
+        xTaskResumeAll();
+
+        sensorHandler.readSensors(measurements, first, last);
         xSemaphoreTake(lineCalcSemaphore, portMAX_DELAY);
         xQueueSend(measurementsQueue, &measurements, 0);
     }

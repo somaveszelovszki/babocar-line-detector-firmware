@@ -20,6 +20,9 @@ class LinePosCalculator {
 public:
     linePositions_t calculate(const measurements_t& measurements);
 
+    static micro::millimeter_t optoIdxToLinePos(const float optoIdx);
+    static float linePosToOptoPos(const micro::millimeter_t linePos);
+
 private:
     static constexpr uint8_t INTENSITY_GROUP_RADIUS = 1;
     static constexpr uint8_t POS_CALC_GROUP_RADIUS  = 2;
@@ -35,8 +38,6 @@ private:
 
     typedef micro::sorted_vec<groupIntensity_t, NUM_GROUP_INTENSITIES> groupIntensities_t;
 
-    static micro::millimeter_t optoIdxToLinePos(const float optoIdx);
-    static float linePosToOptoPos(const micro::millimeter_t linePos);
     static void removeOffset(const uint8_t * const measurements, uint8_t * const OUT result);
     static void calculateGroupIntensities(const uint8_t * const intensities, groupIntensities_t& OUT groupIntensities);
     static micro::millimeter_t calculateLinePos(const uint8_t * const intensities, const uint8_t centerIdx);
