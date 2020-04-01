@@ -1,5 +1,6 @@
 #pragma once
 
+#include <micro/container/infinite_buffer.hpp>
 #include <micro/container/vec.hpp>
 #include <micro/math/unit_utils.hpp>
 
@@ -24,24 +25,35 @@ public:
     trackedLines_t update(const linePositions_t& detectedLines);
 
 private:
+    typedef micro::infinite_buffer<micro::millimeter_t, 10> linePosSamples_t;
+
     struct filteredLine_t {
-        trackedLine_t current;
-        micro::millimeter_t prev;
-        uint8_t cntr = 0;
+        uint8_t id : 3;
+        linePosSamples_t samples;
+        micro::millimeter_t estimated;
+        int8_t cntr = 0;
+        bool isValidated;
 
-        bool operator<(const filteredLine_t& other) const { return this->current.pos < other.current.pos; }
-        bool operator>(const filteredLine_t& other) const { return this->current.pos > other.current.pos; }
+        const micro::millimeter_t& current() const { return this->samples.peek_back(0); }
+        micro::millimeter_t& current() { return this->samples.peek_back(0); }
 
-        micro::millimeter_t distance(const micro::millimeter_t& line) const {
-            return micro::abs(this->current.pos - line);
+        bool operator<(const filteredLine_t& other) const { return this->current() < other.current(); }
+        bool operator>(const filteredLine_t& other) const { return this->current() > other.current(); }
+
+        void increaseCntr() {
+            cntr = micro::max<int8_t>(cntr, 0);
+            cntr = micro::min<int8_t>(cntr + 1, cfg::LINE_FILTER_HYSTERESIS);
         }
 
-        micro::millimeter_t distance(const trackedLine_t& line) const {
-            return this->distance(line.pos);
+        void decreaseCntr() {
+            cntr = micro::min<int8_t>(cntr, 0);
+            cntr = micro::max<int8_t>(cntr - 1, -cfg::LINE_FILTER_HYSTERESIS);
         }
     };
 
     typedef micro::sorted_vec<filteredLine_t, cfg::MAX_NUM_FILTERED_LINES> filteredLines_t;
+
+    uint8_t generateNewLineId();
 
     filteredLines_t lines_;
 };

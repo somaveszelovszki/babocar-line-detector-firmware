@@ -33,97 +33,109 @@ using namespace micro;
 
 trackedLines_t LineFilter::update(const linePositions_t& detectedLines) {
 
-    sorted_map<linePositions_t::const_iterator, filteredLines_t::iterator, cfg::MAX_NUM_FILTERED_LINES> currentClosest;
-    sorted_map<filteredLines_t::iterator, linePositions_t::const_iterator, cfg::MAX_NUM_FILTERED_LINES> prevClosest;
+    typedef vec<linePositions_t::const_iterator, cfg::MAX_NUM_FILTERED_LINES> linePositionIterators_t;
+    linePositionIterators_t unmatchedDetectedLines;
+    for (linePositions_t::const_iterator it = detectedLines.begin(); it != detectedLines.end(); ++it) {
+        unmatchedDetectedLines.push_back(it);
+    }
 
-    return sorted_vec<trackedLine_t, cfg::MAX_NUM_LINES>();
+    typedef vec<filteredLines_t::iterator, cfg::MAX_NUM_FILTERED_LINES> filteredLineIterators_t;
+    filteredLineIterators_t unmatchedFilteredLines;
+    for (filteredLines_t::iterator it = this->lines_.begin(); it != this->lines_.end(); ++it) {
+        unmatchedFilteredLines.push_back(it);
+    }
 
-//    // iterates through current lines, updates counters for existing ones and adds new lines to the list
-//    for (auto line = detectedLines.begin(); line != detectedLines.end(); ++line) {
-//
-//        //finds nearest line in the previous line set (if present)
-//        auto closest = std::min_element(this->lines_.begin(), this->lines_.end(), [line] (const filteredLine_t& a, const filteredLine_t& b) {
-//            return a.distance(*line) < b.distance(*line);
-//        });
-//
-//        if (closest->distance(*line) < cfg::MAX_LINE_JUMP &&
-//            line == std::min_element(detectedLines.begin(), detectedLines.end(), [closest] (const millimeter_t& a, const millimeter_t& b) {
-//                return closest->distance(a) < closest->distance(b);
-//            })) {
-//
-//
-//        }
-//
-//        uint8_t min_idx = 255;
-//        int32_t min_dist = -1;
-//        for (uint8_t j = 0; j < lineFilter->numLines; ++j) {
-//            const int32_t dist = abs((int32_t)line->pos_mm - (int32_t)lineFilter->values[j].current.pos_mm);
-//            if (min_dist == -1 || dist <= min_dist) {
-//                min_dist = dist;
-//                min_idx = j;
-//            }
-//        }
-//
-//        if (min_dist == -1 || min_dist > MAX_LINE_JUMP_MM) {    // line is NOT present in the previous line set
-//            add_line(lineFilter, line);
-//        } else {    // line has been found in the previous line set
-//            filteredLine_t *fl = &lineFilter->values[min_idx];
-//            fl->current.pos_mm = line->pos_mm;
-//            fl->cntr = (fl->cntr < 0 || fl->cntr == MIN_LINE_SAMPLE_APPEAR) ? MIN_LINE_SAMPLE_APPEAR : fl->cntr + 1;
-//        }
-//    }
-//
-//    // iterates through current lines, updates counters for existing ones and adds new lines to the list
-//    for (uint8_t i = 0; i < detectedLines->numLines; ++i) {
-//        const line_t *line = &detectedLines->values[i];
-//
-//        //finds nearest line in the previous line set (if present)
-//        uint8_t min_idx = 255;
-//        int32_t min_dist = -1;
-//        for (uint8_t j = 0; j < lineFilter->numLines; ++j) {
-//            const int32_t dist = abs((int32_t)line->pos_mm - (int32_t)lineFilter->values[j].current.pos_mm);
-//            if (min_dist == -1 || dist <= min_dist) {
-//                min_dist = dist;
-//                min_idx = j;
-//            }
-//        }
-//
-//        if (min_dist == -1 || min_dist > MAX_LINE_JUMP_MM) {    // line is NOT present in the previous line set
-//            add_line(lineFilter, line);
-//        } else {    // line has been found in the previous line set
-//            filteredLine_t *fl = &lineFilter->values[min_idx];
-//            fl->current.pos_mm = line->pos_mm;
-//            fl->cntr = (fl->cntr < 0 || fl->cntr == MIN_LINE_SAMPLE_APPEAR) ? MIN_LINE_SAMPLE_APPEAR : fl->cntr + 1;
-//        }
-//    }
-//
-//    // iterates through previous lines, updates counters and removes lines that have disappeared
-//    for (uint8_t i = 0; i < lineFilter->numLines; ++i) {
-//        filteredLine_t *fl= &lineFilter->values[i];
-//
-//        //finds nearest line in the current line set (if present)
-//        int32_t min_dist = -1;
-//        for (uint8_t j = 0; j < detectedLines->numLines; ++j) {
-//            const int32_t dist = abs((int32_t)fl->current.pos_mm - (int32_t)detectedLines->values[j].pos_mm);
-//            if (min_dist == -1 || dist <= min_dist) {
-//                min_dist = dist;
-//            }
-//        }
-//
-//        if (min_dist == -1 || min_dist > MAX_LINE_JUMP_MM) {    // line is NOT present in the current line set
-//            fl->cntr = (fl->cntr > 0 && fl->cntr < MIN_LINE_SAMPLE_APPEAR) ? -MIN_LINE_SAMPLE_DISAPPEAR : fl->cntr == MIN_LINE_SAMPLE_APPEAR ? -1 : fl->cntr - 1;
-//            if (fl->cntr == -MIN_LINE_SAMPLE_DISAPPEAR) {
-//                remove_line(lineFilter, i);
-//            }
-//        } // else: line has been found in the current line set -> already handled
-//    }
-//
-//    // fills filtered line array from stored ones
-//    filteredLines->numLines = 0;
-//    for (uint8_t i = 0; i < lineFilter->numLines && filteredLines->numLines < MAX_NUM_LINES; ++i) {
-//        const filteredLine_t *fl = &lineFilter->values[i];
-//        if (fl->cntr == MIN_LINE_SAMPLE_APPEAR || (fl->cntr < 0 && fl->cntr > -MIN_LINE_SAMPLE_DISAPPEAR)) {
-//            filteredLines->values[filteredLines->numLines++] = fl->current;
-//        }
-//    }
+    // updates estimated positions for all filtered lines
+    for (filteredLine_t& l : this->lines_) {
+        l.estimated = l.samples.size() > cfg::LINE_FILTER_VELO_PEEK_BACK ?
+            l.current() + (l.current() - l.samples.peek_back(cfg::LINE_FILTER_VELO_PEEK_BACK)) / cfg::LINE_FILTER_VELO_PEEK_BACK :
+            l.current();
+    }
+
+    struct posMapping_t {
+        linePositionIterators_t::iterator detectedLine;
+        filteredLineIterators_t::iterator filteredLine;
+        millimeter_t diff;
+    };
+
+    typedef vec<posMapping_t, cfg::MAX_NUM_LINES * cfg::MAX_NUM_FILTERED_LINES> posMappings_t;
+
+    // finds all close position pairs from the current and the previous measurements (expected positions), and updates filtered lines
+    while (unmatchedDetectedLines.size() && unmatchedFilteredLines.size()) {
+
+        // maps all previous and current line positions to each other
+        posMappings_t posMappings;
+        for (linePositionIterators_t::iterator detectedLine = unmatchedDetectedLines.begin(); detectedLine != unmatchedDetectedLines.end(); ++detectedLine) {
+            for (filteredLineIterators_t::iterator filteredLine = unmatchedFilteredLines.begin(); filteredLine != unmatchedFilteredLines.end(); ++filteredLine) {
+                posMappings.push_back({ detectedLine, filteredLine, abs((*detectedLine)->pos - (*filteredLine)->estimated) });
+            }
+        }
+
+        // finds closest pair in the line position map
+        const posMappings_t::iterator closest = std::min_element(posMappings.begin(), posMappings.end(), [] (const posMapping_t& a, const posMapping_t& b) {
+            return a.diff < b.diff;
+        });
+
+        // will be accepted as valid position pairs of the previous and the current measurement if they are close enough to each other
+        if (closest->diff < cfg::MAX_LINE_JUMP) {
+            (*closest->filteredLine)->samples.push_back((*closest->detectedLine)->pos);
+            (*closest->filteredLine)->increaseCntr();
+        } else {
+            // no more close pairs found
+            break;
+        }
+
+        // pair has been handled, removes them from their correspondent list
+        unmatchedDetectedLines.erase(closest->detectedLine);
+        unmatchedFilteredLines.erase(closest->filteredLine);
+    }
+
+    // decreases counters for unmatched previous lines
+    for (filteredLines_t::iterator it : unmatchedFilteredLines) {
+        it->decreaseCntr();
+    }
+
+    // erases lines from the filtered lines list that have not been detected for a given number of measurements
+    for (filteredLines_t::const_iterator it = this->lines_.begin(); it != this->lines_.end();) {
+        if (-cfg::LINE_FILTER_HYSTERESIS == it->cntr) {
+            it = this->lines_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    // if a line has been in the filtered lines list for at least LINE_FILTER_HYSTERESIS measurements, then it is a valid line
+    for (filteredLine_t& l : this->lines_) {
+        if (cfg::LINE_FILTER_HYSTERESIS == l.cntr) {
+            l.isValidated = true;
+        }
+    }
+
+    // added unmatched detected lines to the filtered lines list
+    for (linePositions_t::const_iterator it : unmatchedDetectedLines) {
+        if (it->probability >= cfg::MIN_LINE_APPEAR_PROBABILITY) {
+            filteredLine_t newLine;
+            newLine.id = this->generateNewLineId();
+            newLine.cntr = 1;
+            newLine.isValidated = false;
+            newLine.samples.push_back(it->pos);
+            this->lines_.insert(newLine);
+        }
+    }
+
+    // output list will contain all validated lines from the filtered lines list
+    trackedLines_t trackedLines;
+    for (const filteredLine_t& l : this->lines_) {
+        if (l.isValidated) {
+            trackedLines.insert({ l.current(), l.id });
+        }
+    }
+
+    return trackedLines;
+}
+
+uint8_t LineFilter::generateNewLineId() {
+    uint8_t id = 1;
+    while (std::find_if(this->lines_.begin(), this->lines_.end(), [id] (const filteredLine_t& l) { return id == l.id; }) != this->lines_.end()) { ++id; }
+    return id;
 }
