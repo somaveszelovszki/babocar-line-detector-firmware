@@ -30,15 +30,15 @@ private:
 
     struct groupIntensity_t {
         uint8_t centerIdx;
-        uint16_t intensity;
+        uint8_t intensity;
 
         bool operator<(const groupIntensity_t& other) const { return this->intensity < other.intensity; }
         bool operator>(const groupIntensity_t& other) const { return this->intensity > other.intensity; }
     };
 
-    typedef micro::sorted_vec<groupIntensity_t, NUM_GROUP_INTENSITIES> groupIntensities_t;
+    typedef micro::vec<groupIntensity_t, NUM_GROUP_INTENSITIES> groupIntensities_t;
 
     static void removeOffset(const uint8_t * const measurements, uint8_t * const OUT result);
-    static void calculateGroupIntensities(const uint8_t * const intensities, groupIntensities_t& OUT groupIntensities);
+    static groupIntensities_t calculateGroupIntensities(const uint8_t * const intensities);
     static micro::millimeter_t calculateLinePos(const uint8_t * const intensities, const uint8_t centerIdx);
 };
