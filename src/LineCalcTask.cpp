@@ -1,4 +1,5 @@
 #include <micro/utils/algorithm.hpp>
+#include <micro/utils/timer.hpp>
 #include <micro/task/common.hpp>
 #include <micro/panel/PanelLink.hpp>
 #include <micro/panel/LineDetectPanelLinkData.hpp>
@@ -15,6 +16,7 @@
 
 using namespace micro;
 
+extern QueueHandle_t ledsQueue;
 extern SemaphoreHandle_t lineCalcSemaphore;
 
 #define MEASUREMENTS_QUEUE_LENGTH 1
@@ -47,6 +49,50 @@ void fillTxData(LineDetectOutPanelLinkData& txData, const trackedLines_t& tracke
     for (; i < ARRAY_SIZE(txData.lines); ++i) {
         txData.lines[i].pos_mm_per16 = 0;
         txData.lines[i].idx = 0;
+    }
+}
+
+void sendLeds(const trackedLines_t& trackedLines) {
+
+    static constexpr uint8_t LED_RADIUS = 1;
+
+    static leds_t leds;
+    static bool prevIsConnected = false;
+    static Timer blinkTimer = [] () {
+        Timer timer;
+        timer.start(millisecond_t(250));
+        return timer;
+    }();
+
+    bool send = true;
+
+    if (globals::isConnected) {
+        leds.reset();
+
+        if (globals::indicatorLedsEnabled) {
+            for (const trackedLine_t& l : trackedLines) {
+                const uint8_t centerIdx = static_cast<uint8_t>(round(LinePosCalculator::linePosToOptoPos(l.pos)));
+
+                const uint8_t startIdx = max<uint8_t>(centerIdx, LED_RADIUS) - LED_RADIUS;
+                const uint8_t endIdx = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
+
+                for (uint8_t i = startIdx; i < endIdx; ++i) {
+                    leds.set(i, true);
+                }
+            }
+        } else if (!prevIsConnected) {
+            prevIsConnected = true;
+        } else {
+            send = false;
+        }
+    } else if (blinkTimer.checkTimeout()) {
+        const bool blinkState = leds.get(0);
+        leds.reset();
+        leds.set(0, !blinkState);
+    }
+
+    if (send) {
+        xQueueOverwrite(ledsQueue, &leds);
     }
 }
 
@@ -86,6 +132,8 @@ extern "C" void runLineCalcTask(void) {
                 fillTxData(txData, trackedLines);
                 panelLink.send(txData);
             }
+
+            sendLeds(trackedLines);
         }
     }
 

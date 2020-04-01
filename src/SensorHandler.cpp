@@ -67,11 +67,11 @@ void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t 
     }
 }
 
-void SensorHandler::writeLeds(const bool * const leds) {
+void SensorHandler::writeLeds(const leds_t& leds) {
     uint8_t outBuffer[cfg::NUM_SENSORS / 8] = { 0, 0, 0, 0, 0, 0 };
 
     for (uint32_t i = 0; i < cfg::NUM_SENSORS; ++i) {
-        if (leds[i]) {
+        if (leds.get(i)) {
             outBuffer[i / 8] |= (1 << (i % 8));
         }
     }

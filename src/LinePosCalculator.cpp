@@ -56,8 +56,8 @@ float LinePosCalculator::linePosToOptoPos(const micro::millimeter_t linePos) {
 
 void LinePosCalculator::removeOffset(const uint8_t * const measurements, uint8_t * const OUT result) {
     for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
-        const uint8_t startIdx = i >= cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS ? i - cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS : 0;
-        const uint8_t endIdx = i < cfg::NUM_SENSORS - cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS ? i + cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS : cfg::NUM_SENSORS - 1;
+        const uint8_t startIdx = max<uint8_t>(i, cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS) - cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS;
+        const uint8_t endIdx = min<uint8_t>(i + cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS + 1, cfg::NUM_SENSORS);
 
         const uint16_t moving_min = *std::min_element(&measurements[startIdx], &measurements[endIdx]);
         result[i] = map<uint16_t, uint8_t>(measurements[i], moving_min, 255, 0, 255);

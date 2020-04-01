@@ -12,6 +12,11 @@ using namespace micro;
 
 extern QueueHandle_t measurementsQueue;
 
+#define LEDS_QUEUE_LENGTH 1
+QueueHandle_t ledsQueue;
+static uint8_t ledsQueueStorageBuffer[LEDS_QUEUE_LENGTH * sizeof(leds_t)];
+static StaticQueue_t ledsQueueBuffer;
+
 SemaphoreHandle_t lineCalcSemaphore;
 
 namespace {
@@ -24,10 +29,14 @@ StaticSemaphore_t lineCalcSemaphoreBuffer;
 extern "C" void runSensorTask(void) {
 
     sensorHandler.initialize();
+
+    ledsQueue = xQueueCreateStatic(LEDS_QUEUE_LENGTH, sizeof(leds_t), ledsQueueStorageBuffer, &ledsQueueBuffer);
+
     lineCalcSemaphore = xSemaphoreCreateBinaryStatic(&lineCalcSemaphoreBuffer);
     xSemaphoreGive(lineCalcSemaphore);
 
     measurements_t measurements;
+    leds_t leds;
 
     while (true) {
         vTaskSuspendAll();
