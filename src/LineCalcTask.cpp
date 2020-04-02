@@ -37,7 +37,9 @@ void parseRxData(const LineDetectInPanelLinkData& rxData) {
     xTaskResumeAll();
 }
 
-void fillTxData(LineDetectOutPanelLinkData& txData, const trackedLines_t& trackedLines) {
+void fillTxData(LineDetectOutPanelLinkData& txData, const trackedLines_t& trackedLines, microsecond_t timeDiff) {
+
+    static constexpr uint16_t MAX_D_TIME_US = std::numeric_limits<uint16_t>::max();
 
     uint32_t i = 0;
 
@@ -50,6 +52,8 @@ void fillTxData(LineDetectOutPanelLinkData& txData, const trackedLines_t& tracke
         txData.lines[i].pos_mm_per16 = 0;
         txData.lines[i].idx = 0;
     }
+
+    txData.d_time_us = timeDiff < microsecond_t(MAX_D_TIME_US) ? static_cast<uint16_t>(timeDiff.get()) : MAX_D_TIME_US;
 }
 
 void sendLeds(const trackedLines_t& trackedLines) {
@@ -107,6 +111,8 @@ extern "C" void runLineCalcTask(void) {
     LineDetectInPanelLinkData rxData;
     LineDetectOutPanelLinkData txData;
 
+    microsecond_t prevLineCalcTime = getExactTime();
+
     while (true) {
         panelLink.update();
         globals::isConnected = panelLink.isConnected();
@@ -117,6 +123,10 @@ extern "C" void runLineCalcTask(void) {
 
         if (xQueueReceive(measurementsQueue, &measurements, 0)) {
             xSemaphoreGive(lineCalcSemaphore);
+
+            const microsecond_t now = getExactTime();
+            const microsecond_t timeDiff = now - prevLineCalcTime;
+            prevLineCalcTime = now;
 
             const linePositions_t linePositions = linePosCalc.calculate(measurements);
             const trackedLines_t trackedLines = lineFilter.update(linePositions);
@@ -129,7 +139,7 @@ extern "C" void runLineCalcTask(void) {
             }
 
             if (panelLink.shouldSend()) {
-                fillTxData(txData, trackedLines);
+                fillTxData(txData, trackedLines, timeDiff);
                 panelLink.send(txData);
             }
 
