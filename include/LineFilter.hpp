@@ -3,6 +3,7 @@
 #include <micro/container/infinite_buffer.hpp>
 #include <micro/container/vec.hpp>
 #include <micro/math/unit_utils.hpp>
+#include <micro/utils/Line.hpp>
 
 #include <cfg_sensor.hpp>
 #include <LinePosCalculator.hpp>
@@ -10,19 +11,9 @@
 #define TRACKED_LINE_ID_INVALID 0
 #define TRACKED_LINE_ID_MAX     7
 
-struct trackedLine_t {
-    micro::millimeter_t pos;
-    uint8_t id : 3;
-
-    bool operator<(const trackedLine_t& other) const { return this->pos < other.pos; }
-    bool operator>(const trackedLine_t& other) const { return this->pos > other.pos; }
-};
-
-typedef micro::sorted_vec<trackedLine_t, cfg::MAX_NUM_LINES> trackedLines_t;
-
 class LineFilter {
 public:
-    trackedLines_t update(const linePositions_t& detectedLines);
+    micro::Lines update(const linePositions_t& detectedLines);
 
 private:
     typedef micro::infinite_buffer<micro::millimeter_t, 10> linePosSamples_t;

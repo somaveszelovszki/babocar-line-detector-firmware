@@ -2,7 +2,6 @@
 
 #include <micro/container/vec.hpp>
 #include <micro/utils/units.hpp>
-
 #include <cfg_sensor.hpp>
 #include <SensorHandler.hpp>
 

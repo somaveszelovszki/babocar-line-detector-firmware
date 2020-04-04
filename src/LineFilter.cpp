@@ -4,34 +4,7 @@
 
 using namespace micro;
 
-//static void add_line(lineFilter_t *lineFilter, const line_t *line) {
-//    if (lineFilter->numLines < MAX_NUM_FILTERED_LINES) {
-//
-//        filteredLine_t *next = &lineFilter->values[lineFilter->numLines];
-//
-//        if (lineFilter->numLines > 0) {
-//
-//            // performs ordered insert: shifts all larger values to the right
-//            for (uint8_t i = lineFilter->numLines - 1; i <= 0; --i) {
-//                filteredLine_t *fl = &lineFilter->values[i];
-//                if (fl->current.pos_mm > line->pos_mm) {
-//                    *next = *fl;
-//                } else {
-//                    break;
-//                }
-//                next = fl;
-//            }
-//        }
-//
-//        next->current.pos_mm = next->prev.pos_mm = line->pos_mm;
-//        next->current.id = (lineFilter->lastLineIdx = 255 == lineFilter->lastLineIdx ? 1 : lineFilter->lastLineIdx + 1);
-//        next->cntr = 1;
-//
-//        ++lineFilter->numLines;
-//    }
-//}
-
-trackedLines_t LineFilter::update(const linePositions_t& detectedLines) {
+Lines LineFilter::update(const linePositions_t& detectedLines) {
 
     typedef vec<linePositions_t::const_iterator, cfg::MAX_NUM_FILTERED_LINES> linePositionIterators_t;
     linePositionIterators_t unmatchedDetectedLines;
@@ -124,7 +97,7 @@ trackedLines_t LineFilter::update(const linePositions_t& detectedLines) {
     }
 
     // output list will contain all validated lines from the filtered lines list
-    trackedLines_t trackedLines;
+    Lines trackedLines;
     for (const filteredLine_t& l : this->lines_) {
         if (l.isValidated) {
             trackedLines.insert({ l.current(), l.id });

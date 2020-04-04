@@ -1,14 +1,14 @@
-#include <micro/utils/algorithm.hpp>
-#include <micro/utils/timer.hpp>
-#include <micro/task/common.hpp>
 #include <micro/panel/PanelLink.hpp>
 #include <micro/panel/LineDetectPanelLinkData.hpp>
+#include <micro/utils/algorithm.hpp>
+#include <micro/utils/timer.hpp>
 
 #include <cfg_board.h>
 #include <globals.hpp>
-#include <SensorHandler.hpp>
-#include <LinePosCalculator.hpp>
 #include <LineFilter.hpp>
+#include <LinePatternCalculator.hpp>
+#include <LinePosCalculator.hpp>
+#include <SensorHandler.hpp>
 
 #include <FreeRTOS.h>
 #include <queue.h>
@@ -29,34 +29,39 @@ namespace {
 PanelLink<LineDetectInPanelLinkData, LineDetectOutPanelLinkData> panelLink(panelLinkRole_t::Slave, uart_Command);
 LinePosCalculator linePosCalc;
 LineFilter lineFilter;
+LinePatternCalculator linePatternCalc;
+
+linePatternDomain_t domain = linePatternDomain_t::Labyrinth;
+millimeter_t distance;
 
 void parseRxData(const LineDetectInPanelLinkData& rxData) {
-    vTaskSuspendAll();
     globals::indicatorLedsEnabled = rxData.indicatorLedsEnabled;
-    globals::scanRangeRadius = rxData.scanRangeRadius;
-    xTaskResumeAll();
+    globals::scanRangeRadius      = rxData.scanRangeRadius;
+    domain                        = static_cast<linePatternDomain_t>(rxData.domain);
+    distance                      = millimeter_t(rxData.distance_mm);
 }
 
-void fillTxData(LineDetectOutPanelLinkData& txData, const trackedLines_t& trackedLines, microsecond_t timeDiff) {
-
-    static constexpr uint16_t MAX_D_TIME_US = std::numeric_limits<uint16_t>::max();
+void fillTxData(LineDetectOutPanelLinkData& txData, const Lines& lines, const LinePattern& pattern) {
 
     uint32_t i = 0;
 
-    for (; i < trackedLines.size(); ++i) {
-        txData.lines[i].pos_mm_per16 = static_cast<int16_t>(trackedLines[i].pos.get() * 16);
-        txData.lines[i].idx = trackedLines[i].id;
+    for (; i < lines.size(); ++i) {
+        txData.lines[i].pos_mm_per16 = static_cast<int16_t>(lines[i].pos.get() * 16);
+        txData.lines[i].id = lines[i].id;
     }
 
     for (; i < ARRAY_SIZE(txData.lines); ++i) {
         txData.lines[i].pos_mm_per16 = 0;
-        txData.lines[i].idx = 0;
+        txData.lines[i].id = 0;
     }
 
-    txData.d_time_us = timeDiff < microsecond_t(MAX_D_TIME_US) ? static_cast<uint16_t>(timeDiff.get()) : MAX_D_TIME_US;
+    txData.pattern.type         = static_cast<uint8_t>(pattern.type);
+    txData.pattern.dir          = static_cast<int8_t>(pattern.dir);
+    txData.pattern.side         = static_cast<int8_t>(pattern.side);
+    txData.pattern.startDist_mm = static_cast<uint32_t>(pattern.startDist);
 }
 
-void sendLeds(const trackedLines_t& trackedLines) {
+void sendLeds(const Lines& lines) {
 
     static constexpr uint8_t LED_RADIUS = 1;
 
@@ -74,7 +79,7 @@ void sendLeds(const trackedLines_t& trackedLines) {
         leds.reset();
 
         if (globals::indicatorLedsEnabled) {
-            for (const trackedLine_t& l : trackedLines) {
+            for (const Line& l : lines) {
                 const uint8_t centerIdx = static_cast<uint8_t>(round(LinePosCalculator::linePosToOptoPos(l.pos)));
 
                 const uint8_t startIdx = max<uint8_t>(centerIdx, LED_RADIUS) - LED_RADIUS;
@@ -111,8 +116,6 @@ extern "C" void runLineCalcTask(void) {
     LineDetectInPanelLinkData rxData;
     LineDetectOutPanelLinkData txData;
 
-    microsecond_t prevLineCalcTime = getExactTime();
-
     while (true) {
         panelLink.update();
         globals::isConnected = panelLink.isConnected();
@@ -124,26 +127,23 @@ extern "C" void runLineCalcTask(void) {
         if (xQueueReceive(measurementsQueue, &measurements, 0)) {
             xSemaphoreGive(lineCalcSemaphore);
 
-            const microsecond_t now = getExactTime();
-            const microsecond_t timeDiff = now - prevLineCalcTime;
-            prevLineCalcTime = now;
-
             const linePositions_t linePositions = linePosCalc.calculate(measurements);
-            const trackedLines_t trackedLines = lineFilter.update(linePositions);
+            const Lines lines = lineFilter.update(linePositions);
+            linePatternCalc.update(domain, lines, distance);
 
-            if (trackedLines.size()) {
-                const millimeter_t avgLinePos = micro::accumulate(trackedLines.begin(), trackedLines.end(), millimeter_t(0),
-                    [] (const millimeter_t& sum, const trackedLine_t& line) { return sum + line.pos; });
+            if (lines.size()) {
+                const millimeter_t avgLinePos = micro::accumulate(lines.begin(), lines.end(), millimeter_t(0),
+                    [] (const millimeter_t& sum, const Line& line) { return sum + line.pos; });
 
                 globals::scanRangeCenter = round(LinePosCalculator::linePosToOptoPos(avgLinePos));
             }
 
             if (panelLink.shouldSend()) {
-                fillTxData(txData, trackedLines, timeDiff);
+                fillTxData(txData, lines, linePatternCalc.pattern());
                 panelLink.send(txData);
             }
 
-            sendLeds(trackedLines);
+            sendLeds(lines);
         }
     }
 
