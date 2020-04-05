@@ -1,5 +1,4 @@
-#include <micro/panel/PanelLink.hpp>
-#include <micro/panel/LineDetectPanelLinkData.hpp>
+#include <micro/panel/vehicleCanTypes.hpp>
 #include <micro/utils/algorithm.hpp>
 #include <micro/utils/timer.hpp>
 
@@ -26,42 +25,28 @@ static StaticQueue_t measurementsQueueBuffer;
 
 namespace {
 
-PanelLink<LineDetectInPanelLinkData, LineDetectOutPanelLinkData> panelLink(panelLinkRole_t::Slave, uart_Command);
 LinePosCalculator linePosCalc;
 LineFilter lineFilter;
 LinePatternCalculator linePatternCalc;
 
 linePatternDomain_t domain = linePatternDomain_t::Labyrinth;
-millimeter_t distance;
+m_per_sec_t speed;
+meter_t distance;
 
-void parseRxData(const LineDetectInPanelLinkData& rxData) {
-    globals::indicatorLedsEnabled = rxData.indicatorLedsEnabled;
-    globals::scanRangeRadius      = rxData.scanRangeRadius;
-    domain                        = static_cast<linePatternDomain_t>(rxData.domain);
-    distance                      = millimeter_t(rxData.distance_mm);
+void parseVehicleCanData(const uint32_t id, const uint8_t * const data) {
+
+    switch (id) {
+    case can::LongitudinalState::id():
+        reinterpret_cast<const can::LongitudinalState*>(data)->acquire(speed, distance);
+        break;
+
+    case can::LineDetectControl::id():
+        reinterpret_cast<const can::LineDetectControl*>(data)->acquire(globals::indicatorLedsEnabled, globals::scanRangeRadius, domain);
+        break;
+    }
 }
 
-void fillTxData(LineDetectOutPanelLinkData& txData, const Lines& lines, const LinePattern& pattern) {
-
-    uint32_t i = 0;
-
-    for (; i < lines.size(); ++i) {
-        txData.lines[i].pos_mm_per16 = static_cast<int16_t>(lines[i].pos.get() * 16);
-        txData.lines[i].id = lines[i].id;
-    }
-
-    for (; i < ARRAY_SIZE(txData.lines); ++i) {
-        txData.lines[i].pos_mm_per16 = 0;
-        txData.lines[i].id = 0;
-    }
-
-    txData.pattern.type         = static_cast<uint8_t>(pattern.type);
-    txData.pattern.dir          = static_cast<int8_t>(pattern.dir);
-    txData.pattern.side         = static_cast<int8_t>(pattern.side);
-    txData.pattern.startDist_mm = static_cast<uint32_t>(pattern.startDist);
-}
-
-void sendLeds(const Lines& lines) {
+void sendLedStates(const Lines& lines) {
 
     static constexpr uint8_t LED_RADIUS = 1;
 
@@ -113,15 +98,22 @@ extern "C" void runLineCalcTask(void) {
 
     measurements_t measurements;
 
-    LineDetectInPanelLinkData rxData;
-    LineDetectOutPanelLinkData txData;
+    WatchdogTimer vehicleCanWatchdog;
+    vehicleCanWatchdog.start(millisecond_t(15));
+
+    CAN_RxHeaderTypeDef rxHeader;
+    alignas(8) uint8_t rxData[8];
+    uint32_t txMailbox = 0;
 
     while (true) {
-        panelLink.update();
-        globals::isConnected = panelLink.isConnected();
 
-        if (panelLink.readAvailable(rxData)) {
-            parseRxData(rxData);
+        globals::isConnected = !vehicleCanWatchdog.hasTimedOut();
+
+        if (HAL_CAN_GetRxFifoFillLevel(can_Vehicle, canRxFifo_Vehicle)) {
+            if (HAL_OK == HAL_CAN_GetRxMessage(can_Vehicle, canRxFifo_Vehicle, &rxHeader, rxData)) {
+                parseVehicleCanData(rxHeader.StdId, rxData);
+                vehicleCanWatchdog.reset();
+            }
         }
 
         if (xQueueReceive(measurementsQueue, &measurements, 0)) {
@@ -138,18 +130,22 @@ extern "C" void runLineCalcTask(void) {
                 globals::scanRangeCenter = round(LinePosCalculator::linePosToOptoPos(avgLinePos));
             }
 
-            if (panelLink.shouldSend()) {
-                fillTxData(txData, lines, linePatternCalc.pattern());
-                panelLink.send(txData);
+            if (PANEL_ID_FRONT_LINE_DETECT == globals::panelId) {
+                CAN_TxHeaderTypeDef txHeader;
+                txHeader.StdId = can::FrontLines::id();
+                txHeader.ExtId = 0;
+                txHeader.IDE   = CAN_ID_STD;
+                txHeader.RTR   = CAN_RTR_DATA;
+                txHeader.DLC   = sizeof(can::FrontLines);
+                txHeader.TransmitGlobalTime = DISABLE;
+
+                can::FrontLines frontLines(lines);
+                HAL_CAN_AddTxMessage(can_Vehicle, &txHeader, reinterpret_cast<uint8_t*>(&frontLines), &txMailbox);
             }
 
-            sendLeds(lines);
+            sendLedStates(lines);
         }
     }
 
     vTaskDelete(nullptr);
-}
-
-void uart_Command_RxCpltCallback(void) {
-    panelLink.onNewRxData();
 }
