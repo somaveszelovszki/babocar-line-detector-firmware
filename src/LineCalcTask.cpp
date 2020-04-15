@@ -98,12 +98,11 @@ extern "C" void runLineCalcTask(void) {
 
     measurements_t measurements;
 
-    WatchdogTimer vehicleCanWatchdog;
-    vehicleCanWatchdog.start(millisecond_t(15));
-
     CAN_RxHeaderTypeDef rxHeader;
     alignas(8) uint8_t rxData[8];
     uint32_t txMailbox = 0;
+
+    WatchdogTimer vehicleCanWatchdog(millisecond_t(15));
 
     while (true) {
 
@@ -131,16 +130,14 @@ extern "C" void runLineCalcTask(void) {
             }
 
             if (PANEL_ID_FRONT_LINE_DETECT == globals::panelId) {
-                CAN_TxHeaderTypeDef txHeader;
-                txHeader.StdId = can::FrontLines::id();
-                txHeader.ExtId = 0;
-                txHeader.IDE   = CAN_ID_STD;
-                txHeader.RTR   = CAN_RTR_DATA;
-                txHeader.DLC   = sizeof(can::FrontLines);
-                txHeader.TransmitGlobalTime = DISABLE;
-
+                CAN_TxHeaderTypeDef txHeader = micro::can::buildHeader<can::FrontLines>();
                 can::FrontLines frontLines(lines);
                 HAL_CAN_AddTxMessage(can_Vehicle, &txHeader, reinterpret_cast<uint8_t*>(&frontLines), &txMailbox);
+
+            } else if (PANEL_ID_REAR_LINE_DETECT == globals::panelId) {
+                CAN_TxHeaderTypeDef txHeader = micro::can::buildHeader<can::RearLines>();
+                can::RearLines rearLines(lines);
+                HAL_CAN_AddTxMessage(can_Vehicle, &txHeader, reinterpret_cast<uint8_t*>(&rearLines), &txMailbox);
             }
 
             sendLedStates(lines);
