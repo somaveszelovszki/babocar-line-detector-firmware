@@ -1,4 +1,4 @@
-#include <micro/panel/vehicleCanTypes.hpp>
+#include <micro/panel/CanManager.hpp>
 #include <micro/utils/algorithm.hpp>
 #include <micro/utils/timer.hpp>
 
@@ -24,27 +24,6 @@ static uint8_t measurementsQueueStorageBuffer[MEASUREMENTS_QUEUE_LENGTH * sizeof
 static StaticQueue_t measurementsQueueBuffer;
 
 namespace {
-
-LinePosCalculator linePosCalc;
-LineFilter lineFilter;
-LinePatternCalculator linePatternCalc;
-
-linePatternDomain_t domain = linePatternDomain_t::Labyrinth;
-m_per_sec_t speed;
-meter_t distance;
-
-void parseVehicleCanData(const uint32_t id, const uint8_t * const data) {
-
-    switch (id) {
-    case can::LongitudinalState::id():
-        reinterpret_cast<const can::LongitudinalState*>(data)->acquire(speed, distance);
-        break;
-
-    case can::LineDetectControl::id():
-        reinterpret_cast<const can::LineDetectControl*>(data)->acquire(globals::indicatorLedsEnabled, globals::scanRangeRadius, domain);
-        break;
-    }
-}
 
 void sendLedStates(const Lines& lines) {
 
@@ -97,23 +76,29 @@ extern "C" void runLineCalcTask(void) {
     measurementsQueue = xQueueCreateStatic(MEASUREMENTS_QUEUE_LENGTH, sizeof(measurements_t), measurementsQueueStorageBuffer, &measurementsQueueBuffer);
 
     measurements_t measurements;
+    LinePosCalculator linePosCalc;
+    LineFilter lineFilter;
+    LinePatternCalculator linePatternCalc;
 
-    CAN_RxHeaderTypeDef rxHeader;
-    alignas(8) uint8_t rxData[8];
-    uint32_t txMailbox = 0;
+    linePatternDomain_t domain = linePatternDomain_t::Labyrinth;
+    m_per_sec_t speed;
+    meter_t distance;
 
-    WatchdogTimer vehicleCanWatchdog(millisecond_t(15));
+    CanManager canManager(can_Vehicle, canRxFifo_Vehicle, millisecond_t(15));
+
+    canManager.registerHandler(can::LongitudinalState::id(), [&speed, &distance] (const uint8_t * const data) {
+        reinterpret_cast<const can::LongitudinalState*>(data)->acquire(speed, distance);
+    });
+
+    canManager.registerHandler(can::LineDetectControl::id(), [&domain] (const uint8_t * const data) {
+        reinterpret_cast<const can::LineDetectControl*>(data)->acquire(globals::indicatorLedsEnabled, globals::scanRangeRadius, domain);
+    });
 
     while (true) {
 
-        globals::isConnected = !vehicleCanWatchdog.hasTimedOut();
+        globals::isConnected = !canManager.hasRxTimedOut();
 
-        if (HAL_CAN_GetRxFifoFillLevel(can_Vehicle, canRxFifo_Vehicle)) {
-            if (HAL_OK == HAL_CAN_GetRxMessage(can_Vehicle, canRxFifo_Vehicle, &rxHeader, rxData)) {
-                parseVehicleCanData(rxHeader.StdId, rxData);
-                vehicleCanWatchdog.reset();
-            }
-        }
+        canManager.handleIncomingFrames();
 
         if (xQueueReceive(measurementsQueue, &measurements, 0)) {
             xSemaphoreGive(lineCalcSemaphore);
@@ -130,14 +115,9 @@ extern "C" void runLineCalcTask(void) {
             }
 
             if (PANEL_ID_FRONT_LINE_DETECT == globals::panelId) {
-                CAN_TxHeaderTypeDef txHeader = micro::can::buildHeader<can::FrontLines>();
-                can::FrontLines frontLines(lines);
-                HAL_CAN_AddTxMessage(can_Vehicle, &txHeader, reinterpret_cast<uint8_t*>(&frontLines), &txMailbox);
-
+                canManager.send(can::FrontLines(lines));
             } else if (PANEL_ID_REAR_LINE_DETECT == globals::panelId) {
-                CAN_TxHeaderTypeDef txHeader = micro::can::buildHeader<can::RearLines>();
-                can::RearLines rearLines(lines);
-                HAL_CAN_AddTxMessage(can_Vehicle, &txHeader, reinterpret_cast<uint8_t*>(&rearLines), &txMailbox);
+                canManager.send(can::RearLines(lines));
             }
 
             sendLedStates(lines);
