@@ -19,7 +19,7 @@ extern QueueHandle_t ledsQueue;
 extern SemaphoreHandle_t lineCalcSemaphore;
 
 #define MEASUREMENTS_QUEUE_LENGTH 1
-QueueHandle_t measurementsQueue;
+QueueHandle_t measurementsQueue = nullptr;
 static uint8_t measurementsQueueStorageBuffer[MEASUREMENTS_QUEUE_LENGTH * sizeof(measurements_t)];
 static StaticQueue_t measurementsQueueBuffer;
 

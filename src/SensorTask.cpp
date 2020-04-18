@@ -11,11 +11,11 @@ using namespace micro;
 extern QueueHandle_t measurementsQueue;
 
 #define LEDS_QUEUE_LENGTH 1
-QueueHandle_t ledsQueue;
+QueueHandle_t ledsQueue = nullptr;
 static uint8_t ledsQueueStorageBuffer[LEDS_QUEUE_LENGTH * sizeof(leds_t)];
 static StaticQueue_t ledsQueueBuffer;
 
-SemaphoreHandle_t lineCalcSemaphore;
+SemaphoreHandle_t lineCalcSemaphore = nullptr;
 
 namespace {
 
