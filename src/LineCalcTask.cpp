@@ -75,6 +75,9 @@ extern "C" void runLineCalcTask(void) {
 
     measurementsQueue = xQueueCreateStatic(MEASUREMENTS_QUEUE_LENGTH, sizeof(measurements_t), measurementsQueueStorageBuffer, &measurementsQueueBuffer);
 
+    micro::waitReady(ledsQueue);
+    micro::waitReady(lineCalcSemaphore);
+
     measurements_t measurements;
     LinePosCalculator linePosCalc;
     LineFilter lineFilter;

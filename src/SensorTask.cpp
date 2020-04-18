@@ -26,15 +26,17 @@ StaticSemaphore_t lineCalcSemaphoreBuffer;
 
 extern "C" void runSensorTask(void) {
 
-    sensorHandler.initialize();
-
     ledsQueue = xQueueCreateStatic(LEDS_QUEUE_LENGTH, sizeof(leds_t), ledsQueueStorageBuffer, &ledsQueueBuffer);
+
+    micro::waitReady(measurementsQueue);
 
     lineCalcSemaphore = xSemaphoreCreateBinaryStatic(&lineCalcSemaphoreBuffer);
     xSemaphoreGive(lineCalcSemaphore);
 
     measurements_t measurements;
     leds_t leds;
+
+    sensorHandler.initialize();
 
     while (true) {
         vTaskSuspendAll();
