@@ -4,7 +4,6 @@
 
 namespace globals {
 
-extern uint8_t panelId;
 extern bool isConnected;
 extern bool indicatorLedsEnabled;
 extern uint8_t scanRangeCenter;

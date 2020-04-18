@@ -1,4 +1,5 @@
 #include <micro/panel/CanManager.hpp>
+#include <micro/panel/panelVersion.h>
 #include <micro/utils/algorithm.hpp>
 #include <micro/utils/timer.hpp>
 
@@ -117,9 +118,9 @@ extern "C" void runLineCalcTask(void) {
                 globals::scanRangeCenter = round(LinePosCalculator::linePosToOptoPos(avgLinePos));
             }
 
-            if (PANEL_ID_FRONT_LINE_DETECT == globals::panelId) {
+            if (PANEL_VERSION_FRONT == panelVersion_get()) {
                 canManager.send(can::FrontLines(lines));
-            } else if (PANEL_ID_REAR_LINE_DETECT == globals::panelId) {
+            } else if (PANEL_VERSION_REAR == panelVersion_get()) {
                 canManager.send(can::RearLines(lines));
             }
 
