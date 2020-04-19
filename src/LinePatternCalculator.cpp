@@ -45,7 +45,7 @@ private:
 const LinePatternCalculator::LinePatternInfo PATTERN_INFO[] = {
     { // NONE
         centimeter_t(10),
-        meter_t::infinity(),
+        micro::numeric_limits<meter_t>::infinity(),
         LinePatternCalculator::LinePatternInfo::NO_HISTORY,
         [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines& lines, uint8_t, meter_t) {
             return 0 == lines.size();
@@ -65,7 +65,7 @@ const LinePatternCalculator::LinePatternInfo PATTERN_INFO[] = {
     },
     { // SINGLE_LINE
         centimeter_t(7),
-        meter_t::infinity(),
+        micro::numeric_limits<meter_t>::infinity(),
         LinePatternCalculator::LinePatternInfo::NO_HISTORY,
         [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines& lines, uint8_t, meter_t) {
             return 1 == lines.size();
@@ -332,7 +332,7 @@ const LinePatternCalculator::LinePatternInfo PATTERN_INFO[] = {
     },
     { // DEAD_END
         centimeter_t(4),
-        meter_t::infinity(),
+        micro::numeric_limits<meter_t>::infinity(),
         LinePatternCalculator::LinePatternInfo::USES_HISTORY,
         [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern&, const Lines& lines, uint8_t, meter_t) {
             bool valid = false;
