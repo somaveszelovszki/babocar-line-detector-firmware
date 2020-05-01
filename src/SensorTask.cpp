@@ -1,3 +1,5 @@
+#include <micro/utils/task.hpp>
+
 #include <cfg_board.h>
 #include <globals.hpp>
 #include <SensorHandler.hpp>
