@@ -31,7 +31,7 @@ Lines LineFilter::update(const linePositions_t& detectedLines) {
         millimeter_t diff;
     };
 
-    typedef vec<posMapping_t, cfg::MAX_NUM_LINES * cfg::MAX_NUM_FILTERED_LINES> posMappings_t;
+    typedef vec<posMapping_t, Line::MAX_NUM_LINES * cfg::MAX_NUM_FILTERED_LINES> posMappings_t;
 
     // finds all close position pairs from the current and the previous measurements (expected positions), and updates filtered lines
     while (unmatchedDetectedLines.size() && unmatchedFilteredLines.size()) {

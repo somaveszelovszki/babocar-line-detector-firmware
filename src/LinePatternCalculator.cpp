@@ -13,7 +13,7 @@ bool isInJunctionCenter(const Lines& lines) {
 
 class LinePatternDescriptor {
 public:
-    typedef vec<uint8_t, cfg::MAX_NUM_LINES + 1> validLinesCount_t;
+    typedef vec<uint8_t, Line::MAX_NUM_LINES + 1> validLinesCount_t;
 
     LinePatternDescriptor(const std::initializer_list<std::pair<uint8_t, centimeter_t>>& pattern)
         : pattern(pattern) {}

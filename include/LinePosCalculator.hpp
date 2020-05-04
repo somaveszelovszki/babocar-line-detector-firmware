@@ -1,7 +1,9 @@
 #pragma once
 
 #include <micro/container/vec.hpp>
+#include <micro/utils/Line.hpp>
 #include <micro/utils/units.hpp>
+
 #include <cfg_sensor.hpp>
 #include <SensorHandler.hpp>
 
@@ -13,7 +15,7 @@ struct linePosition_t {
     bool operator>(const linePosition_t& other) const { return this->pos > other.pos; }
 };
 
-typedef micro::sorted_vec<linePosition_t, cfg::MAX_NUM_LINES> linePositions_t;
+typedef micro::sorted_vec<linePosition_t, micro::Line::MAX_NUM_LINES> linePositions_t;
 
 class LinePosCalculator {
 public:
