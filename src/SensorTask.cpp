@@ -1,3 +1,5 @@
+#include <micro/panel/CanManager.hpp>
+#include <micro/panel/vehicleCanTypes.hpp>
 #include <micro/port/task.hpp>
 
 #include <cfg_board.h>
@@ -10,6 +12,7 @@
 
 using namespace micro;
 
+extern CanManager vehicleCanManager;
 extern QueueHandle_t measurementsQueue;
 
 #define LEDS_QUEUE_LENGTH 1
@@ -38,9 +41,23 @@ extern "C" void runSensorTask(void) {
     measurements_t measurements;
     leds_t leds;
 
+    canFrame_t rxCanFrame;
+    CanFrameHandler vehicleCanFrameHandler;
+
+    vehicleCanFrameHandler.registerHandler(can::LineDetectControl::id(), [] (const uint8_t * const data) {
+        linePatternDomain_t domain;
+        reinterpret_cast<const can::LineDetectControl*>(data)->acquire(globals::indicatorLedsEnabled, globals::scanRangeRadius, domain);
+    });
+
+    const CanManager::subscriberId_t vehicleCanSubsciberId = vehicleCanManager.registerSubscriber(vehicleCanFrameHandler.identifiers());
+
     sensorHandler.initialize();
 
     while (true) {
+        if (vehicleCanManager.read(vehicleCanSubsciberId, rxCanFrame)) {
+            vehicleCanFrameHandler.handleFrame(rxCanFrame);
+        }
+
         vTaskSuspendAll();
         const uint8_t first = globals::scanRangeRadius > 0 ? globals::scanRangeCenter - globals::scanRangeRadius : 0;
         const uint8_t last  = globals::scanRangeRadius > 0 ? globals::scanRangeCenter + globals::scanRangeRadius : ARRAY_SIZE(measurements) - 1;

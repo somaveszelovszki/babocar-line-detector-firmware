@@ -11,14 +11,12 @@
 #include <LinePosCalculator.hpp>
 #include <SensorHandler.hpp>
 
-#include <FreeRTOS.h>
-#include <queue.h>
-#include <task.h>
-
 using namespace micro;
 
 extern QueueHandle_t ledsQueue;
 extern SemaphoreHandle_t lineCalcSemaphore;
+
+CanManager vehicleCanManager(can_Vehicle, canRxFifo_Vehicle, millisecond_t(50));
 
 #define MEASUREMENTS_QUEUE_LENGTH 1
 QueueHandle_t measurementsQueue = nullptr;
@@ -33,11 +31,7 @@ void sendLedStates(const Lines& lines) {
 
     static leds_t leds;
     static bool prevIsConnected = false;
-    static Timer blinkTimer = [] () {
-        Timer timer;
-        timer.start(millisecond_t(250));
-        return timer;
-    }();
+    static Timer blinkTimer(millisecond_t(250));
 
     bool send = true;
 
@@ -89,21 +83,26 @@ extern "C" void runLineCalcTask(void) {
     m_per_sec_t speed;
     meter_t distance;
 
-    CanManager canManager(can_Vehicle, canRxFifo_Vehicle, millisecond_t(15));
+    canFrame_t rxCanFrame;
+    CanFrameHandler vehicleCanFrameHandler;
 
-    canManager.registerHandler(can::LongitudinalState::id(), [&speed, &distance] (const uint8_t * const data) {
+    vehicleCanFrameHandler.registerHandler(can::LongitudinalState::id(), [&speed, &distance] (const uint8_t * const data) {
         reinterpret_cast<const can::LongitudinalState*>(data)->acquire(speed, distance);
     });
 
-    canManager.registerHandler(can::LineDetectControl::id(), [&domain] (const uint8_t * const data) {
+    vehicleCanFrameHandler.registerHandler(can::LineDetectControl::id(), [&domain] (const uint8_t * const data) {
         reinterpret_cast<const can::LineDetectControl*>(data)->acquire(globals::indicatorLedsEnabled, globals::scanRangeRadius, domain);
     });
 
+    const CanManager::subscriberId_t vehicleCanSubsciberId = vehicleCanManager.registerSubscriber(vehicleCanFrameHandler.identifiers());
+
     while (true) {
 
-        globals::isConnected = !canManager.hasRxTimedOut();
+        globals::isConnected = !vehicleCanManager.hasRxTimedOut();
 
-        canManager.handleIncomingFrames();
+        if (vehicleCanManager.read(vehicleCanSubsciberId, rxCanFrame)) {
+            vehicleCanFrameHandler.handleFrame(rxCanFrame);
+        }
 
         if (xQueueReceive(measurementsQueue, &measurements, 0)) {
             xSemaphoreGive(lineCalcSemaphore);
@@ -120,9 +119,9 @@ extern "C" void runLineCalcTask(void) {
             }
 
             if (PANEL_VERSION_FRONT == panelVersion_get()) {
-                canManager.send(can::FrontLines(lines));
+                vehicleCanManager.send(can::FrontLines(lines));
             } else if (PANEL_VERSION_REAR == panelVersion_get()) {
-                canManager.send(can::RearLines(lines));
+                vehicleCanManager.send(can::RearLines(lines));
             }
 
             sendLedStates(lines);
@@ -130,4 +129,8 @@ extern "C" void runLineCalcTask(void) {
     }
 
     vTaskDelete(nullptr);
+}
+
+void micro_Vehicle_Can_RxFifoMsgPendingCallback() {
+    vehicleCanManager.onFrameReceived();
 }
