@@ -13,15 +13,10 @@
 
 using namespace micro;
 
-extern QueueHandle_t ledsQueue;
-extern SemaphoreHandle_t lineCalcSemaphore;
+extern queue_t<measurements_t, 1> measurementsQueue;
 
 CanManager vehicleCanManager(can_Vehicle, canRxFifo_Vehicle, millisecond_t(50));
-
-#define MEASUREMENTS_QUEUE_LENGTH 1
-QueueHandle_t measurementsQueue = nullptr;
-static uint8_t measurementsQueueStorageBuffer[MEASUREMENTS_QUEUE_LENGTH * sizeof(measurements_t)];
-static StaticQueue_t measurementsQueueBuffer;
+queue_t<leds_t, 1> ledsQueue;
 
 namespace {
 
@@ -61,18 +56,13 @@ void sendLedStates(const Lines& lines) {
     }
 
     if (send) {
-        xQueueOverwrite(ledsQueue, &leds);
+        ledsQueue.overwrite(leds);
     }
 }
 
 } // namespace
 
 extern "C" void runLineCalcTask(void) {
-
-    measurementsQueue = xQueueCreateStatic(MEASUREMENTS_QUEUE_LENGTH, sizeof(measurements_t), measurementsQueueStorageBuffer, &measurementsQueueBuffer);
-
-    micro::waitReady(ledsQueue);
-    micro::waitReady(lineCalcSemaphore);
 
     measurements_t measurements;
     LinePosCalculator linePosCalc;
@@ -104,9 +94,7 @@ extern "C" void runLineCalcTask(void) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
 
-        if (xQueueReceive(measurementsQueue, &measurements, 0)) {
-            xSemaphoreGive(lineCalcSemaphore);
-
+        if (measurementsQueue.receive(measurements, millisecond_t(5))) {
             const linePositions_t linePositions = linePosCalc.calculate(measurements);
             const Lines lines = lineFilter.update(linePositions);
             linePatternCalc.update(domain, lines, distance);
@@ -127,8 +115,6 @@ extern "C" void runLineCalcTask(void) {
             sendLedStates(lines);
         }
     }
-
-    vTaskDelete(nullptr);
 }
 
 void micro_Vehicle_Can_RxFifoMsgPendingCallback() {

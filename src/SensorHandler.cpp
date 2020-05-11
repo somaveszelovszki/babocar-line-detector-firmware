@@ -48,6 +48,7 @@ void SensorHandler::initialize() {
 }
 
 void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t first, const uint8_t last) {
+    // TODO handle scan range
     for (uint8_t optoIdx = 0; optoIdx < 8; ++optoIdx) {
 
         HAL_SPI_Transmit_DMA(spi_Sensor, (uint8_t*)OPTO_BUFFERS[optoIdx], cfg::NUM_SENSORS / 8);
