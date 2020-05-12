@@ -33,9 +33,6 @@ const std::pair<GPIO_TypeDef*, uint16_t> ADC_ENABLE_PINS[cfg::NUM_SENSORS / 8] =
 } // namespace
 
 void SensorHandler::initialize() {
-    this->semaphore_ = xSemaphoreCreateBinaryStatic(&this->semaphoreBuffer_);
-    xSemaphoreGive(this->semaphore_);
-
     HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_OPTO, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_OPTO, GPIO_PIN_SET);
 
@@ -83,6 +80,10 @@ void SensorHandler::writeLeds(const leds_t& leds) {
     HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_IND, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_IND, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_IND, GPIO_PIN_RESET);
+}
+
+void SensorHandler::onTxFinished() {
+    this->semaphore_.give();
 }
 
 uint8_t SensorHandler::readAdc(const uint8_t channel) {

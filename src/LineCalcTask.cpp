@@ -5,35 +5,35 @@
 #include <micro/utils/timer.hpp>
 
 #include <cfg_board.h>
-#include <globals.hpp>
 #include <LineFilter.hpp>
 #include <LinePatternCalculator.hpp>
 #include <LinePosCalculator.hpp>
-#include <SensorHandler.hpp>
+#include <SensorHandlerData.hpp>
 
 using namespace micro;
 
 extern queue_t<measurements_t, 1> measurementsQueue;
 
 CanManager vehicleCanManager(can_Vehicle, canRxFifo_Vehicle, millisecond_t(50));
-queue_t<leds_t, 1> ledsQueue;
+queue_t<SensorHandlerData, 1> sensorHandlerDataQueue;
 
 namespace {
 
-void sendLedStates(const Lines& lines) {
+bool isConnected = false;
+bool indicatorLedsEnabled = false;
+uint8_t scanRangeCenter = 0;
+
+void sendSensorHandlerData(const Lines& lines) {
 
     static constexpr uint8_t LED_RADIUS = 1;
 
     static leds_t leds;
-    static bool prevIsConnected = false;
     static Timer blinkTimer(millisecond_t(250));
 
-    bool send = true;
-
-    if (globals::isConnected) {
+    if (isConnected) {
         leds.reset();
 
-        if (globals::indicatorLedsEnabled) {
+        if (indicatorLedsEnabled) {
             for (const Line& l : lines) {
                 const uint8_t centerIdx = static_cast<uint8_t>(round(LinePosCalculator::linePosToOptoPos(l.pos)));
 
@@ -44,10 +44,6 @@ void sendLedStates(const Lines& lines) {
                     leds.set(i, true);
                 }
             }
-        } else if (!prevIsConnected) {
-            prevIsConnected = true;
-        } else {
-            send = false;
         }
     } else if (blinkTimer.checkTimeout()) {
         const bool blinkState = leds.get(0);
@@ -55,9 +51,7 @@ void sendLedStates(const Lines& lines) {
         leds.set(0, !blinkState);
     }
 
-    if (send) {
-        ledsQueue.overwrite(leds);
-    }
+    sensorHandlerDataQueue.overwrite({ leds, scanRangeCenter });
 }
 
 } // namespace
@@ -81,14 +75,15 @@ extern "C" void runLineCalcTask(void) {
     });
 
     vehicleCanFrameHandler.registerHandler(can::LineDetectControl::id(), [&domain] (const uint8_t * const data) {
-        reinterpret_cast<const can::LineDetectControl*>(data)->acquire(globals::indicatorLedsEnabled, globals::scanRangeRadius, domain);
+        uint8_t scanRangeRadius;
+        reinterpret_cast<const can::LineDetectControl*>(data)->acquire(indicatorLedsEnabled, scanRangeRadius, domain);
     });
 
     const CanManager::subscriberId_t vehicleCanSubsciberId = vehicleCanManager.registerSubscriber(vehicleCanFrameHandler.identifiers());
 
     while (true) {
 
-        globals::isConnected = !vehicleCanManager.hasRxTimedOut();
+        isConnected = !vehicleCanManager.hasRxTimedOut();
 
         if (vehicleCanManager.read(vehicleCanSubsciberId, rxCanFrame)) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
@@ -103,7 +98,7 @@ extern "C" void runLineCalcTask(void) {
                 const millimeter_t avgLinePos = micro::accumulate(lines.begin(), lines.end(), millimeter_t(0),
                     [] (const millimeter_t& sum, const Line& line) { return sum + line.pos; });
 
-                globals::scanRangeCenter = round(LinePosCalculator::linePosToOptoPos(avgLinePos));
+                scanRangeCenter = round(LinePosCalculator::linePosToOptoPos(avgLinePos));
             }
 
             if (PANEL_VERSION_FRONT == panelVersion_get()) {
@@ -112,7 +107,7 @@ extern "C" void runLineCalcTask(void) {
                 vehicleCanManager.send(can::RearLines(lines));
             }
 
-            sendLedStates(lines);
+            sendSensorHandlerData(lines);
         }
     }
 }
