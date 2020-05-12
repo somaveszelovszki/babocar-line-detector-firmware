@@ -1,3 +1,5 @@
+#include <micro/math/numeric.hpp>
+
 #include <cfg_board.h>
 #include <cfg_sensor.hpp>
 #include <SensorHandler.hpp>
@@ -45,7 +47,6 @@ void SensorHandler::initialize() {
 }
 
 void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t first, const uint8_t last) {
-    // TODO handle scan range
     for (uint8_t optoIdx = 0; optoIdx < 8; ++optoIdx) {
 
         HAL_SPI_Transmit_DMA(spi_Sensor, (uint8_t*)OPTO_BUFFERS[optoIdx], cfg::NUM_SENSORS / 8);
@@ -56,11 +57,15 @@ void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t 
         HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_OPTO, GPIO_PIN_RESET);
 
         for (uint8_t adcIdx = 0; adcIdx < cfg::NUM_SENSORS / 8; ++adcIdx) {
-            const std::pair<GPIO_TypeDef*, uint16_t>& adcEnPin = ADC_ENABLE_PINS[adcIdx];
+            const uint8_t pos = adcIdx * 8 + optoIdx;
 
-            HAL_GPIO_WritePin(adcEnPin.first, adcEnPin.second, GPIO_PIN_RESET);
-            measurements[adcIdx * 8 + optoIdx] = this->readAdc(optoIdx);
-            HAL_GPIO_WritePin(adcEnPin.first, adcEnPin.second, GPIO_PIN_SET);
+            if (micro::isBtw(pos, first, last)) {
+                const std::pair<GPIO_TypeDef*, uint16_t>& adcEnPin = ADC_ENABLE_PINS[adcIdx];
+
+                HAL_GPIO_WritePin(adcEnPin.first, adcEnPin.second, GPIO_PIN_RESET);
+                measurements[pos] = this->readAdc(optoIdx);
+                HAL_GPIO_WritePin(adcEnPin.first, adcEnPin.second, GPIO_PIN_SET);
+            }
         }
     }
 }
