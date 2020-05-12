@@ -28,9 +28,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <micro/panel/panelVersion.h>
-#include <micro/utils/time_init.h>
-#include <cfg_board.h>
+#include <system_init.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -90,11 +88,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  if (PANEL_VERSION_FRONT != panelVersion_get() && PANEL_VERSION_REAR != panelVersion_get()) {
-      Error_Handler();
-  }
-
-  micro_time_init(tim_System);
+  system_init();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
