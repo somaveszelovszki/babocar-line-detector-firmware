@@ -1,5 +1,5 @@
 #include <micro/debug/DebugLed.hpp>
-#include <micro/debug/taskMonitor.hpp>
+#include <micro/debug/SystemManager.hpp>
 #include <micro/panel/CanManager.hpp>
 #include <micro/panel/vehicleCanTypes.hpp>
 #include <micro/port/task.hpp>
@@ -38,7 +38,7 @@ const leds_t& updateFailureLeds() {
 
 extern "C" void runSensorTask(void) {
 
-    TaskMonitor::instance().registerTask();
+    SystemManager::instance().registerTask();
 
     measurements_t measurements;
     SensorHandlerData sensorHandlerData;
@@ -69,9 +69,9 @@ extern "C" void runSensorTask(void) {
 
         sensorHandlerDataQueue.receive(sensorHandlerData, millisecond_t(0));
 
-        sensorHandler.writeLeds(TaskMonitor::instance().failingTasks().size() > 0 ? sensorHandlerData.leds : updateFailureLeds());
+        sensorHandler.writeLeds(SystemManager::instance().failingTasks().size() > 0 ? sensorHandlerData.leds : updateFailureLeds());
 
-        TaskMonitor::instance().notify(!vehicleCanManager.hasRxTimedOut());
+        SystemManager::instance().notify(!vehicleCanManager.hasRxTimedOut());
     }
 }
 

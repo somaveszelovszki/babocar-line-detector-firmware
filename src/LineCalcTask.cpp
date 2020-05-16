@@ -1,4 +1,4 @@
-#include <micro/debug/taskMonitor.hpp>
+#include <micro/debug/SystemManager.hpp>
 #include <micro/panel/CanManager.hpp>
 #include <micro/panel/panelVersion.h>
 #include <micro/utils/algorithm.hpp>
@@ -48,7 +48,7 @@ void sendSensorHandlerData(const Lines& lines) {
 
 extern "C" void runLineCalcTask(void) {
 
-    TaskMonitor::instance().registerTask();
+    SystemManager::instance().registerTask();
 
     measurements_t measurements;
     LinePosCalculator linePosCalc;
@@ -98,7 +98,7 @@ extern "C" void runLineCalcTask(void) {
 
             sendSensorHandlerData(lines);
 
-            TaskMonitor::instance().notify(!vehicleCanManager.hasRxTimedOut());
+            SystemManager::instance().notify(!vehicleCanManager.hasRxTimedOut());
         }
     }
 }
