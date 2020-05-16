@@ -34,25 +34,6 @@ const leds_t& updateFailureLeds() {
     return leds;
 }
 
-bool monitorTasks() {
-    const TaskMonitor::taskStates_t failingTasks = TaskMonitor::instance().failingTasks();
-
-    if (failingTasks.size()) {
-        char msg[LOG_MSG_MAX_SIZE];
-        uint32_t idx = 0;
-        for (TaskMonitor::taskStates_t::const_iterator it = failingTasks.begin(); it != failingTasks.end(); ++it) {
-            idx += strncpy_until(&msg[idx], it->details.pcTaskName, min(static_cast<uint32_t>(configMAX_TASK_NAME_LEN), LOG_MSG_MAX_SIZE - idx));
-            if (it != failingTasks.back()) {
-                idx += strncpy_until(&msg[idx], ", ", sizeof(", "), LOG_MSG_MAX_SIZE - idx);
-            }
-        }
-        msg[idx] = '\0';
-        LOG_ERROR("Failing tasks: %s", msg);
-    }
-
-    return failingTasks.size() == 0;
-}
-
 } // namespace
 
 extern "C" void runSensorTask(void) {
@@ -88,7 +69,7 @@ extern "C" void runSensorTask(void) {
 
         sensorHandlerDataQueue.receive(sensorHandlerData, millisecond_t(0));
 
-        sensorHandler.writeLeds(monitorTasks() ? sensorHandlerData.leds : updateFailureLeds());
+        sensorHandler.writeLeds(TaskMonitor::instance().failingTasks().size() > 0 ? sensorHandlerData.leds : updateFailureLeds());
 
         TaskMonitor::instance().notify(!vehicleCanManager.hasRxTimedOut());
     }

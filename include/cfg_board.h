@@ -7,12 +7,15 @@ extern "C" {
 
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_can.h"
+#include "stm32f4xx_hal_gpio.h"
 #include "stm32f4xx_hal_spi.h"
 #include "stm32f4xx_hal_tim.h"
+#include "stm32f4xx_hal_uart.h"
 
 extern CAN_HandleTypeDef  hcan1;
 extern SPI_HandleTypeDef  hspi1;
 extern TIM_HandleTypeDef  htim2;
+extern UART_HandleTypeDef huart2;
 
 #define can_Vehicle             (&hcan1)
 #define canRxFifo_Vehicle       CAN_RX_FIFO0
@@ -41,9 +44,11 @@ extern TIM_HandleTypeDef  htim2;
 #define gpioPin_OE_IND          GPIO_PIN_0
 #define gpioPin_LE_IND          GPIO_PIN_1
 
+#define spi_Sensor              (&hspi1)
+
 #define tim_System              (&htim2)
 
-#define spi_Sensor              (&hspi1)
+#define uart_Debug              (&huart2)
 
 #define PANEL_VERSION_FRONT     0x01
 #define PANEL_VERSION_REAR      0x00

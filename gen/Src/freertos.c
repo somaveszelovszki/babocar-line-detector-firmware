@@ -54,15 +54,20 @@ osStaticThreadDef_t SensorTaskControlBlock;
 osThreadId LineCalcTaskHandle;
 uint32_t LineCalcTaskBuffer[ 1024 ];
 osStaticThreadDef_t LineCalcTaskControlBlock;
+osThreadId DebugTaskHandle;
+uint32_t DebugTaskBuffer[ 1024 ];
+osStaticThreadDef_t DebugTaskControlBlock;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 void runSensorTask(void);
 void runLineCalcTask(void);
+void runDebugTask(void);
 /* USER CODE END FunctionPrototypes */
 
 void StartSensorTask(void const * argument);
 void StartLineCalcTask(void const * argument);
+void StartDebugTask(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -117,6 +122,10 @@ void MX_FREERTOS_Init(void) {
   osThreadStaticDef(LineCalcTask, StartLineCalcTask, osPriorityNormal, 0, 1024, LineCalcTaskBuffer, &LineCalcTaskControlBlock);
   LineCalcTaskHandle = osThreadCreate(osThread(LineCalcTask), NULL);
 
+  /* definition and creation of DebugTask */
+  osThreadStaticDef(DebugTask, StartDebugTask, osPriorityLow, 0, 1024, DebugTaskBuffer, &DebugTaskControlBlock);
+  DebugTaskHandle = osThreadCreate(osThread(DebugTask), NULL);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -132,6 +141,7 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_StartSensorTask */
 void StartSensorTask(void const * argument)
 {
+    
     
     
     
@@ -155,6 +165,20 @@ void StartLineCalcTask(void const * argument)
   UNUSED(argument);
   runLineCalcTask();
   /* USER CODE END StartLineCalcTask */
+}
+
+/* USER CODE BEGIN Header_StartDebugTask */
+/**
+* @brief Function implementing the DebugTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartDebugTask */
+void StartDebugTask(void const * argument)
+{
+  /* USER CODE BEGIN StartDebugTask */
+  runDebugTask();
+  /* USER CODE END StartDebugTask */
 }
 
 /* Private application code --------------------------------------------------*/
