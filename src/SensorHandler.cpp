@@ -24,22 +24,22 @@ constexpr uint8_t OPTO_BUFFERS[8][cfg::NUM_SENSORS / 8] = { // selects every 8th
 };
 
 const std::pair<GPIO_TypeDef*, uint16_t> ADC_ENABLE_PINS[cfg::NUM_SENSORS / 8] = {
-    { GPIO_SS_ADC0, GPIO_PIN_SS_ADC0 },
-    { GPIO_SS_ADC1, GPIO_PIN_SS_ADC1 },
-    { GPIO_SS_ADC2, GPIO_PIN_SS_ADC2 },
-    { GPIO_SS_ADC3, GPIO_PIN_SS_ADC3 },
-    { GPIO_SS_ADC4, GPIO_PIN_SS_ADC4 },
-    { GPIO_SS_ADC5, GPIO_PIN_SS_ADC5 }
+    { gpio_SS_ADC0, gpioPin_SS_ADC0 },
+    { gpio_SS_ADC1, gpioPin_SS_ADC1 },
+    { gpio_SS_ADC2, gpioPin_SS_ADC2 },
+    { gpio_SS_ADC3, gpioPin_SS_ADC3 },
+    { gpio_SS_ADC4, gpioPin_SS_ADC4 },
+    { gpio_SS_ADC5, gpioPin_SS_ADC5 }
 };
 
 } // namespace
 
 void SensorHandler::initialize() {
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_OPTO, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_OPTO, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_OPTO, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_OPTO, GPIO_PIN_SET);
 
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_IND, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_IND, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_IND, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_IND, GPIO_PIN_SET);
 
     for (const std::pair<GPIO_TypeDef*, uint16_t>& adcEnPin : ADC_ENABLE_PINS) {
         HAL_GPIO_WritePin(adcEnPin.first, adcEnPin.second, GPIO_PIN_SET);
@@ -51,10 +51,10 @@ void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t 
 
         HAL_SPI_Transmit_DMA(spi_Sensor, (uint8_t*)OPTO_BUFFERS[optoIdx], cfg::NUM_SENSORS / 8);
 
-        HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_OPTO, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_OPTO, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_OPTO, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_OPTO, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_OPTO, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_OPTO, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_OPTO, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_OPTO, GPIO_PIN_RESET);
 
         for (uint8_t adcIdx = 0; adcIdx < cfg::NUM_SENSORS / 8; ++adcIdx) {
             const uint8_t pos = adcIdx * 8 + optoIdx;
@@ -81,10 +81,10 @@ void SensorHandler::writeLeds(const leds_t& leds) {
 
     HAL_SPI_Transmit_DMA(spi_Sensor, outBuffer, ARRAY_SIZE(outBuffer));
 
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_IND, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_IND, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_LE_IND, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIO_LED_DRIVERS, GPIO_PIN_OE_IND, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_IND, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_IND, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_IND, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_IND, GPIO_PIN_RESET);
 }
 
 void SensorHandler::onTxFinished() {
