@@ -1,3 +1,4 @@
+#include <micro/debug/taskMonitor.hpp>
 #include <micro/panel/CanManager.hpp>
 #include <micro/panel/panelVersion.h>
 #include <micro/utils/algorithm.hpp>
@@ -19,36 +20,25 @@ queue_t<SensorHandlerData, 1> sensorHandlerDataQueue;
 
 namespace {
 
-bool isConnected = false;
 bool indicatorLedsEnabled = false;
 uint8_t scanRangeCenter = 0;
 
 void sendSensorHandlerData(const Lines& lines) {
 
     static constexpr uint8_t LED_RADIUS = 1;
+    leds_t leds;
 
-    static leds_t leds;
-    static Timer blinkTimer(millisecond_t(250));
+    if (indicatorLedsEnabled) {
+        for (const Line& l : lines) {
+            const uint8_t centerIdx = static_cast<uint8_t>(round(LinePosCalculator::linePosToOptoPos(l.pos)));
 
-    if (isConnected) {
-        leds.reset();
+            const uint8_t startIdx = max<uint8_t>(centerIdx, LED_RADIUS) - LED_RADIUS;
+            const uint8_t endIdx = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
 
-        if (indicatorLedsEnabled) {
-            for (const Line& l : lines) {
-                const uint8_t centerIdx = static_cast<uint8_t>(round(LinePosCalculator::linePosToOptoPos(l.pos)));
-
-                const uint8_t startIdx = max<uint8_t>(centerIdx, LED_RADIUS) - LED_RADIUS;
-                const uint8_t endIdx = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
-
-                for (uint8_t i = startIdx; i < endIdx; ++i) {
-                    leds.set(i, true);
-                }
+            for (uint8_t i = startIdx; i < endIdx; ++i) {
+                leds.set(i, true);
             }
         }
-    } else if (blinkTimer.checkTimeout()) {
-        const bool blinkState = leds.get(0);
-        leds.reset();
-        leds.set(0, !blinkState);
     }
 
     sensorHandlerDataQueue.overwrite({ leds, scanRangeCenter });
@@ -57,6 +47,8 @@ void sendSensorHandlerData(const Lines& lines) {
 } // namespace
 
 extern "C" void runLineCalcTask(void) {
+
+    TaskMonitor::instance().registerTask();
 
     measurements_t measurements;
     LinePosCalculator linePosCalc;
@@ -82,9 +74,6 @@ extern "C" void runLineCalcTask(void) {
     const CanManager::subscriberId_t vehicleCanSubsciberId = vehicleCanManager.registerSubscriber(vehicleCanFrameHandler.identifiers());
 
     while (true) {
-
-        isConnected = !vehicleCanManager.hasRxTimedOut();
-
         if (vehicleCanManager.read(vehicleCanSubsciberId, rxCanFrame)) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
@@ -108,6 +97,8 @@ extern "C" void runLineCalcTask(void) {
             }
 
             sendSensorHandlerData(lines);
+
+            TaskMonitor::instance().notify(!vehicleCanManager.hasRxTimedOut());
         }
     }
 }
