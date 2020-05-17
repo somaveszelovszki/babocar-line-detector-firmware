@@ -57,7 +57,7 @@ extern "C" void runSensorTask(void) {
     sensorHandler.initialize();
 
     while (true) {
-        if (vehicleCanManager.read(vehicleCanSubsciberId, rxCanFrame)) {
+        while (vehicleCanManager.read(vehicleCanSubsciberId, rxCanFrame)) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
 
