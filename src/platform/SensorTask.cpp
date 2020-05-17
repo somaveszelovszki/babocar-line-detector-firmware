@@ -18,7 +18,20 @@ queue_t<measurements_t, 1> measurementsQueue;
 
 namespace {
 
-SensorHandler sensorHandler;
+SensorHandler sensorHandler(spi_Sensor,
+    {
+        { gpio_SS_ADC0, gpioPin_SS_ADC0 },
+        { gpio_SS_ADC1, gpioPin_SS_ADC1 },
+        { gpio_SS_ADC2, gpioPin_SS_ADC2 },
+        { gpio_SS_ADC3, gpioPin_SS_ADC3 },
+        { gpio_SS_ADC4, gpioPin_SS_ADC4 },
+        { gpio_SS_ADC5, gpioPin_SS_ADC5 }
+    },
+    { gpio_LedDrivers, gpioPin_LE_OPTO },
+    { gpio_LedDrivers, gpioPin_OE_OPTO },
+    { gpio_LedDrivers, gpioPin_LE_IND },
+    { gpio_LedDrivers, gpioPin_LE_IND });
+
 uint8_t scanRangeRadius = 0;
 
 const leds_t& updateFailureLeds() {

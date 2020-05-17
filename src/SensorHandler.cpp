@@ -1,14 +1,11 @@
 #include <micro/math/numeric.hpp>
 
-#include <cfg_board.h>
 #include <cfg_sensor.hpp>
 #include <SensorHandler.hpp>
 
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_spi.h"
-#include "stm32f4xx_hal_gpio.h"
-
 #include <utility>
+
+using namespace micro;
 
 namespace {
 
@@ -23,48 +20,52 @@ constexpr uint8_t OPTO_BUFFERS[8][cfg::NUM_SENSORS / 8] = { // selects every 8th
     { 128, 128, 128, 128, 128, 128 }
 };
 
-const std::pair<GPIO_TypeDef*, uint16_t> ADC_ENABLE_PINS[cfg::NUM_SENSORS / 8] = {
-    { gpio_SS_ADC0, gpioPin_SS_ADC0 },
-    { gpio_SS_ADC1, gpioPin_SS_ADC1 },
-    { gpio_SS_ADC2, gpioPin_SS_ADC2 },
-    { gpio_SS_ADC3, gpioPin_SS_ADC3 },
-    { gpio_SS_ADC4, gpioPin_SS_ADC4 },
-    { gpio_SS_ADC5, gpioPin_SS_ADC5 }
-};
-
 } // namespace
 
+SensorHandler::SensorHandler(SPI_HandleTypeDef *hspi,
+    const micro::vec<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
+    const micro::gpio_t& LE_opto,
+    const micro::gpio_t& OE_opto,
+    const micro::gpio_t& LE_ind,
+    const micro::gpio_t& OE_ind)
+    : hspi_(hspi)
+    , adcEnPins_(adcEnPins)
+    , LE_opto_(LE_opto)
+    , OE_opto_(OE_opto)
+    , LE_ind_(LE_ind)
+    , OE_ind_(OE_ind) {}
+
 void SensorHandler::initialize() {
-    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_OPTO, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_OPTO, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(this->LE_opto_.instance, this->LE_opto_.pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(this->OE_opto_.instance, this->OE_opto_.pin, GPIO_PIN_SET);
 
-    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_IND, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_IND, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(this->LE_ind_.instance, this->LE_ind_.pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(this->OE_ind_.instance, this->OE_ind_.pin, GPIO_PIN_SET);
 
-    for (const std::pair<GPIO_TypeDef*, uint16_t>& adcEnPin : ADC_ENABLE_PINS) {
-        HAL_GPIO_WritePin(adcEnPin.first, adcEnPin.second, GPIO_PIN_SET);
+    for (const gpio_t& adcEnPin : this->adcEnPins_) {
+        HAL_GPIO_WritePin(adcEnPin.instance, adcEnPin.pin, GPIO_PIN_SET);
     }
 }
 
 void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t first, const uint8_t last) {
     for (uint8_t optoIdx = 0; optoIdx < 8; ++optoIdx) {
 
-        HAL_SPI_Transmit_DMA(spi_Sensor, (uint8_t*)OPTO_BUFFERS[optoIdx], cfg::NUM_SENSORS / 8);
+        HAL_SPI_Transmit_DMA(this->hspi_, (uint8_t*)OPTO_BUFFERS[optoIdx], cfg::NUM_SENSORS / 8);
 
-        HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_OPTO, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_OPTO, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_OPTO, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_OPTO, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(this->OE_opto_.instance, this->OE_opto_.pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(this->LE_opto_.instance, this->LE_opto_.pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(this->LE_opto_.instance, this->LE_opto_.pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(this->OE_opto_.instance, this->OE_opto_.pin, GPIO_PIN_RESET);
 
         for (uint8_t adcIdx = 0; adcIdx < cfg::NUM_SENSORS / 8; ++adcIdx) {
             const uint8_t pos = adcIdx * 8 + optoIdx;
 
             if (micro::isBtw(pos, first, last)) {
-                const std::pair<GPIO_TypeDef*, uint16_t>& adcEnPin = ADC_ENABLE_PINS[adcIdx];
+                const gpio_t& adcEnPin = this->adcEnPins_[adcIdx];
 
-                HAL_GPIO_WritePin(adcEnPin.first, adcEnPin.second, GPIO_PIN_RESET);
+                HAL_GPIO_WritePin(adcEnPin.instance, adcEnPin.pin, GPIO_PIN_RESET);
                 measurements[pos] = this->readAdc(optoIdx);
-                HAL_GPIO_WritePin(adcEnPin.first, adcEnPin.second, GPIO_PIN_SET);
+                HAL_GPIO_WritePin(adcEnPin.instance, adcEnPin.pin, GPIO_PIN_SET);
             }
         }
     }
@@ -79,12 +80,12 @@ void SensorHandler::writeLeds(const leds_t& leds) {
         }
     }
 
-    HAL_SPI_Transmit_DMA(spi_Sensor, outBuffer, ARRAY_SIZE(outBuffer));
+    HAL_SPI_Transmit_DMA(this->hspi_, outBuffer, ARRAY_SIZE(outBuffer));
 
-    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_IND, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_IND, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_LE_IND, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(gpio_LedDrivers, gpioPin_OE_IND, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(this->OE_ind_.instance, this->OE_ind_.pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(this->LE_ind_.instance, this->LE_ind_.pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(this->LE_ind_.instance, this->LE_ind_.pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(this->OE_ind_.instance, this->OE_ind_.pin, GPIO_PIN_RESET);
 }
 
 void SensorHandler::onTxFinished() {
@@ -102,6 +103,6 @@ uint8_t SensorHandler::readAdc(const uint8_t channel) {
     //
     // @see MAX1110CAP+ datasheet for details
     adcBuffer[0] =  0b10001111 | ((channel & 0b00000001) << 6) | ((channel & 0b00000010) << 3) | ((channel & 0b00000100) << 3);
-    HAL_SPI_TransmitReceive_DMA(spi_Sensor, adcBuffer, adcBuffer, ARRAY_SIZE(adcBuffer));
+    HAL_SPI_TransmitReceive_DMA(this->hspi_, adcBuffer, adcBuffer, ARRAY_SIZE(adcBuffer));
     return (adcBuffer[1] << 2) | (adcBuffer[2] >> 6); // ADC value format: 00000000 00XXXXXX XX000000
 }

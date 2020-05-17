@@ -2,6 +2,7 @@
 
 #include <micro/container/infinite_buffer.hpp>
 #include <micro/utils/LinePattern.hpp>
+
 #include <functional>
 
 class LinePatternCalculator {
