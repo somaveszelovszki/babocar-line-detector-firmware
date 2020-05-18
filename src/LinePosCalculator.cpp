@@ -12,8 +12,8 @@ constexpr uint8_t LinePosCalculator::NUM_GROUP_INTENSITIES;
 
 linePositions_t LinePosCalculator::calculate(const measurements_t& measurements) {
 
-    static constexpr uint8_t MAX_VALID_AVERAGE = 150;
-    static constexpr uint8_t MAX_PROBABILITY_GROUP_INTENSITY = 200;
+    static constexpr uint8_t MAX_VALID_AVERAGE = 100;
+    static constexpr uint8_t MAX_PROBABILITY_GROUP_INTENSITY = 120;
 
     linePositions_t positions;
     const uint8_t average = static_cast<uint8_t>(micro::accumulate(measurements, &measurements[cfg::NUM_SENSORS], static_cast<uint16_t>(0)) / cfg::NUM_SENSORS);
@@ -22,12 +22,12 @@ linePositions_t LinePosCalculator::calculate(const measurements_t& measurements)
         uint8_t intensities[cfg::NUM_SENSORS];
         removeOffset(measurements, intensities);
         groupIntensities_t groupIntensities = calculateGroupIntensities(intensities);
-        const groupIntensities_t::const_iterator minGroupIntensity = std::min_element(groupIntensities.begin(), groupIntensities.end());
 
         while (positions.size() < positions.capacity() && !groupIntensities.empty()) {
-            const groupIntensities_t::const_iterator maxGroupIntensity = std::max_element(groupIntensities.begin(), groupIntensities.end());
-            const millimeter_t linePos = calculateLinePos(intensities, maxGroupIntensity->centerIdx);
-            const float probability = map(maxGroupIntensity->intensity, minGroupIntensity->intensity, MAX_PROBABILITY_GROUP_INTENSITY, 0.0f, 1.0f);
+
+            const std::pair<groupIntensities_t::const_iterator, groupIntensities_t::const_iterator> boundaries = std::minmax_element(groupIntensities.begin(), groupIntensities.end());
+            const millimeter_t linePos = calculateLinePos(intensities, boundaries.second->centerIdx);
+            const float probability = map(boundaries.second->intensity, boundaries.first->intensity, MAX_PROBABILITY_GROUP_INTENSITY, 0.0f, 1.0f);
 
             if (probability < cfg::MIN_LINE_PROBABILITY) {
                 break;
@@ -39,7 +39,7 @@ linePositions_t LinePosCalculator::calculate(const measurements_t& measurements)
                 positions.insert({ linePos, probability });
             }
 
-            groupIntensities.erase(maxGroupIntensity);
+            groupIntensities.erase(boundaries.second);
         }
     }
 
@@ -66,12 +66,12 @@ void LinePosCalculator::removeOffset(const uint8_t * const measurements, uint8_t
 
 LinePosCalculator::groupIntensities_t LinePosCalculator::calculateGroupIntensities(const uint8_t * const intensities) {
     groupIntensities_t groupIntensities;
-    for (uint8_t groupIdx = INTENSITY_GROUP_RADIUS; groupIdx < NUM_GROUP_INTENSITIES; ++groupIdx) {
+    for (uint8_t groupIdx = INTENSITY_GROUP_RADIUS; groupIdx < cfg::NUM_SENSORS - INTENSITY_GROUP_RADIUS; ++groupIdx) {
         uint16_t groupIntensity = 0;
-        for (int8_t subIdx = -static_cast<int8_t>(INTENSITY_GROUP_RADIUS); subIdx < static_cast<int8_t>(INTENSITY_GROUP_RADIUS); ++subIdx) {
+        for (int8_t subIdx = -static_cast<int8_t>(INTENSITY_GROUP_RADIUS); subIdx <= static_cast<int8_t>(INTENSITY_GROUP_RADIUS); ++subIdx) {
             groupIntensity += intensities[groupIdx + subIdx];
         }
-        groupIntensities.push_back({ groupIdx, static_cast<uint8_t>(groupIntensity / (2 * INTENSITY_GROUP_RADIUS - 1)) });
+        groupIntensities.push_back({ groupIdx, static_cast<uint8_t>(round(groupIntensity / (2.0f * INTENSITY_GROUP_RADIUS + 1))) });
     }
     return groupIntensities;
 }
