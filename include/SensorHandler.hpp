@@ -7,9 +7,6 @@
 
 #include <SensorHandlerData.hpp>
 
-typedef uint8_t measurements_t[cfg::NUM_SENSORS];
-typedef micro::bit_array<cfg::NUM_SENSORS> leds_t;
-
 class SensorHandler {
 public:
     SensorHandler(SPI_HandleTypeDef *hspi,

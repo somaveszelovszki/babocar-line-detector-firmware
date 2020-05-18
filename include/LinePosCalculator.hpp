@@ -5,7 +5,7 @@
 #include <micro/utils/units.hpp>
 
 #include <cfg_sensor.hpp>
-#include <SensorHandler.hpp>
+#include <SensorHandlerData.hpp>
 
 struct linePosition_t {
     micro::millimeter_t pos;
