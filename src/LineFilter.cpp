@@ -66,6 +66,7 @@ Lines LineFilter::update(const linePositions_t& detectedLines) {
     // decreases counters for unmatched previous lines
     for (filteredLines_t::iterator it : unmatchedFilteredLines) {
         it->decreaseCntr();
+        it->samples.push_back(it->estimated);
     }
 
     // erases lines from the filtered lines list that have not been detected for a given number of measurements
