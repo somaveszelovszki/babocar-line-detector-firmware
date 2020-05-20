@@ -4,6 +4,8 @@
 #include <cfg_sensor.hpp>
 #include <LinePosCalculator.hpp>
 
+#include <numeric>
+
 using namespace micro;
 
 constexpr uint8_t LinePosCalculator::INTENSITY_GROUP_RADIUS;
@@ -16,7 +18,7 @@ linePositions_t LinePosCalculator::calculate(const measurements_t& measurements)
     static constexpr uint8_t MAX_PROBABILITY_GROUP_INTENSITY = 120;
 
     linePositions_t positions;
-    const uint8_t average = static_cast<uint8_t>(micro::accumulate(measurements, &measurements[cfg::NUM_SENSORS], static_cast<uint16_t>(0)) / cfg::NUM_SENSORS);
+    const uint8_t average = static_cast<uint8_t>(std::accumulate(measurements, &measurements[cfg::NUM_SENSORS], static_cast<uint16_t>(0)) / cfg::NUM_SENSORS);
 
     if (average < MAX_VALID_AVERAGE) {
         uint8_t intensities[cfg::NUM_SENSORS];

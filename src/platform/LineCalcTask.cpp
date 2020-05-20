@@ -11,6 +11,8 @@
 #include <LinePosCalculator.hpp>
 #include <SensorHandlerData.hpp>
 
+#include <numeric>
+
 using namespace micro;
 
 extern queue_t<measurements_t, 1> measurementsQueue;
@@ -84,7 +86,7 @@ extern "C" void runLineCalcTask(void) {
             linePatternCalc.update(domain, lines, distance);
 
             if (lines.size()) {
-                const millimeter_t avgLinePos = micro::accumulate(lines.begin(), lines.end(), millimeter_t(0),
+                const millimeter_t avgLinePos = std::accumulate(lines.begin(), lines.end(), millimeter_t(0),
                     [] (const millimeter_t& sum, const Line& line) { return sum + line.pos; });
 
                 scanRangeCenter = round(LinePosCalculator::linePosToOptoPos(avgLinePos));
