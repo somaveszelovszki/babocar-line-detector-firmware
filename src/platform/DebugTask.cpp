@@ -1,6 +1,7 @@
 #include <micro/container/ring_buffer.hpp>
 #include <micro/debug/params.hpp>
 #include <micro/debug/SystemManager.hpp>
+#include <micro/port/semaphore.hpp>
 #include <micro/port/task.hpp>
 #include <micro/utils/log.hpp>
 #include <micro/utils/str_utils.hpp>

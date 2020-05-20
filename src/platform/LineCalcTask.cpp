@@ -2,6 +2,7 @@
 #include <micro/panel/CanManager.hpp>
 #include <micro/panel/panelVersion.h>
 #include <micro/utils/algorithm.hpp>
+#include <micro/port/queue.hpp>
 #include <micro/port/task.hpp>
 #include <micro/utils/timer.hpp>
 

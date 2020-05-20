@@ -3,7 +3,7 @@
 #include <micro/container/vec.hpp>
 #include <micro/port/gpio.hpp>
 #include <micro/port/spi.hpp>
-#include <micro/port/task.hpp>
+#include <micro/port/semaphore.hpp>
 
 #include <SensorHandlerData.hpp>
 
