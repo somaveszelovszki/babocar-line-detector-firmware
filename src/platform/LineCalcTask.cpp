@@ -1,12 +1,12 @@
+#include <cfg_board.hpp>
 #include <micro/debug/SystemManager.hpp>
 #include <micro/panel/CanManager.hpp>
-#include <micro/panel/panelVersion.h>
+#include <micro/panel/panelVersion.hpp>
 #include <micro/utils/algorithm.hpp>
 #include <micro/port/queue.hpp>
 #include <micro/port/task.hpp>
 #include <micro/utils/timer.hpp>
 
-#include <cfg_board.h>
 #include <LineFilter.hpp>
 #include <LinePatternCalculator.hpp>
 #include <LinePosCalculator.hpp>
@@ -18,7 +18,7 @@ using namespace micro;
 
 extern queue_t<measurements_t, 1> measurementsQueue;
 
-CanManager vehicleCanManager(can_Vehicle, canRxFifo_Vehicle, millisecond_t(50));
+CanManager vehicleCanManager(can_Vehicle, millisecond_t(50));
 queue_t<SensorHandlerData, 1> sensorHandlerDataQueue;
 
 namespace {
@@ -93,9 +93,9 @@ extern "C" void runLineCalcTask(void) {
                 scanRangeCenter = round(LinePosCalculator::linePosToOptoPos(avgLinePos));
             }
 
-            if (PANEL_VERSION_FRONT == panelVersion_get()) {
+            if (PANEL_VERSION_FRONT == getPanelVersion()) {
                 vehicleCanManager.send(can::FrontLines(lines));
-            } else if (PANEL_VERSION_REAR == panelVersion_get()) {
+            } else if (PANEL_VERSION_REAR == getPanelVersion()) {
                 vehicleCanManager.send(can::RearLines(lines));
             }
 

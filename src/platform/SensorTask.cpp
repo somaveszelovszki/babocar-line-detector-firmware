@@ -1,3 +1,4 @@
+#include <cfg_board.hpp>
 #include <micro/debug/DebugLed.hpp>
 #include <micro/debug/SystemManager.hpp>
 #include <micro/panel/CanManager.hpp>
@@ -7,7 +8,6 @@
 #include <micro/utils/log.hpp>
 #include <micro/utils/str_utils.hpp>
 
-#include <cfg_board.h>
 #include <SensorHandler.hpp>
 
 using namespace micro;
@@ -19,19 +19,7 @@ queue_t<measurements_t, 1> measurementsQueue;
 
 namespace {
 
-SensorHandler sensorHandler(spi_Sensor,
-    {
-        { gpio_SS_ADC0, gpioPin_SS_ADC0 },
-        { gpio_SS_ADC1, gpioPin_SS_ADC1 },
-        { gpio_SS_ADC2, gpioPin_SS_ADC2 },
-        { gpio_SS_ADC3, gpioPin_SS_ADC3 },
-        { gpio_SS_ADC4, gpioPin_SS_ADC4 },
-        { gpio_SS_ADC5, gpioPin_SS_ADC5 }
-    },
-    { gpio_LedDrivers, gpioPin_LE_OPTO },
-    { gpio_LedDrivers, gpioPin_OE_OPTO },
-    { gpio_LedDrivers, gpioPin_LE_IND },
-    { gpio_LedDrivers, gpioPin_LE_IND });
+SensorHandler sensorHandler(spi_Sensor, { gpio_SS_ADC0, gpio_SS_ADC1, gpio_SS_ADC2, gpio_SS_ADC3, gpio_SS_ADC4, gpio_SS_ADC5 }, gpio_LE_OPTO, gpio_OE_OPTO, gpio_LE_IND, gpio_LE_IND);
 
 uint8_t scanRangeRadius = 0;
 

@@ -22,13 +22,13 @@ constexpr uint8_t OPTO_BUFFERS[8][cfg::NUM_SENSORS / 8] = { // selects every 8th
 
 } // namespace
 
-SensorHandler::SensorHandler(SPI_HandleTypeDef *hspi,
+SensorHandler::SensorHandler(const spi_t& spi,
     const micro::vec<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
     const micro::gpio_t& LE_opto,
     const micro::gpio_t& OE_opto,
     const micro::gpio_t& LE_ind,
     const micro::gpio_t& OE_ind)
-    : hspi_(hspi)
+    : spi_(spi)
     , adcEnPins_(adcEnPins)
     , LE_opto_(LE_opto)
     , OE_opto_(OE_opto)
@@ -50,7 +50,7 @@ void SensorHandler::initialize() {
 void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t first, const uint8_t last) {
     for (uint8_t optoIdx = 0; optoIdx < 8; ++optoIdx) {
 
-        HAL_SPI_Transmit_DMA(this->hspi_, (uint8_t*)OPTO_BUFFERS[optoIdx], cfg::NUM_SENSORS / 8);
+        spi_exchange(this->spi_, (uint8_t*)OPTO_BUFFERS[optoIdx], nullptr, cfg::NUM_SENSORS / 8);
 
         HAL_GPIO_WritePin(this->OE_opto_.instance, this->OE_opto_.pin, GPIO_PIN_SET);
         HAL_GPIO_WritePin(this->LE_opto_.instance, this->LE_opto_.pin, GPIO_PIN_SET);
@@ -63,9 +63,9 @@ void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t 
             if (micro::isBtw(pos, first, last)) {
                 const gpio_t& adcEnPin = this->adcEnPins_[adcIdx];
 
-                HAL_GPIO_WritePin(adcEnPin.instance, adcEnPin.pin, GPIO_PIN_RESET);
+                gpio_write(adcEnPin, gpioPinState_t::RESET);
                 measurements[pos] = this->readAdc(optoIdx);
-                HAL_GPIO_WritePin(adcEnPin.instance, adcEnPin.pin, GPIO_PIN_SET);
+                gpio_write(adcEnPin, gpioPinState_t::SET);
             }
         }
     }
@@ -80,7 +80,7 @@ void SensorHandler::writeLeds(const leds_t& leds) {
         }
     }
 
-    HAL_SPI_Transmit_DMA(this->hspi_, outBuffer, ARRAY_SIZE(outBuffer));
+    spi_exchange(this->spi_, outBuffer, nullptr, ARRAY_SIZE(outBuffer));
 
     HAL_GPIO_WritePin(this->OE_ind_.instance, this->OE_ind_.pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(this->LE_ind_.instance, this->LE_ind_.pin, GPIO_PIN_SET);
@@ -103,6 +103,6 @@ uint8_t SensorHandler::readAdc(const uint8_t channel) {
     //
     // @see MAX1110CAP+ datasheet for details
     adcBuffer[0] =  0b10001111 | ((channel & 0b00000001) << 6) | ((channel & 0b00000010) << 3) | ((channel & 0b00000100) << 3);
-    HAL_SPI_TransmitReceive_DMA(this->hspi_, adcBuffer, adcBuffer, ARRAY_SIZE(adcBuffer));
+    spi_exchange(this->spi_, adcBuffer, adcBuffer, ARRAY_SIZE(adcBuffer));
     return (adcBuffer[1] << 2) | (adcBuffer[2] >> 6); // ADC value format: 00000000 00XXXXXX XX000000
 }

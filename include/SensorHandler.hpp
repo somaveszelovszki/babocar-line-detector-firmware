@@ -9,7 +9,7 @@
 
 class SensorHandler {
 public:
-    SensorHandler(SPI_HandleTypeDef *hspi,
+    SensorHandler(const micro::spi_t& spi,
         const micro::vec<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
         const micro::gpio_t& LE_opto,
         const micro::gpio_t& OE_opto,
@@ -28,7 +28,7 @@ private:
 
 private:
     micro::semaphore_t semaphore_;
-    SPI_HandleTypeDef * const hspi_;
+    const micro::spi_t spi_;
     const micro::vec<micro::gpio_t, cfg::NUM_SENSORS / 8> adcEnPins_;
     const micro::gpio_t LE_opto_;
     const micro::gpio_t OE_opto_;
