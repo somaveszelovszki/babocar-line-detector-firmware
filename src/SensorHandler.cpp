@@ -36,6 +36,7 @@ SensorHandler::SensorHandler(const spi_t& spi,
     , OE_ind_(OE_ind) {}
 
 void SensorHandler::initialize() {
+#if defined STM32
     HAL_GPIO_WritePin(this->LE_opto_.instance, this->LE_opto_.pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(this->OE_opto_.instance, this->OE_opto_.pin, GPIO_PIN_SET);
 
@@ -45,6 +46,7 @@ void SensorHandler::initialize() {
     for (const gpio_t& adcEnPin : this->adcEnPins_) {
         HAL_GPIO_WritePin(adcEnPin.instance, adcEnPin.pin, GPIO_PIN_SET);
     }
+#endif // STM32
 }
 
 void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t first, const uint8_t last) {
@@ -52,10 +54,12 @@ void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t 
 
         spi_exchange(this->spi_, (uint8_t*)OPTO_BUFFERS[optoIdx], nullptr, cfg::NUM_SENSORS / 8);
 
+#if defined STM32
         HAL_GPIO_WritePin(this->OE_opto_.instance, this->OE_opto_.pin, GPIO_PIN_SET);
         HAL_GPIO_WritePin(this->LE_opto_.instance, this->LE_opto_.pin, GPIO_PIN_SET);
         HAL_GPIO_WritePin(this->LE_opto_.instance, this->LE_opto_.pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(this->OE_opto_.instance, this->OE_opto_.pin, GPIO_PIN_RESET);
+#endif // STM32
 
         for (uint8_t adcIdx = 0; adcIdx < cfg::NUM_SENSORS / 8; ++adcIdx) {
             const uint8_t pos = adcIdx * 8 + optoIdx;
@@ -82,10 +86,12 @@ void SensorHandler::writeLeds(const leds_t& leds) {
 
     spi_exchange(this->spi_, outBuffer, nullptr, ARRAY_SIZE(outBuffer));
 
+#if defined STM32
     HAL_GPIO_WritePin(this->OE_ind_.instance, this->OE_ind_.pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(this->LE_ind_.instance, this->LE_ind_.pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(this->LE_ind_.instance, this->LE_ind_.pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(this->OE_ind_.instance, this->OE_ind_.pin, GPIO_PIN_RESET);
+#endif // STM32
 }
 
 void SensorHandler::onTxFinished() {
