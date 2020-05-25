@@ -1,7 +1,7 @@
-#include <cfg_board.hpp>
 #include <micro/panel/panelVersion.hpp>
 #include <micro/port/timer.hpp>
 
+#include <cfg_board.hpp>
 #include <system_init.h>
 
 #include <FreeRTOS.h>
@@ -12,7 +12,7 @@ using namespace micro;
 extern "C" void Error_Handler(void);
 
 extern "C" void system_init(void) {
-    if (PANEL_VERSION != getPanelVersion()) {
+    if (PANEL_VERSION_FRONT != getPanelVersion() && PANEL_VERSION_REAR != getPanelVersion()) {
         Error_Handler();
     }
 
