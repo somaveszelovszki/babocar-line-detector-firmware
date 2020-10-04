@@ -40,10 +40,8 @@ extern "C" void runSensorTask(void) {
     SystemManager::instance().registerTask();
 
     while (true) {
-        sensorHandler.readSensors(measurements, getScanRange());
-        measurementsQueue.send(measurements, millisecond_t(5));
-
         sensorHandler.writeLeds(sensorControl.leds);
+        sensorHandler.readSensors(measurements, getScanRange());
 
         measurementsQueue.send(measurements);
         sensorControlDataQueue.receive(sensorControl);
