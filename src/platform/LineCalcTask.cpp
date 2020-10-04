@@ -17,6 +17,7 @@
 using namespace micro;
 
 extern queue_t<Measurements, 1> measurementsQueue;
+extern queue_t<uint8_t, 1> numFailingTasksQueue;
 
 CanManager vehicleCanManager(can_Vehicle, millisecond_t(50));
 queue_t<SensorControlData, 1> sensorControlDataQueue;
@@ -62,7 +63,8 @@ const Leds& updateFailureLeds() {
 void updateSensorControl(const Lines& lines) {
     static constexpr uint8_t LED_RADIUS = 1;
 
-    if (vehicleCanManager.hasRxTimedOut()) {
+    uint8_t numFailingTasks = 0;
+    if (!numFailingTasksQueue.peek(numFailingTasks, millisecond_t(0)) || numFailingTasks > 0) {
         sensorControl.leds = updateFailureLeds();
     } else {
         sensorControl.leds.reset();
@@ -92,6 +94,7 @@ void updateSensorControl(const Lines& lines) {
 } // namespace
 
 extern "C" void runLineCalcTask(void) {
+    SystemManager::instance().registerTask();
 
     vehicleCanFrameHandler.registerHandler(can::LongitudinalState::id(), [] (const uint8_t * const data) {
         reinterpret_cast<const can::LongitudinalState*>(data)->acquire(speed, distance);
@@ -119,6 +122,8 @@ extern "C" void runLineCalcTask(void) {
         while (vehicleCanManager.read(vehicleCanSubsciberId, rxCanFrame)) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
+
+        SystemManager::instance().notify(!vehicleCanManager.hasRxTimedOut());
 
         updateSensorControl(lines);
         sensorControlDataQueue.send(sensorControl);

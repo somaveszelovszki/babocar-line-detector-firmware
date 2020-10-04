@@ -37,6 +37,7 @@ std::pair<uint8_t, uint8_t> getScanRange() {
 } // namespace
 
 extern "C" void runSensorTask(void) {
+    SystemManager::instance().registerTask();
 
     while (true) {
         sensorHandler.readSensors(measurements, getScanRange());
