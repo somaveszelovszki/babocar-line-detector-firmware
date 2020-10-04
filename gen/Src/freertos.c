@@ -127,7 +127,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of SensorTask */
-  osThreadStaticDef(SensorTask, StartSensorTask, osPriorityRealtime, 0, 1024, SensorTaskBuffer, &SensorTaskControlBlock);
+  osThreadStaticDef(SensorTask, StartSensorTask, osPriorityNormal, 0, 1024, SensorTaskBuffer, &SensorTaskControlBlock);
   SensorTaskHandle = osThreadCreate(osThread(SensorTask), NULL);
 
   /* definition and creation of LineCalcTask */
