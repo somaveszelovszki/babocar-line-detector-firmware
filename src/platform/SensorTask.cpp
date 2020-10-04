@@ -12,68 +12,40 @@
 
 using namespace micro;
 
-extern CanManager vehicleCanManager;
-extern queue_t<SensorHandlerData, 1> sensorHandlerDataQueue;
-
-queue_t<measurements_t, 1> measurementsQueue;
+extern queue_t<SensorControlData, 1> sensorControlDataQueue;
+queue_t<Measurements, 1> measurementsQueue;
 
 namespace {
 
-SensorHandler sensorHandler(spi_Sensor, { gpio_SS_ADC0, gpio_SS_ADC1, gpio_SS_ADC2, gpio_SS_ADC3, gpio_SS_ADC4, gpio_SS_ADC5 }, gpio_LE_OPTO, gpio_OE_OPTO, gpio_LE_IND, gpio_LE_IND);
+SensorHandler sensorHandler(spi_Sensor, { gpio_SS_ADC0, gpio_SS_ADC1, gpio_SS_ADC2, gpio_SS_ADC3, gpio_SS_ADC4, gpio_SS_ADC5 },
+    gpio_LE_OPTO, gpio_OE_OPTO, gpio_LE_IND, gpio_LE_IND);
 
-uint8_t scanRangeRadius = 0;
+Measurements measurements;
+SensorControlData sensorControl;
 
-const leds_t& updateFailureLeds() {
+std::pair<uint8_t, uint8_t> getScanRange() {
+    std::pair<uint8_t, uint8_t> range = { 0, cfg::NUM_SENSORS - 1 };
 
-    static leds_t leds;
-    static Timer blinkTimer(DebugLed::period_NOK());
-
-    if (blinkTimer.checkTimeout()) {
-        for (uint8_t i = 0; i < cfg::NUM_SENSORS; i += 8) {
-            leds.set(i, !leds.get(i));
-        }
+    if (sensorControl.scanRangeRadius > 0) {
+        range.first  = micro::max(sensorControl.scanRangeCenter, sensorControl.scanRangeRadius) - sensorControl.scanRangeRadius;
+        range.second = micro::min(sensorControl.scanRangeCenter + sensorControl.scanRangeRadius, cfg::NUM_SENSORS - 1);
     }
-    return leds;
+
+    return range;
 }
 
 } // namespace
 
 extern "C" void runSensorTask(void) {
 
-    SystemManager::instance().registerTask();
-
-    measurements_t measurements;
-    SensorHandlerData sensorHandlerData;
-
-    canFrame_t rxCanFrame;
-    CanFrameHandler vehicleCanFrameHandler;
-
-    vehicleCanFrameHandler.registerHandler(can::LineDetectControl::id(), [] (const uint8_t * const data) {
-        bool indicatorLedsEnabled;
-        linePatternDomain_t domain;
-        reinterpret_cast<const can::LineDetectControl*>(data)->acquire(indicatorLedsEnabled, scanRangeRadius, domain);
-    });
-
-    const CanManager::subscriberId_t vehicleCanSubsciberId = vehicleCanManager.registerSubscriber(vehicleCanFrameHandler.identifiers());
-
-    sensorHandler.initialize();
-
     while (true) {
-        while (vehicleCanManager.read(vehicleCanSubsciberId, rxCanFrame)) {
-            vehicleCanFrameHandler.handleFrame(rxCanFrame);
-        }
-
-        const uint8_t first = scanRangeRadius > 0 ? sensorHandlerData.scanRangeCenter - scanRangeRadius : 0;
-        const uint8_t last  = scanRangeRadius > 0 ? sensorHandlerData.scanRangeCenter + scanRangeRadius : ARRAY_SIZE(measurements) - 1;
-
-        sensorHandler.readSensors(measurements, first, last);
+        sensorHandler.readSensors(measurements, getScanRange());
         measurementsQueue.send(measurements, millisecond_t(5));
 
-        sensorHandlerDataQueue.receive(sensorHandlerData, millisecond_t(0));
+        sensorHandler.writeLeds(sensorControl.leds);
 
-        sensorHandler.writeLeds(SystemManager::instance().failingTasks().size() > 0 ? sensorHandlerData.leds : updateFailureLeds());
-
-        SystemManager::instance().notify(!vehicleCanManager.hasRxTimedOut());
+        measurementsQueue.send(measurements);
+        sensorControlDataQueue.receive(sensorControl);
     }
 }
 

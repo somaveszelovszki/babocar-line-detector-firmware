@@ -5,7 +5,9 @@
 #include <micro/port/spi.hpp>
 #include <micro/port/semaphore.hpp>
 
-#include <SensorHandlerData.hpp>
+#include <SensorData.hpp>
+
+#include <utility>
 
 class SensorHandler {
 public:
@@ -18,13 +20,14 @@ public:
 
     void initialize();
 
-    void readSensors(measurements_t& OUT measurements, const uint8_t first, const uint8_t last);
-    void writeLeds(const leds_t& leds);
+    void readSensors(Measurements& OUT measurements, const std::pair<uint8_t, uint8_t>& scanRange);
+    void writeLeds(const Leds& leds);
 
     void onTxFinished();
 
 private:
     uint8_t readAdc(const uint8_t channel);
+    void exchangeData(const uint8_t *txBuf, uint8_t *rxBuf, const uint32_t size);
 
 private:
     micro::semaphore_t semaphore_;

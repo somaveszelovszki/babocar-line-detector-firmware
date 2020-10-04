@@ -17,13 +17,13 @@ namespace {
 
 constexpr uint32_t NUM_TESTS_PER_SCENARIO = 1;
 
-linePositions_t addNoise(const linePositions_t& linePositions) {
+LinePositions addNoise(const LinePositions& linePositions) {
 
     static constexpr millimeter_t MAX_RAND_NOISE = { 3 };
 
-    linePositions_t result = linePositions;
+    LinePositions result = linePositions;
 
-    for (linePosition_t& linePos : result) {
+    for (LinePosition& linePos : result) {
         const millimeter_t noise = map<uint32_t, millimeter_t>(rand() % 10000, 0, 10000, -MAX_RAND_NOISE, MAX_RAND_NOISE);
         linePos.pos += noise;
     }
@@ -31,11 +31,11 @@ linePositions_t addNoise(const linePositions_t& linePositions) {
     return result;
 }
 
-linePositions_t move(const linePositions_t& linePositions, const millimeter_t distance) {
+LinePositions move(const LinePositions& linePositions, const millimeter_t distance) {
 
-    linePositions_t result = linePositions;
+    LinePositions result = linePositions;
 
-    for (linePosition_t& linePos : result) {
+    for (LinePosition& linePos : result) {
         linePos.pos += distance;
     }
 
@@ -45,7 +45,7 @@ linePositions_t move(const linePositions_t& linePositions, const millimeter_t di
 } // namespace
 
 TEST(LineFilter, one_line_few_detections) {
-    linePositions_t linePositions = { { millimeter_t(0), 1.0f } };
+    LinePositions linePositions = { { millimeter_t(0), 1.0f } };
 
     LineFilter lineFilter;
     Lines lines;
@@ -58,7 +58,7 @@ TEST(LineFilter, one_line_few_detections) {
 }
 
 TEST(LineFilter, one_line) {
-    linePositions_t linePositions = { { millimeter_t(0), 1.0f } };
+    LinePositions linePositions = { { millimeter_t(0), 1.0f } };
 
     LineFilter lineFilter;
     Lines lines;
@@ -75,8 +75,8 @@ TEST(LineFilter, one_line) {
 }
 
 TEST(LineFilter, one_line_noise) {
-    linePositions_t linePositions_base = { { millimeter_t(0), 1.0f } };
-    linePositions_t linePositions;
+    LinePositions linePositions_base = { { millimeter_t(0), 1.0f } };
+    LinePositions linePositions;
 
     LineFilter lineFilter;
     Lines lines;
@@ -94,9 +94,9 @@ TEST(LineFilter, one_line_noise) {
 }
 
 TEST(LineFilter, one_line_noise_false_positives) {
-    linePositions_t linePositions_base = { { millimeter_t(0), 1.0f } };
-    linePositions_t linePositionsFalsePositives_base = { { millimeter_t(0), 1.0f }, { millimeter_t(50), 1.0f } };
-    linePositions_t linePositions;
+    LinePositions linePositions_base = { { millimeter_t(0), 1.0f } };
+    LinePositions linePositionsFalsePositives_base = { { millimeter_t(0), 1.0f }, { millimeter_t(50), 1.0f } };
+    LinePositions linePositions;
 
     LineFilter lineFilter;
     Lines lines;
@@ -114,8 +114,8 @@ TEST(LineFilter, one_line_noise_false_positives) {
 }
 
 TEST(LineFilter, one_line_true_negatives) {
-    linePositions_t linePositions = { { millimeter_t(0), 1.0f } };
-    linePositions_t linePositionsTrueNegatives = {};
+    LinePositions linePositions = { { millimeter_t(0), 1.0f } };
+    LinePositions linePositionsTrueNegatives = {};
 
     LineFilter lineFilter;
     Lines lines;
@@ -149,8 +149,8 @@ TEST(LineFilter, one_moving_line_true_negatives) {
 
     static constexpr millimeter_t MOVE_DISTANCE = { 5 };
 
-    linePositions_t linePositions = { { millimeter_t(0), 1.0f } };
-    linePositions_t linePositionsTrueNegatives = {};
+    LinePositions linePositions = { { millimeter_t(0), 1.0f } };
+    LinePositions linePositionsTrueNegatives = {};
 
     LineFilter lineFilter;
     Lines lines;

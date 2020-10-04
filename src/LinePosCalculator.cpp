@@ -12,12 +12,12 @@ constexpr uint8_t LinePosCalculator::INTENSITY_GROUP_RADIUS;
 constexpr uint8_t LinePosCalculator::POS_CALC_GROUP_RADIUS;
 constexpr uint8_t LinePosCalculator::NUM_GROUP_INTENSITIES;
 
-linePositions_t LinePosCalculator::calculate(const measurements_t& measurements) {
+LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
 
     static constexpr uint8_t MAX_VALID_AVERAGE = 100;
     static constexpr uint8_t MAX_PROBABILITY_GROUP_INTENSITY = 120;
 
-    linePositions_t positions;
+    LinePositions positions;
     const uint8_t average = static_cast<uint8_t>(std::accumulate(measurements, &measurements[cfg::NUM_SENSORS], static_cast<uint16_t>(0)) / cfg::NUM_SENSORS);
 
     if (average < MAX_VALID_AVERAGE) {
@@ -35,7 +35,7 @@ linePositions_t LinePosCalculator::calculate(const measurements_t& measurements)
                 break;
             }
 
-            if (std::find_if(positions.begin(), positions.end(), [linePos] (const linePosition_t& pos) {
+            if (std::find_if(positions.begin(), positions.end(), [linePos] (const LinePosition& pos) {
                 return abs(pos.pos - linePos) <= cfg::MIN_LINE_DIST;
             }) == positions.end()) {
                 positions.insert({ linePos, probability });

@@ -36,35 +36,31 @@ SensorHandler::SensorHandler(const spi_t& spi,
     , OE_ind_(OE_ind) {}
 
 void SensorHandler::initialize() {
-#if defined STM32
-    HAL_GPIO_WritePin(this->LE_opto_.instance, this->LE_opto_.pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(this->OE_opto_.instance, this->OE_opto_.pin, GPIO_PIN_SET);
+    gpio_write(this->LE_opto_, gpioPinState_t::RESET);
+    gpio_write(this->OE_opto_, gpioPinState_t::SET);
 
-    HAL_GPIO_WritePin(this->LE_ind_.instance, this->LE_ind_.pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(this->OE_ind_.instance, this->OE_ind_.pin, GPIO_PIN_SET);
+    gpio_write(this->LE_ind_,  gpioPinState_t::RESET);
+    gpio_write(this->OE_ind_,  gpioPinState_t::SET);
 
     for (const gpio_t& adcEnPin : this->adcEnPins_) {
-        HAL_GPIO_WritePin(adcEnPin.instance, adcEnPin.pin, GPIO_PIN_SET);
+        gpio_write(adcEnPin, gpioPinState_t::SET);
     }
-#endif // STM32
 }
 
-void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t first, const uint8_t last) {
+void SensorHandler::readSensors(Measurements& OUT measurements, const std::pair<uint8_t, uint8_t>& scanRange) {
     for (uint8_t optoIdx = 0; optoIdx < 8; ++optoIdx) {
 
-        spi_exchange(this->spi_, (uint8_t*)OPTO_BUFFERS[optoIdx], nullptr, cfg::NUM_SENSORS / 8);
+        this->exchangeData((uint8_t*)OPTO_BUFFERS[optoIdx], nullptr, cfg::NUM_SENSORS / 8);
 
-#if defined STM32
-        HAL_GPIO_WritePin(this->OE_opto_.instance, this->OE_opto_.pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(this->LE_opto_.instance, this->LE_opto_.pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(this->LE_opto_.instance, this->LE_opto_.pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(this->OE_opto_.instance, this->OE_opto_.pin, GPIO_PIN_RESET);
-#endif // STM32
+        gpio_write(this->OE_opto_, gpioPinState_t::SET);
+        gpio_write(this->LE_opto_, gpioPinState_t::SET);
+        gpio_write(this->LE_opto_, gpioPinState_t::RESET);
+        gpio_write(this->OE_opto_, gpioPinState_t::RESET);
 
         for (uint8_t adcIdx = 0; adcIdx < cfg::NUM_SENSORS / 8; ++adcIdx) {
             const uint8_t pos = adcIdx * 8 + optoIdx;
 
-            if (micro::isBtw(pos, first, last)) {
+            if (micro::isBtw(pos, scanRange.first, scanRange.second)) {
                 const gpio_t& adcEnPin = this->adcEnPins_[adcIdx];
 
                 gpio_write(adcEnPin, gpioPinState_t::RESET);
@@ -75,7 +71,7 @@ void SensorHandler::readSensors(measurements_t& OUT measurements, const uint8_t 
     }
 }
 
-void SensorHandler::writeLeds(const leds_t& leds) {
+void SensorHandler::writeLeds(const Leds& leds) {
     uint8_t outBuffer[2 * cfg::NUM_SENSORS / 8] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     for (uint32_t i = 0; i < cfg::NUM_SENSORS; ++i) {
@@ -84,14 +80,12 @@ void SensorHandler::writeLeds(const leds_t& leds) {
         }
     }
 
-    spi_exchange(this->spi_, outBuffer, nullptr, ARRAY_SIZE(outBuffer));
+    this->exchangeData(outBuffer, nullptr, ARRAY_SIZE(outBuffer));
 
-#if defined STM32
-    HAL_GPIO_WritePin(this->OE_ind_.instance, this->OE_ind_.pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(this->LE_ind_.instance, this->LE_ind_.pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(this->LE_ind_.instance, this->LE_ind_.pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(this->OE_ind_.instance, this->OE_ind_.pin, GPIO_PIN_RESET);
-#endif // STM32
+    gpio_write(this->OE_ind_, gpioPinState_t::SET);
+    gpio_write(this->LE_ind_, gpioPinState_t::SET);
+    gpio_write(this->LE_ind_, gpioPinState_t::RESET);
+    gpio_write(this->OE_ind_, gpioPinState_t::RESET);
 }
 
 void SensorHandler::onTxFinished() {
@@ -109,6 +103,11 @@ uint8_t SensorHandler::readAdc(const uint8_t channel) {
     //
     // @see MAX1110CAP+ datasheet for details
     adcBuffer[0] =  0b10001111 | ((channel & 0b00000001) << 6) | ((channel & 0b00000010) << 3) | ((channel & 0b00000100) << 3);
-    spi_exchange(this->spi_, adcBuffer, adcBuffer, ARRAY_SIZE(adcBuffer));
+    this->exchangeData(adcBuffer, adcBuffer, ARRAY_SIZE(adcBuffer));
     return (adcBuffer[1] << 2) | (adcBuffer[2] >> 6); // ADC value format: 00000000 00XXXXXX XX000000
+}
+
+void SensorHandler::exchangeData(const uint8_t *txBuf, uint8_t *rxBuf, const uint32_t size) {
+    micro::spi_exchange(this->spi_, txBuf, rxBuf, size);
+    this->semaphore_.take(millisecond_t(2));
 }

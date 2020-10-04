@@ -13,7 +13,7 @@
 
 class LineFilter {
 public:
-    micro::Lines update(const linePositions_t& detectedLines);
+    micro::Lines update(const LinePositions& detectedLines);
 
 private:
     typedef micro::infinite_buffer<micro::millimeter_t, 10> linePosSamples_t;

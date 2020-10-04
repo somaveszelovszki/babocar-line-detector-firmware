@@ -4,11 +4,11 @@
 
 using namespace micro;
 
-Lines LineFilter::update(const linePositions_t& detectedLines) {
+Lines LineFilter::update(const LinePositions& detectedLines) {
 
-    typedef vec<linePositions_t::const_iterator, cfg::MAX_NUM_FILTERED_LINES> linePositionIterators_t;
+    typedef vec<LinePositions::const_iterator, cfg::MAX_NUM_FILTERED_LINES> linePositionIterators_t;
     linePositionIterators_t unmatchedDetectedLines;
-    for (linePositions_t::const_iterator it = detectedLines.begin(); it != detectedLines.end(); ++it) {
+    for (LinePositions::const_iterator it = detectedLines.begin(); it != detectedLines.end(); ++it) {
         unmatchedDetectedLines.push_back(it);
     }
 
@@ -86,7 +86,7 @@ Lines LineFilter::update(const linePositions_t& detectedLines) {
     }
 
     // added unmatched detected lines to the filtered lines list
-    for (linePositions_t::const_iterator it : unmatchedDetectedLines) {
+    for (LinePositions::const_iterator it : unmatchedDetectedLines) {
         if (it->probability >= cfg::MIN_LINE_APPEAR_PROBABILITY) {
             filteredLine_t newLine;
             newLine.id = this->generateNewLineId();

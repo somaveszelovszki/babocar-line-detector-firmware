@@ -5,21 +5,21 @@
 #include <micro/utils/units.hpp>
 
 #include <cfg_sensor.hpp>
-#include <SensorHandlerData.hpp>
+#include <SensorData.hpp>
 
-struct linePosition_t {
+struct LinePosition {
     micro::millimeter_t pos;
     float probability;
 
-    bool operator<(const linePosition_t& other) const { return this->pos < other.pos; }
-    bool operator>(const linePosition_t& other) const { return this->pos > other.pos; }
+    bool operator<(const LinePosition& other) const { return this->pos < other.pos; }
+    bool operator>(const LinePosition& other) const { return this->pos > other.pos; }
 };
 
-typedef micro::sorted_vec<linePosition_t, micro::Line::MAX_NUM_LINES> linePositions_t;
+typedef micro::sorted_vec<LinePosition, micro::Line::MAX_NUM_LINES> LinePositions;
 
 class LinePosCalculator {
 public:
-    linePositions_t calculate(const measurements_t& measurements);
+    LinePositions calculate(const Measurements& measurements);
 
     static micro::millimeter_t optoIdxToLinePos(const float optoIdx);
     static float linePosToOptoPos(const micro::millimeter_t linePos);

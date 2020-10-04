@@ -17,7 +17,7 @@ namespace {
 
 constexpr uint32_t NUM_TESTS_PER_SCENARIO = 10000;
 
-void createMeasurements(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines, measurements_t& meas) {
+void createMeasurements(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines, Measurements& meas) {
 
     static constexpr std::pair<uint8_t, uint8_t> TYPICAL_RANGE = { 20, 170 };
     static constexpr double RAND_WEIGHT = 0.25;
@@ -41,7 +41,7 @@ void createMeasurements(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines, mea
 
 void test(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines) {
     LinePosCalculator linePosCalculator;
-    measurements_t measurements;
+    Measurements measurements;
 
     for (uint32_t i = 0; i < NUM_TESTS_PER_SCENARIO; ++i) {
         createMeasurements(lines, measurements);
@@ -58,7 +58,7 @@ void test(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines) {
         }
 #endif // PRINT_MEAS
 
-        const linePositions_t linePositions = linePosCalculator.calculate(measurements);
+        const LinePositions linePositions = linePosCalculator.calculate(measurements);
         EXPECT_EQ(lines.size(), linePositions.size());
         for (uint8_t i = 0; i < linePositions.size(); ++i) {
             EXPECT_NEAR_UNIT(lines[i], linePositions[i].pos, millimeter_t(4));

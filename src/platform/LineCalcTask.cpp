@@ -10,99 +10,118 @@
 #include <LineFilter.hpp>
 #include <LinePatternCalculator.hpp>
 #include <LinePosCalculator.hpp>
-#include <SensorHandlerData.hpp>
+#include <SensorData.hpp>
 
 #include <numeric>
 
 using namespace micro;
 
-extern queue_t<measurements_t, 1> measurementsQueue;
+extern queue_t<Measurements, 1> measurementsQueue;
 
 CanManager vehicleCanManager(can_Vehicle, millisecond_t(50));
-queue_t<SensorHandlerData, 1> sensorHandlerDataQueue;
+queue_t<SensorControlData, 1> sensorControlDataQueue;
 
 namespace {
 
+LinePosCalculator linePosCalc;
+LineFilter lineFilter;
+LinePatternCalculator linePatternCalc;
+
+linePatternDomain_t domain = linePatternDomain_t::Labyrinth;
+m_per_sec_t speed;
+meter_t distance;
 bool indicatorLedsEnabled = false;
-uint8_t scanRangeCenter = 0;
 
-void sendSensorHandlerData(const Lines& lines) {
+Measurements measurements;
+SensorControlData sensorControl;
 
+canFrame_t rxCanFrame;
+CanFrameHandler vehicleCanFrameHandler;
+
+const Leds& updateFailureLeds() {
+
+    static Leds leds;
+    static Timer animationTimer(millisecond_t(25));
+    static uint8_t pos = 0;
+    static Sign dir = Sign::POSITIVE;
+
+    if (animationTimer.checkTimeout()) {
+        leds.reset();
+
+        pos += dir * 1;
+        if (0 == pos || cfg::NUM_SENSORS - 1 == pos) {
+            dir = -dir;
+        }
+
+        leds.set(pos, true);
+    }
+
+    return leds;
+}
+
+void updateSensorControl(const Lines& lines) {
     static constexpr uint8_t LED_RADIUS = 1;
-    leds_t leds;
 
-    if (indicatorLedsEnabled) {
-        for (const Line& l : lines) {
-            const uint8_t centerIdx = static_cast<uint8_t>(round(LinePosCalculator::linePosToOptoPos(l.pos)));
+    if (vehicleCanManager.hasRxTimedOut()) {
+        sensorControl.leds = updateFailureLeds();
+    } else {
+        sensorControl.leds.reset();
 
-            const uint8_t startIdx = max<uint8_t>(centerIdx, LED_RADIUS) - LED_RADIUS;
-            const uint8_t endIdx = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
+        if (indicatorLedsEnabled) {
+            for (const Line& l : lines) {
+                const uint8_t centerIdx = static_cast<uint8_t>(round(LinePosCalculator::linePosToOptoPos(l.pos)));
 
-            for (uint8_t i = startIdx; i < endIdx; ++i) {
-                leds.set(i, true);
+                const uint8_t startIdx = max<uint8_t>(centerIdx, LED_RADIUS) - LED_RADIUS;
+                const uint8_t endIdx = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
+
+                for (uint8_t i = startIdx; i < endIdx; ++i) {
+                    sensorControl.leds.set(i, true);
+                }
             }
         }
     }
 
-    sensorHandlerDataQueue.overwrite({ leds, scanRangeCenter });
+    if (lines.size()) {
+        const millimeter_t avgLinePos = std::accumulate(lines.begin(), lines.end(), millimeter_t(0),
+            [] (const millimeter_t& sum, const Line& line) { return sum + line.pos; }) / lines.size();
+
+        sensorControl.scanRangeCenter = round(LinePosCalculator::linePosToOptoPos(avgLinePos));
+    }
 }
 
 } // namespace
 
 extern "C" void runLineCalcTask(void) {
 
-    SystemManager::instance().registerTask();
-
-    measurements_t measurements;
-    LinePosCalculator linePosCalc;
-    LineFilter lineFilter;
-    LinePatternCalculator linePatternCalc;
-
-    linePatternDomain_t domain = linePatternDomain_t::Labyrinth;
-    m_per_sec_t speed;
-    meter_t distance;
-
-    canFrame_t rxCanFrame;
-    CanFrameHandler vehicleCanFrameHandler;
-
-    vehicleCanFrameHandler.registerHandler(can::LongitudinalState::id(), [&speed, &distance] (const uint8_t * const data) {
+    vehicleCanFrameHandler.registerHandler(can::LongitudinalState::id(), [] (const uint8_t * const data) {
         reinterpret_cast<const can::LongitudinalState*>(data)->acquire(speed, distance);
     });
 
-    vehicleCanFrameHandler.registerHandler(can::LineDetectControl::id(), [&domain] (const uint8_t * const data) {
-        uint8_t scanRangeRadius;
-        reinterpret_cast<const can::LineDetectControl*>(data)->acquire(indicatorLedsEnabled, scanRangeRadius, domain);
+    vehicleCanFrameHandler.registerHandler(can::LineDetectControl::id(), [] (const uint8_t * const data) {
+        reinterpret_cast<const can::LineDetectControl*>(data)->acquire(indicatorLedsEnabled, sensorControl.scanRangeRadius, domain);
     });
 
     const CanManager::subscriberId_t vehicleCanSubsciberId = vehicleCanManager.registerSubscriber(vehicleCanFrameHandler.identifiers());
 
     while (true) {
+        measurementsQueue.receive(measurements);
+
+        const LinePositions linePositions = linePosCalc.calculate(measurements);
+        const Lines lines = lineFilter.update(linePositions);
+        linePatternCalc.update(domain, lines, distance);
+
+        if (PANEL_VERSION_FRONT == getPanelVersion()) {
+            vehicleCanManager.send(can::FrontLines(lines));
+        } else if (PANEL_VERSION_REAR == getPanelVersion()) {
+            vehicleCanManager.send(can::RearLines(lines));
+        }
+
         while (vehicleCanManager.read(vehicleCanSubsciberId, rxCanFrame)) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
 
-        if (measurementsQueue.receive(measurements, millisecond_t(5))) {
-            const linePositions_t linePositions = linePosCalc.calculate(measurements);
-            const Lines lines = lineFilter.update(linePositions);
-            linePatternCalc.update(domain, lines, distance);
-
-            if (lines.size()) {
-                const millimeter_t avgLinePos = std::accumulate(lines.begin(), lines.end(), millimeter_t(0),
-                    [] (const millimeter_t& sum, const Line& line) { return sum + line.pos; });
-
-                scanRangeCenter = round(LinePosCalculator::linePosToOptoPos(avgLinePos));
-            }
-
-            if (PANEL_VERSION_FRONT == getPanelVersion()) {
-                vehicleCanManager.send(can::FrontLines(lines));
-            } else if (PANEL_VERSION_REAR == getPanelVersion()) {
-                vehicleCanManager.send(can::RearLines(lines));
-            }
-
-            sendSensorHandlerData(lines);
-
-            SystemManager::instance().notify(!vehicleCanManager.hasRxTimedOut());
-        }
+        updateSensorControl(lines);
+        sensorControlDataQueue.send(sensorControl);
     }
 }
 
