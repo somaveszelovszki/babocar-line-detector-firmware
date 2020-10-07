@@ -76,7 +76,7 @@ void SensorHandler::writeLeds(const Leds& leds) {
 
     for (uint32_t i = 0; i < cfg::NUM_SENSORS; ++i) {
         if (leds.get(i)) {
-            outBuffer[(cfg::NUM_SENSORS + i) / 8] |= (1 << (i % 8));
+            outBuffer[(cfg::NUM_SENSORS + i) / 8] |= (1 << (8 - (i % 8) - 1));
         }
     }
 
