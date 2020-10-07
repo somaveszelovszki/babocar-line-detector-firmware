@@ -42,7 +42,7 @@ CanFrameHandler vehicleCanFrameHandler;
 const Leds& updateFailureLeds() {
 
     static Leds leds;
-    static Timer animationTimer(millisecond_t(25));
+    static Timer animationTimer(millisecond_t(15));
     static uint8_t pos = 0;
     static Sign dir = Sign::POSITIVE;
 
