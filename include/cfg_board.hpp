@@ -16,9 +16,9 @@ extern UART_HandleTypeDef huart2;
 #define gpio_SS_ADC0            micro::gpio_t{ GPIOC, GPIO_PIN_6 }
 #define gpio_SS_ADC1            micro::gpio_t{ GPIOB, GPIO_PIN_3 }
 #define gpio_SS_ADC2            micro::gpio_t{ GPIOA, GPIO_PIN_15 }
-#define gpio_SS_ADC3            micro::gpio_t{ GPIOC, GPIO_PIN_13 }
+#define gpio_SS_ADC3            micro::gpio_t{ GPIOC, GPIO_PIN_15 }
 #define gpio_SS_ADC4            micro::gpio_t{ GPIOC, GPIO_PIN_14 }
-#define gpio_SS_ADC5            micro::gpio_t{ GPIOC, GPIO_PIN_15 }
+#define gpio_SS_ADC5            micro::gpio_t{ GPIOC, GPIO_PIN_13 }
 
 #define gpio_OE_OPTO            micro::gpio_t{ GPIOC, GPIO_PIN_2 }
 #define gpio_LE_OPTO            micro::gpio_t{ GPIOC, GPIO_PIN_3 }
