@@ -50,7 +50,7 @@ void SensorHandler::initialize() {
 void SensorHandler::readSensors(Measurements& OUT measurements, const std::pair<uint8_t, uint8_t>& scanRange) {
     for (uint8_t optoIdx = 0; optoIdx < 8; ++optoIdx) {
 
-        this->exchangeData((uint8_t*)OPTO_BUFFERS[optoIdx], nullptr, cfg::NUM_SENSORS / 8);
+        this->exchangeData(OPTO_BUFFERS[optoIdx], nullptr, cfg::NUM_SENSORS / 8);
 
         gpio_write(this->OE_opto_, gpioPinState_t::SET);
         gpio_write(this->LE_opto_, gpioPinState_t::SET);
@@ -69,14 +69,16 @@ void SensorHandler::readSensors(Measurements& OUT measurements, const std::pair<
             }
         }
     }
+
+    gpio_write(this->OE_opto_, gpioPinState_t::SET);
 }
 
 void SensorHandler::writeLeds(const Leds& leds) {
-    uint8_t outBuffer[2 * cfg::NUM_SENSORS / 8] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    uint8_t outBuffer[cfg::NUM_SENSORS / 8] = { 0, 0, 0, 0, 0, 0 };
 
     for (uint32_t i = 0; i < cfg::NUM_SENSORS; ++i) {
         if (leds.get(i)) {
-            outBuffer[(cfg::NUM_SENSORS + i) / 8] |= (1 << (8 - (i % 8) - 1));
+            outBuffer[i / 8] |= (1 << (8 - (i % 8) - 1));
         }
     }
 
