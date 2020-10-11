@@ -24,20 +24,40 @@ queue_t<SensorControlData, 1> sensorControlDataQueue;
 
 namespace {
 
-LinePosCalculator linePosCalc;
+constexpr std::pair<uint8_t, uint8_t> FRONT_SENSOR_LIMITS[cfg::NUM_SENSORS] = {
+//       0             1             2             3             4             5             6             7
+   { 139, 252 }, { 9,   146 }, { 14,  121 }, { 13,  170 }, { 13,  93  }, { 13,  161 }, { 13,  68  }, { 13,  133 }, // 0-7
+   { 8,   208 }, { 8,   205 }, { 4,   49  }, { 5,   104 }, { 6,   117 }, { 6,   130 }, { 7,   90  }, { 7,   116 }, // 8-15
+   { 13,  183 }, { 14,  117 }, { 13,  109 }, { 12,  118 }, { 11,  102 }, { 11,  108 }, { 11,  149 }, { 11,  170 }, // 16-23
+   { 6,   148 }, { 7,   128 }, { 10,  100 }, { 11,  120 }, { 11,  115 }, { 11,  137 }, { 11,  119 }, { 11,  124 }, // 24-31
+   { 12,  139 }, { 8,   105 }, { 6,   120 }, { 6,   104 }, { 7,   101 }, { 7,   129 }, { 9,   211 }, { 10,  213 }, // 32-39
+   { 15,  207 }, { 18,  197 }, { 18,  212 }, { 16,  197 }, { 16,  198 }, { 15,  197 }, { 15,  204 }, { 14,  200 }  // 40-47
+};
+
+constexpr std::pair<uint8_t, uint8_t> REAR_SENSOR_LIMITS[cfg::NUM_SENSORS] = {
+//       0             1             2             3             4             5             6             7
+   { 139, 252 }, { 9,   146 }, { 14,  121 }, { 13,  170 }, { 13,  93  }, { 13,  161 }, { 13,  68  }, { 13,  133 }, // 0-7
+   { 8,   208 }, { 8,   205 }, { 4,   49  }, { 5,   104 }, { 6,   117 }, { 6,   130 }, { 7,   90  }, { 7,   116 }, // 8-15
+   { 13,  183 }, { 14,  117 }, { 13,  109 }, { 12,  118 }, { 11,  102 }, { 11,  108 }, { 11,  149 }, { 11,  170 }, // 16-23
+   { 6,   148 }, { 7,   128 }, { 10,  100 }, { 11,  120 }, { 11,  115 }, { 11,  137 }, { 11,  119 }, { 11,  124 }, // 24-31
+   { 12,  139 }, { 8,   105 }, { 6,   120 }, { 6,   104 }, { 7,   101 }, { 7,   129 }, { 9,   211 }, { 10,  213 }, // 32-39
+   { 15,  207 }, { 18,  197 }, { 18,  212 }, { 16,  197 }, { 16,  198 }, { 15,  197 }, { 15,  204 }, { 14,  200 }  // 40-47
+};
+
 LineFilter lineFilter;
 LinePatternCalculator linePatternCalc;
 
 linePatternDomain_t domain = linePatternDomain_t::Labyrinth;
 m_per_sec_t speed;
 meter_t distance;
-bool indicatorLedsEnabled = false;
+bool indicatorLedsEnabled = true;
 
 Measurements measurements;
 SensorControlData sensorControl;
 
 canFrame_t rxCanFrame;
 CanFrameHandler vehicleCanFrameHandler;
+CanSubscriber::id_t vehicleCanSubscriberId = CanSubscriber::INVALID_ID;
 
 const Leds& updateFailureLeds() {
 
@@ -64,7 +84,7 @@ void updateSensorControl(const Lines& lines) {
     static constexpr uint8_t LED_RADIUS = 1;
 
     uint8_t numFailingTasks = 0;
-    if (!numFailingTasksQueue.peek(numFailingTasks, millisecond_t(0)) || numFailingTasks > 0) {
+    if (false && (!numFailingTasksQueue.peek(numFailingTasks, millisecond_t(0)) || numFailingTasks > 0)) {
         sensorControl.leds = updateFailureLeds();
     } else {
         sensorControl.leds.reset();
@@ -91,11 +111,7 @@ void updateSensorControl(const Lines& lines) {
     }
 }
 
-} // namespace
-
-extern "C" void runLineCalcTask(void) {
-    SystemManager::instance().registerTask();
-
+void initializeVehicleCan() {
     vehicleCanFrameHandler.registerHandler(can::LongitudinalState::id(), [] (const uint8_t * const data) {
         reinterpret_cast<const can::LongitudinalState*>(data)->acquire(speed, distance);
     });
@@ -104,26 +120,46 @@ extern "C" void runLineCalcTask(void) {
         reinterpret_cast<const can::LineDetectControl*>(data)->acquire(indicatorLedsEnabled, sensorControl.scanRangeRadius, domain);
     });
 
-    const CanManager::subscriberId_t vehicleCanSubsciberId = vehicleCanManager.registerSubscriber(vehicleCanFrameHandler.identifiers());
+    const CanFrameIds rxFilter = vehicleCanFrameHandler.identifiers();
+    const CanFrameIds txFilter = {};
+    vehicleCanSubscriberId = vehicleCanManager.registerSubscriber(rxFilter, txFilter);
+}
+
+} // namespace
+
+extern "C" void runLineCalcTask(void) {
+    SystemManager::instance().registerTask();
+
+    LinePosCalculator linePosCalc(PANEL_VERSION_FRONT == getPanelVersion() ? FRONT_SENSOR_LIMITS : REAR_SENSOR_LIMITS);
+
+    initializeVehicleCan();
 
     while (true) {
         measurementsQueue.receive(measurements);
+
+        measurements[0]                    = measurements[1];
+        measurements[cfg::NUM_SENSORS - 1] = measurements[cfg::NUM_SENSORS - 2];
 
         const LinePositions linePositions = linePosCalc.calculate(measurements);
         const Lines lines = lineFilter.update(linePositions);
         linePatternCalc.update(domain, lines, distance);
 
         if (PANEL_VERSION_FRONT == getPanelVersion()) {
-            vehicleCanManager.send(can::FrontLines(lines));
+            vehicleCanManager.periodicSend<can::FrontLines>(vehicleCanSubscriberId, lines);
         } else if (PANEL_VERSION_REAR == getPanelVersion()) {
-            vehicleCanManager.send(can::RearLines(lines));
+            vehicleCanManager.periodicSend<can::RearLines>(vehicleCanSubscriberId, lines);
         }
 
-        while (vehicleCanManager.read(vehicleCanSubsciberId, rxCanFrame)) {
+        while (vehicleCanManager.read(vehicleCanSubscriberId, rxCanFrame)) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
 
         SystemManager::instance().notify(!vehicleCanManager.hasRxTimedOut());
+
+//        sensorControl.leds.reset();
+//        sensorControl.leds.set(1, true);
+//        sensorControl.leds.set(3, true);
+//        sensorControl.leds.set(micro::round(speed.get()) % 48, true);
 
         updateSensorControl(lines);
         sensorControlDataQueue.send(sensorControl);

@@ -10,6 +10,8 @@
 
 #include <SensorHandler.hpp>
 
+#include <cstring>
+
 using namespace micro;
 
 extern queue_t<SensorControlData, 1> sensorControlDataQueue;

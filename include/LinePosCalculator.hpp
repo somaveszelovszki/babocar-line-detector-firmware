@@ -7,6 +7,8 @@
 #include <cfg_sensor.hpp>
 #include <SensorData.hpp>
 
+#include <utility>
+
 struct LinePosition {
     micro::millimeter_t pos;
     float probability;
@@ -19,6 +21,8 @@ typedef micro::sorted_vec<LinePosition, micro::Line::MAX_NUM_LINES> LinePosition
 
 class LinePosCalculator {
 public:
+    explicit LinePosCalculator(const std::pair<uint8_t, uint8_t> sensorLimits[cfg::NUM_SENSORS]);
+
     LinePositions calculate(const Measurements& measurements);
 
     static micro::millimeter_t optoIdxToLinePos(const float optoIdx);
@@ -31,7 +35,7 @@ private:
 
     struct groupIntensity_t {
         uint8_t centerIdx;
-        uint8_t intensity;
+        float intensity;
 
         bool operator<(const groupIntensity_t& other) const { return this->intensity < other.intensity; }
         bool operator>(const groupIntensity_t& other) const { return this->intensity > other.intensity; }
@@ -39,7 +43,10 @@ private:
 
     typedef micro::vec<groupIntensity_t, NUM_GROUP_INTENSITIES> groupIntensities_t;
 
-    static void removeOffset(const uint8_t * const measurements, uint8_t * const OUT result);
-    static groupIntensities_t calculateGroupIntensities(const uint8_t * const intensities);
-    static micro::millimeter_t calculateLinePos(const uint8_t * const intensities, const uint8_t centerIdx);
+    void normalize(const uint8_t * const measurements, float * const OUT result);
+
+    static groupIntensities_t calculateGroupIntensities(const float * const intensities);
+    static micro::millimeter_t calculateLinePos(const float * const intensities, const uint8_t centerIdx);
+
+    const std::pair<uint8_t, uint8_t> *sensorLimits_;
 };

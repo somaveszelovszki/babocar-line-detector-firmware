@@ -33,3 +33,5 @@ extern UART_HandleTypeDef huart2;
 
 #define PANEL_VERSION_FRONT     0x01
 #define PANEL_VERSION_REAR      0x00
+
+#define QUARTZ_FREQ             megahertz_t(20)
