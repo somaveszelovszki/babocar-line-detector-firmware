@@ -156,11 +156,6 @@ extern "C" void runLineCalcTask(void) {
 
         SystemManager::instance().notify(!vehicleCanManager.hasRxTimedOut());
 
-//        sensorControl.leds.reset();
-//        sensorControl.leds.set(1, true);
-//        sensorControl.leds.set(3, true);
-//        sensorControl.leds.set(micro::round(speed.get()) % 48, true);
-
         updateSensorControl(lines);
         sensorControlDataQueue.send(sensorControl);
     }
