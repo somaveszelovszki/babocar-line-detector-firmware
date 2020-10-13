@@ -30,21 +30,27 @@ LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
         groupIntensities_t groupIntensities = calculateGroupIntensities(intensities);
 
         const float minGroupIntensity = std::min_element(groupIntensities.begin(), groupIntensities.end())->intensity;
+        uint8_t lastInsertedIdx       = 255;
 
         while (positions.size() < positions.capacity() && !groupIntensities.empty()) {
 
             const groupIntensities_t::const_iterator candidate = std::max_element(groupIntensities.begin(), groupIntensities.end());
-            const millimeter_t linePos = calculateLinePos(intensities, candidate->centerIdx);
-            const float probability = map(candidate->intensity, minGroupIntensity, MAX_PROBABILITY_GROUP_INTENSITY, 0.0f, 1.0f);
 
-            if (probability < cfg::MIN_LINE_PROBABILITY) {
-                break;
-            }
+            if (micro::abs(static_cast<int32_t>(lastInsertedIdx) - static_cast<int32_t>(candidate->centerIdx)) >= 4) {
+                const millimeter_t linePos = calculateLinePos(intensities, candidate->centerIdx);
+                const float probability = map(candidate->intensity, minGroupIntensity, MAX_PROBABILITY_GROUP_INTENSITY, 0.0f, 1.0f);
 
-            if (std::find_if(positions.begin(), positions.end(), [linePos] (const LinePosition& pos) {
-                return abs(pos.pos - linePos) <= cfg::MIN_LINE_DIST;
-            }) == positions.end()) {
-                positions.insert({ linePos, probability });
+                if (probability < cfg::MIN_LINE_PROBABILITY) {
+                    break;
+                }
+
+                if (std::find_if(positions.begin(), positions.end(), [linePos] (const LinePosition& pos) {
+                    return abs(pos.pos - linePos) <= cfg::MIN_LINE_DIST;
+                }) == positions.end()) {
+                    positions.insert({ linePos, probability });
+                }
+
+                lastInsertedIdx = candidate->centerIdx;
             }
 
             groupIntensities.erase(candidate);
@@ -86,6 +92,7 @@ LinePosCalculator::groupIntensities_t LinePosCalculator::calculateGroupIntensiti
         for (int8_t subIdx = -static_cast<int8_t>(INTENSITY_GROUP_RADIUS); subIdx <= static_cast<int8_t>(INTENSITY_GROUP_RADIUS); ++subIdx) {
             groupIntensity += intensities[groupIdx + subIdx];
         }
+
         groupIntensities.push_back({ groupIdx, groupIntensity / (2 * INTENSITY_GROUP_RADIUS + 1) });
     }
     return groupIntensities;
