@@ -29,9 +29,9 @@ public:
     static float linePosToOptoPos(const micro::millimeter_t linePos);
 
 private:
-    static constexpr uint8_t INTENSITY_GROUP_RADIUS = 1;
+    static constexpr std::pair<uint8_t, uint8_t> INTENSITY_GROUP_RADIUS = { 0, 1 };
     static constexpr uint8_t POS_CALC_GROUP_RADIUS  = 2;
-    static constexpr uint8_t NUM_GROUP_INTENSITIES  = cfg::NUM_SENSORS - INTENSITY_GROUP_RADIUS * 2;
+    static constexpr uint8_t NUM_GROUP_INTENSITIES  = cfg::NUM_SENSORS - INTENSITY_GROUP_RADIUS.first - INTENSITY_GROUP_RADIUS.second;
 
     struct groupIntensity_t {
         uint8_t centerIdx;

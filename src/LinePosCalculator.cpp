@@ -8,7 +8,7 @@
 
 using namespace micro;
 
-constexpr uint8_t LinePosCalculator::INTENSITY_GROUP_RADIUS;
+constexpr std::pair<uint8_t, uint8_t> LinePosCalculator::INTENSITY_GROUP_RADIUS;
 constexpr uint8_t LinePosCalculator::POS_CALC_GROUP_RADIUS;
 constexpr uint8_t LinePosCalculator::NUM_GROUP_INTENSITIES;
 
@@ -18,7 +18,6 @@ LinePosCalculator::LinePosCalculator(const std::pair<uint8_t, uint8_t> sensorLim
 LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
 
     static constexpr float MAX_VALID_AVERAGE = 0.5f;
-    static constexpr float MAX_PROBABILITY_GROUP_INTENSITY = 0.6f;
 
     LinePositions positions;
 
@@ -38,7 +37,7 @@ LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
 
             if (micro::abs(static_cast<int32_t>(lastInsertedIdx) - static_cast<int32_t>(candidate->centerIdx)) >= 4) {
                 const millimeter_t linePos = calculateLinePos(intensities, candidate->centerIdx);
-                const float probability = map(candidate->intensity, minGroupIntensity, MAX_PROBABILITY_GROUP_INTENSITY, 0.0f, 1.0f);
+                const float probability = map(candidate->intensity, minGroupIntensity, 1.0f, 0.0f, 1.0f);
 
                 if (probability < cfg::MIN_LINE_PROBABILITY) {
                     break;
@@ -70,9 +69,11 @@ float LinePosCalculator::linePosToOptoPos(const micro::millimeter_t linePos) {
 
 void LinePosCalculator::normalize(const uint8_t * const measurements, float * const OUT result) {
 
+    float scaled[cfg::NUM_SENSORS];
+
     // removes sensor-specific offset
     for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
-        result[i] = micro::map(measurements[i], this->sensorLimits_[i].first, this->sensorLimits_[i].second, 0.0f, 1.0f);
+        scaled[i] = micro::map(measurements[i], this->sensorLimits_[i].first, this->sensorLimits_[i].second, 0.0f, 1.0f);
     }
 
     // removes dynamic light-related offset, that applies to the neighboring sensors
@@ -80,20 +81,20 @@ void LinePosCalculator::normalize(const uint8_t * const measurements, float * co
         const uint8_t startIdx = max<uint8_t>(i, cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS) - cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS;
         const uint8_t endIdx = min<uint8_t>(i + cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS + 1, cfg::NUM_SENSORS);
 
-        const float moving_min = *std::min_element(&result[startIdx], &result[endIdx]);
-        result[i] = map(result[i], moving_min, 1.0f, 0.0f, 1.0f);
+        const float moving_min = *std::min_element(&scaled[startIdx], &scaled[endIdx]);
+        result[i] = map(scaled[i], moving_min, 1.0f, 0.0f, 1.0f);
     }
 }
 
 LinePosCalculator::groupIntensities_t LinePosCalculator::calculateGroupIntensities(const float * const intensities) {
     groupIntensities_t groupIntensities;
-    for (uint8_t groupIdx = INTENSITY_GROUP_RADIUS; groupIdx < cfg::NUM_SENSORS - INTENSITY_GROUP_RADIUS; ++groupIdx) {
+    for (uint8_t groupIdx = INTENSITY_GROUP_RADIUS.first; groupIdx < cfg::NUM_SENSORS - INTENSITY_GROUP_RADIUS.second; ++groupIdx) {
         float groupIntensity = 0.0f;
-        for (int8_t subIdx = -static_cast<int8_t>(INTENSITY_GROUP_RADIUS); subIdx <= static_cast<int8_t>(INTENSITY_GROUP_RADIUS); ++subIdx) {
+        for (int8_t subIdx = -static_cast<int8_t>(INTENSITY_GROUP_RADIUS.first); subIdx <= static_cast<int8_t>(INTENSITY_GROUP_RADIUS.second); ++subIdx) {
             groupIntensity += intensities[groupIdx + subIdx];
         }
 
-        groupIntensities.push_back({ groupIdx, groupIntensity / (2 * INTENSITY_GROUP_RADIUS + 1) });
+        groupIntensities.push_back({ groupIdx, groupIntensity / (INTENSITY_GROUP_RADIUS.first + 1 + INTENSITY_GROUP_RADIUS.second) });
     }
     return groupIntensities;
 }
