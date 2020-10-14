@@ -52,24 +52,32 @@ void SensorHandler::readSensors(Measurements& OUT measurements, const std::pair<
 
         this->exchangeData(OPTO_BUFFERS[optoIdx], nullptr, cfg::NUM_SENSORS / 8);
 
-        gpio_write(this->OE_opto_, gpioPinState_t::SET);
         gpio_write(this->LE_opto_, gpioPinState_t::SET);
         gpio_write(this->LE_opto_, gpioPinState_t::RESET);
-        gpio_write(this->OE_opto_, gpioPinState_t::RESET);
 
-        for (uint8_t adcIdx = 0; adcIdx < cfg::NUM_SENSORS / 8; ++adcIdx) {
+        // first measurement always needs to be repeated, otherwise it states an invalid intensity value
+        uint8_t readCntr = 0;
+        bool repeat      = false;
+
+        for (uint8_t adcIdx = 0; adcIdx < cfg::NUM_SENSORS / 8; adcIdx = repeat ? adcIdx : adcIdx + 1) {
             const uint8_t pos = adcIdx * 8 + optoIdx;
 
             if (micro::isBtw(pos, scanRange.first, scanRange.second)) {
                 const gpio_t& adcEnPin = this->adcEnPins_[adcIdx];
 
                 gpio_write(adcEnPin, gpioPinState_t::RESET);
+                gpio_write(this->OE_opto_, gpioPinState_t::RESET);
+
                 measurements[pos] = this->readAdc(optoIdx);
+
+                gpio_write(this->OE_opto_, gpioPinState_t::SET);
                 gpio_write(adcEnPin, gpioPinState_t::SET);
+
+                repeat = !readCntr && !repeat;
+                ++readCntr;
             }
         }
     }
-
     gpio_write(this->OE_opto_, gpioPinState_t::SET);
 }
 
