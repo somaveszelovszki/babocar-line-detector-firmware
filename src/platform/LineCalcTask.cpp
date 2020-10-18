@@ -203,7 +203,10 @@ void initializeVehicleCan() {
     });
 
     const CanFrameIds rxFilter = vehicleCanFrameHandler.identifiers();
-    const CanFrameIds txFilter = {};
+    const CanFrameIds txFilter = {
+        PANEL_VERSION_FRONT == getPanelVersion() ? can::FrontLines::id() : can::RearLines::id(),
+        PANEL_VERSION_FRONT == getPanelVersion() ? can::FrontLinePattern::id() : can::RearLinePattern::id()
+    };
     vehicleCanSubscriberId = vehicleCanManager.registerSubscriber(rxFilter, txFilter);
 }
 
@@ -228,8 +231,10 @@ extern "C" void runLineCalcTask(void) {
 
         if (PANEL_VERSION_FRONT == getPanelVersion()) {
             vehicleCanManager.periodicSend<can::FrontLines>(vehicleCanSubscriberId, lines);
+            vehicleCanManager.periodicSend<can::FrontLinePattern>(vehicleCanSubscriberId, linePatternCalc.pattern());
         } else if (PANEL_VERSION_REAR == getPanelVersion()) {
             vehicleCanManager.periodicSend<can::RearLines>(vehicleCanSubscriberId, lines);
+            vehicleCanManager.periodicSend<can::RearLinePattern>(vehicleCanSubscriberId, linePatternCalc.pattern());
         }
 
         while (vehicleCanManager.read(vehicleCanSubscriberId, rxCanFrame)) {
