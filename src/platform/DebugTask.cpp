@@ -14,18 +14,6 @@ queue_t<uint8_t, 1> numFailingTasksQueue;
 
 namespace {
 
-constexpr uint32_t MAX_PARAMS_BUFFER_SIZE = 1024;
-
-ring_buffer<uint8_t[MAX_PARAMS_BUFFER_SIZE], 3> rxBuffer;
-Log::message_t txLog;
-char paramsStr[MAX_PARAMS_BUFFER_SIZE];
-semaphore_t txSemaphore;
-
-void transmit(const char * const data) {
-    uart_transmit(uart_Debug, reinterpret_cast<uint8_t*>(const_cast<char*>(data)), strlen(data));
-    txSemaphore.take(micro::numeric_limits<millisecond_t>::infinity());
-}
-
 void monitorTasks() {
     static Timer failureCheckTimer(millisecond_t(200));
     static Timer failureLogTimer(millisecond_t(1000));
@@ -55,39 +43,8 @@ void monitorTasks() {
 extern "C" void runDebugTask(void) {
     SystemManager::instance().registerTask();
 
-    uart_receive(uart_Debug, *rxBuffer.getWritableBuffer(), MAX_PARAMS_BUFFER_SIZE);
-
-    Timer debugParamsSendTimer(millisecond_t(500));
-
     while (true) {
-        if (rxBuffer.size() > 0) {
-            const char * const inCmd = reinterpret_cast<const char*>(*rxBuffer.getReadableBuffer());
-            rxBuffer.updateTail(1);
-            Params::instance().deserializeAll(inCmd, MAX_PARAMS_BUFFER_SIZE);
-        }
-
-        if (debugParamsSendTimer.checkTimeout()) {
-            Params::instance().serializeAll(paramsStr, MAX_PARAMS_BUFFER_SIZE);
-            transmit(paramsStr);
-        }
-
-        if (Log::instance().receive(txLog)) {
-            transmit(txLog);
-        }
-
         monitorTasks();
-        SystemManager::instance().notify(true);
-        os_sleep(millisecond_t(1));
+        SystemManager::instance().notify(false);
     }
-}
-
-void micro_Command_Uart_RxCpltCallback() {
-    if (MAX_PARAMS_BUFFER_SIZE > uart_Debug.handle->hdmarx->Instance->NDTR) {
-        rxBuffer.updateHead(1);
-    }
-    uart_receive(uart_Debug, *rxBuffer.getWritableBuffer(), MAX_PARAMS_BUFFER_SIZE);
-}
-
-void micro_Command_Uart_TxCpltCallback() {
-    txSemaphore.give();
 }
