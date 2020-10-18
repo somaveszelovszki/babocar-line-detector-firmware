@@ -238,7 +238,7 @@ extern "C" void runLineCalcTask(void) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
 
-        SystemManager::instance().notify(/*!vehicleCanManager.hasRxTimedOut()*/true);
+        SystemManager::instance().notify(!vehicleCanManager.hasRxTimedOut());
 
         updateSensorControl(lines);
         sensorControlDataQueue.send(sensorControl);
