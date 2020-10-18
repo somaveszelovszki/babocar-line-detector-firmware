@@ -47,6 +47,8 @@ extern "C" void runSensorTask(void) {
 
         measurementsQueue.send(measurements);
         sensorControlDataQueue.receive(sensorControl);
+
+        SystemManager::instance().notify(true);
     }
 }
 

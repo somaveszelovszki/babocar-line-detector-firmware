@@ -143,21 +143,18 @@ CanSubscriber::id_t vehicleCanSubscriberId = CanSubscriber::INVALID_ID;
 
 const Leds& updateFailureLeds() {
 
+    static constexpr float SENSOR_OFFSET = cfg::NUM_SENSORS / 2.0f - 0.5f;
+
     static Leds leds;
-    static Timer animationTimer(millisecond_t(15));
-    static uint8_t pos = 0;
-    static Sign dir = Sign::POSITIVE;
+    static Timer animationTimer(millisecond_t(1200));
 
-    if (animationTimer.checkTimeout()) {
-        leds.reset();
+    static radian_t angle = radian_t(0);
 
-        pos += dir * 1;
-        if (0 == pos || cfg::NUM_SENSORS - 1 == pos) {
-            dir = -dir;
-        }
+    animationTimer.checkTimeout();
+    angle = map(getTime(), animationTimer.startTime(), animationTimer.startTime() + animationTimer.period(), radian_t(0), 2 * PI);
 
-        leds.set(pos, true);
-    }
+    leds.reset();
+    leds.set(static_cast<uint32_t>(micro::round(SENSOR_OFFSET + micro::cos(angle) * SENSOR_OFFSET)), true);
 
     return leds;
 }
@@ -166,7 +163,7 @@ void updateSensorControl(const Lines& lines) {
     static constexpr uint8_t LED_RADIUS = 1;
 
     uint8_t numFailingTasks = 0;
-    if (false && (!numFailingTasksQueue.peek(numFailingTasks, millisecond_t(0)) || numFailingTasks > 0)) {
+    if (!numFailingTasksQueue.peek(numFailingTasks, millisecond_t(0)) || numFailingTasks > 0) {
         sensorControl.leds = updateFailureLeds();
     } else {
         sensorControl.leds.reset();
@@ -241,7 +238,7 @@ extern "C" void runLineCalcTask(void) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
 
-        SystemManager::instance().notify(!vehicleCanManager.hasRxTimedOut());
+        SystemManager::instance().notify(/*!vehicleCanManager.hasRxTimedOut()*/true);
 
         updateSensorControl(lines);
         sensorControlDataQueue.send(sensorControl);
