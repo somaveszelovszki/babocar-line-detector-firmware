@@ -29,9 +29,8 @@ public:
     static float linePosToOptoPos(const micro::millimeter_t linePos);
 
 private:
-    static constexpr std::pair<uint8_t, uint8_t> INTENSITY_GROUP_RADIUS = { 0, 1 };
-    static constexpr uint8_t POS_CALC_GROUP_RADIUS  = 2;
-    static constexpr uint8_t NUM_GROUP_INTENSITIES  = cfg::NUM_SENSORS - INTENSITY_GROUP_RADIUS.first - INTENSITY_GROUP_RADIUS.second;
+    static constexpr float INTENSITY_GROUP_RADIUS  = 0.5f;
+    static constexpr uint8_t POS_CALC_GROUP_RADIUS = 2;
 
     struct groupIntensity_t {
         uint8_t centerIdx;
@@ -41,7 +40,7 @@ private:
         bool operator>(const groupIntensity_t& other) const { return this->intensity > other.intensity; }
     };
 
-    typedef micro::vec<groupIntensity_t, NUM_GROUP_INTENSITIES> groupIntensities_t;
+    typedef micro::vec<groupIntensity_t, cfg::NUM_SENSORS - 2 * micro::round_up(INTENSITY_GROUP_RADIUS)> groupIntensities_t;
 
     void normalize(const uint8_t * const measurements, float * const OUT result);
 

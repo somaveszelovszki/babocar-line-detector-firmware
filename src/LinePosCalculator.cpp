@@ -8,9 +8,8 @@
 
 using namespace micro;
 
-constexpr std::pair<uint8_t, uint8_t> LinePosCalculator::INTENSITY_GROUP_RADIUS;
+constexpr float LinePosCalculator::INTENSITY_GROUP_RADIUS;
 constexpr uint8_t LinePosCalculator::POS_CALC_GROUP_RADIUS;
-constexpr uint8_t LinePosCalculator::NUM_GROUP_INTENSITIES;
 
 LinePosCalculator::LinePosCalculator(const std::pair<uint8_t, uint8_t> sensorLimits[cfg::NUM_SENSORS])
     : sensorLimits_(sensorLimits) {}
@@ -88,14 +87,19 @@ void LinePosCalculator::normalize(const uint8_t * const measurements, float * co
 }
 
 LinePosCalculator::groupIntensities_t LinePosCalculator::calculateGroupIntensities(const float * const intensities) {
+
+    static constexpr int8_t RADIUS     = round_up(INTENSITY_GROUP_RADIUS);
+    static constexpr float LAST_WEIGHT = INTENSITY_GROUP_RADIUS - round_down(INTENSITY_GROUP_RADIUS - 0.001f);
+    static constexpr float SUM_WEIGHT  = 1.0f + 2 * (RADIUS - 1 + LAST_WEIGHT);
+
     groupIntensities_t groupIntensities;
-    for (uint8_t groupIdx = INTENSITY_GROUP_RADIUS.first; groupIdx < cfg::NUM_SENSORS - INTENSITY_GROUP_RADIUS.second; ++groupIdx) {
+    for (uint8_t groupIdx = RADIUS; groupIdx < cfg::NUM_SENSORS - RADIUS; ++groupIdx) {
         float groupIntensity = 0.0f;
-        for (int8_t subIdx = -static_cast<int8_t>(INTENSITY_GROUP_RADIUS.first); subIdx <= static_cast<int8_t>(INTENSITY_GROUP_RADIUS.second); ++subIdx) {
-            groupIntensity += intensities[groupIdx + subIdx];
+        for (int8_t subIdx = -RADIUS; subIdx <= RADIUS; ++subIdx) {
+            groupIntensity += (abs(subIdx) == RADIUS ? LAST_WEIGHT : 1.0f) * intensities[groupIdx + subIdx];
         }
 
-        groupIntensities.push_back({ groupIdx, groupIntensity / (INTENSITY_GROUP_RADIUS.first + 1 + INTENSITY_GROUP_RADIUS.second) });
+        groupIntensities.push_back({ groupIdx, groupIntensity / SUM_WEIGHT });
     }
     return groupIntensities;
 }
@@ -103,14 +107,14 @@ LinePosCalculator::groupIntensities_t LinePosCalculator::calculateGroupIntensiti
 millimeter_t LinePosCalculator::calculateLinePos(const float * const intensities, const uint8_t centerIdx) {
 
     const uint8_t startIdx = max(centerIdx, POS_CALC_GROUP_RADIUS) - POS_CALC_GROUP_RADIUS;
-    const uint8_t lastIdx  = min(centerIdx + POS_CALC_GROUP_RADIUS, cfg::NUM_SENSORS - 1);
+    const uint8_t lastIdx  = min(centerIdx + POS_CALC_GROUP_RADIUS, cfg::NUM_SENSORS - POS_CALC_GROUP_RADIUS);
 
-    float sum = 0;
+    float sum  = 0;
     float sumW = 0;
 
     for (uint8_t i = startIdx; i <= lastIdx; ++i) {
         const float m = intensities[i];
-        sum += m;
+        sum  += m;
         sumW += m * i;
     }
 
