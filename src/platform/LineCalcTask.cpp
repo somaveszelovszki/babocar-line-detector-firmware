@@ -219,9 +219,6 @@ extern "C" void runLineCalcTask(void) {
     while (true) {
         measurementsQueue.receive(measurements);
 
-        measurements[0]                    = measurements[1];
-        measurements[cfg::NUM_SENSORS - 1] = measurements[cfg::NUM_SENSORS - 2];
-
         const LinePositions linePositions = linePosCalc.calculate(measurements);
         const Lines lines = lineFilter.update(linePositions);
         linePatternCalc.update(domain, lines, distance);
