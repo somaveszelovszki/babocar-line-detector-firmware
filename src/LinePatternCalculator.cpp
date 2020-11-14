@@ -73,6 +73,7 @@ const LinePatternCalculator::LinePatternInfo PATTERN_INFO[] = {
         [] (const LinePattern&, const linePatternDomain_t domain) {
             LinePatternCalculator::linePatterns_t validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
+                validPatterns.push_back({ LinePattern::NONE,        Sign::NEUTRAL,  Direction::CENTER });
                 validPatterns.push_back({ LinePattern::JUNCTION_1,  Sign::NEGATIVE, Direction::CENTER });
                 validPatterns.push_back({ LinePattern::JUNCTION_2,  Sign::NEGATIVE, Direction::LEFT   });
                 validPatterns.push_back({ LinePattern::JUNCTION_2,  Sign::NEGATIVE, Direction::RIGHT  });
@@ -336,7 +337,7 @@ const LinePatternCalculator::LinePatternInfo PATTERN_INFO[] = {
         LinePatternCalculator::LinePatternInfo::USES_HISTORY,
         [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern&, const Lines& lines, uint8_t, meter_t) {
             bool valid = false;
-            const Lines pastLines = LinePatternCalculator::peek_back(prevMeas, centimeter_t(10)).lines;
+            const Lines pastLines = LinePatternCalculator::peek_back(prevMeas, centimeter_t(20)).lines;
 
             if (0 == lines.size()) {
                 static constexpr millimeter_t MAX_POS = centimeter_t(8);
