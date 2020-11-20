@@ -19,7 +19,7 @@ using namespace micro;
 extern queue_t<Measurements, 1> measurementsQueue;
 extern queue_t<uint8_t, 1> numFailingTasksQueue;
 
-CanManager vehicleCanManager(can_Vehicle, millisecond_t(50));
+CanManager vehicleCanManager(can_Vehicle);
 queue_t<SensorControlData, 1> sensorControlDataQueue;
 
 namespace {
@@ -235,7 +235,7 @@ extern "C" void runLineCalcTask(void) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
 
-        SystemManager::instance().notify(!vehicleCanManager.hasRxTimedOut());
+        SystemManager::instance().notify(!vehicleCanManager.hasTimedOut(vehicleCanSubscriberId));
 
         updateSensorControl(lines);
         sensorControlDataQueue.send(sensorControl);
