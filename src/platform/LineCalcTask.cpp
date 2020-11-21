@@ -192,7 +192,8 @@ void updateSensorControl(const Lines& lines) {
 
 void initializeVehicleCan() {
     vehicleCanFrameHandler.registerHandler(can::LongitudinalState::id(), [] (const uint8_t * const data) {
-        reinterpret_cast<const can::LongitudinalState*>(data)->acquire(speed, distance);
+        bool isRemoteControlled;
+        reinterpret_cast<const can::LongitudinalState*>(data)->acquire(speed, isRemoteControlled, distance);
     });
 
     vehicleCanFrameHandler.registerHandler(can::LineDetectControl::id(), [] (const uint8_t * const data) {
