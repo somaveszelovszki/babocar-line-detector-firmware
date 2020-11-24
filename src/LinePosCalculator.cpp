@@ -17,7 +17,7 @@ LinePosCalculator::LinePosCalculator(const std::pair<uint8_t, uint8_t> sensorLim
 LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
 
     static constexpr float MAX_VALID_AVERAGE = 0.5f;
-    static constexpr float MAX_PROBABILITY_GROUP_INTENSITY = 0.5f;
+    static constexpr float MAX_PROBABILITY_GROUP_INTENSITY = 0.8f;
 
     LinePositions positions;
 
