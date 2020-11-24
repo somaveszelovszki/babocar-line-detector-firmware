@@ -43,7 +43,14 @@ extern "C" void runSensorTask(void) {
 
     while (true) {
         sensorHandler.writeLeds(sensorControl.leds);
-        sensorHandler.readSensors(measurements, getScanRange());
+
+        if (sensorControl.scanEnabled) {
+            sensorHandler.readSensors(measurements, getScanRange());
+        } else {
+            for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
+                measurements[i] = 0;
+            }
+        }
 
         measurementsQueue.send(measurements);
         sensorControlDataQueue.receive(sensorControl);

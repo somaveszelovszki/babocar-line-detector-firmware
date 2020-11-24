@@ -147,7 +147,6 @@ const Leds& updateFailureLeds() {
 
     static Leds leds;
     static Timer animationTimer(millisecond_t(1200));
-
     static radian_t angle = radian_t(0);
 
     animationTimer.checkTimeout();
@@ -159,10 +158,11 @@ const Leds& updateFailureLeds() {
     return leds;
 }
 
-void updateSensorControl(const Lines& lines) {
+void updateSensorControl(const Lines& lines, const bool scanEnabled) {
     static constexpr uint8_t LED_RADIUS = 1;
 
     uint8_t numFailingTasks = 0;
+
     if (!numFailingTasksQueue.peek(numFailingTasks, millisecond_t(0)) || numFailingTasks > 0) {
         sensorControl.leds = updateFailureLeds();
     } else {
@@ -181,6 +181,8 @@ void updateSensorControl(const Lines& lines) {
             }
         }
     }
+
+    sensorControl.scanEnabled = scanEnabled;
 
     if (lines.size()) {
         const millimeter_t avgLinePos = std::accumulate(lines.begin(), lines.end(), millimeter_t(0),
@@ -236,9 +238,11 @@ extern "C" void runLineCalcTask(void) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
 
-        SystemManager::instance().notify(!vehicleCanManager.hasTimedOut(vehicleCanSubscriberId));
+        const bool isCanCommOk = !vehicleCanManager.hasTimedOut(vehicleCanSubscriberId);
 
-        updateSensorControl(lines);
+        SystemManager::instance().notify(isCanCommOk);
+
+        updateSensorControl(lines, isCanCommOk);
         sensorControlDataQueue.send(sensorControl);
     }
 }

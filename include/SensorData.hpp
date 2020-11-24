@@ -10,6 +10,7 @@ typedef micro::bit_array<cfg::NUM_SENSORS> Leds;
 
 struct SensorControlData {
     Leds leds;
+    bool scanEnabled        = false;
     uint8_t scanRangeCenter = cfg::NUM_SENSORS / 2;
     uint8_t scanRangeRadius = 0;
 };
