@@ -158,7 +158,7 @@ const Leds& updateFailureLeds() {
     return leds;
 }
 
-void updateSensorControl(const Lines& lines, const bool scanEnabled) {
+void updateSensorControl(const Lines& lines) {
     static constexpr uint8_t LED_RADIUS = 1;
 
     uint8_t numFailingTasks = 0;
@@ -182,7 +182,7 @@ void updateSensorControl(const Lines& lines, const bool scanEnabled) {
         }
     }
 
-    sensorControl.scanEnabled = scanEnabled;
+    sensorControl.scanEnabled = true;
 
     if (lines.size()) {
         const millimeter_t avgLinePos = std::accumulate(lines.begin(), lines.end(), millimeter_t(0),
@@ -238,11 +238,9 @@ extern "C" void runLineCalcTask(void) {
             vehicleCanFrameHandler.handleFrame(rxCanFrame);
         }
 
-        const bool isCanCommOk = !vehicleCanManager.hasTimedOut(vehicleCanSubscriberId);
+        SystemManager::instance().notify(!vehicleCanManager.hasTimedOut(vehicleCanSubscriberId));
 
-        SystemManager::instance().notify(isCanCommOk);
-
-        updateSensorControl(lines, isCanCommOk);
+        updateSensorControl(lines);
         sensorControlDataQueue.send(sensorControl);
     }
 }
