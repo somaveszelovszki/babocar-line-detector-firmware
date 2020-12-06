@@ -161,6 +161,7 @@ void StartSensorTask(void const * argument)
   /* USER CODE BEGIN StartSensorTask */
   UNUSED(argument);
   runSensorTask();
+  vTaskDelete(NULL);
   /* USER CODE END StartSensorTask */
 }
 
@@ -176,6 +177,7 @@ void StartLineCalcTask(void const * argument)
   /* USER CODE BEGIN StartLineCalcTask */
   UNUSED(argument);
   runLineCalcTask();
+  vTaskDelete(NULL);
   /* USER CODE END StartLineCalcTask */
 }
 
@@ -189,7 +191,9 @@ void StartLineCalcTask(void const * argument)
 void StartDebugTask(void const * argument)
 {
   /* USER CODE BEGIN StartDebugTask */
+  UNUSED(argument);
   runDebugTask();
+  vTaskDelete(NULL);
   /* USER CODE END StartDebugTask */
 }
 
