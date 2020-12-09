@@ -1,31 +1,23 @@
 #include <micro/utils/algorithm.hpp>
 #include <micro/math/unit_utils.hpp>
 
-#include <cfg_sensor.hpp>
 #include <LinePosCalculator.hpp>
 
 #include <numeric>
 
 using namespace micro;
 
-constexpr float LinePosCalculator::INTENSITY_GROUP_RADIUS;
-constexpr uint8_t LinePosCalculator::POS_CALC_GROUP_RADIUS;
-
 LinePosCalculator::LinePosCalculator(const std::pair<uint8_t, uint8_t> sensorLimits[cfg::NUM_SENSORS])
     : sensorLimits_(sensorLimits) {}
 
 LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
-
-    static constexpr float MAX_VALID_AVERAGE = 0.5f;
-    static constexpr float MAX_PROBABILITY_GROUP_INTENSITY = 0.8f;
-
     LinePositions positions;
 
     float intensities[cfg::NUM_SENSORS];
     this->normalize(measurements, intensities);
 
     const float average = std::accumulate(intensities, &intensities[cfg::NUM_SENSORS], 0.0f) / cfg::NUM_SENSORS;
-    if (average < MAX_VALID_AVERAGE) {
+    if (average < cfg::LINE_POS_CALC_MAX_VALID_AVERAGE) {
         groupIntensities_t groupIntensities = calculateGroupIntensities(intensities);
 
         const float minGroupIntensity = std::min_element(groupIntensities.begin(), groupIntensities.end())->intensity;
@@ -37,7 +29,7 @@ LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
 
             if (micro::abs(static_cast<int32_t>(lastInsertedIdx) - static_cast<int32_t>(candidate->centerIdx)) >= 4) {
                 const millimeter_t linePos = calculateLinePos(intensities, candidate->centerIdx);
-                const float probability = map(candidate->intensity, minGroupIntensity, MAX_PROBABILITY_GROUP_INTENSITY, 0.0f, 1.0f);
+                const float probability = map(candidate->intensity, minGroupIntensity, cfg::LINE_POS_CALC_MAX_PROBABILITY_GROUP_INTENSITY, 0.0f, 1.0f);
 
                 if (probability < cfg::MIN_LINE_PROBABILITY) {
                     break;
@@ -88,34 +80,35 @@ void LinePosCalculator::normalize(const uint8_t * const measurements, float * co
 
 LinePosCalculator::groupIntensities_t LinePosCalculator::calculateGroupIntensities(const float * const intensities) {
 
-    static constexpr int8_t RADIUS     = round_up(INTENSITY_GROUP_RADIUS);
-    static constexpr float LAST_WEIGHT = INTENSITY_GROUP_RADIUS - round_down(INTENSITY_GROUP_RADIUS - 0.001f);
-    static constexpr float SUM_WEIGHT  = 1.0f + 2 * (RADIUS - 1 + LAST_WEIGHT);
+    static constexpr WeightCalculator CALC(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS);
 
     groupIntensities_t groupIntensities;
-    for (uint8_t groupIdx = RADIUS; groupIdx < cfg::NUM_SENSORS - RADIUS; ++groupIdx) {
+    for (uint8_t groupIdx = CALC.radius; groupIdx < cfg::NUM_SENSORS - CALC.radius; ++groupIdx) {
         float groupIntensity = 0.0f;
-        for (int8_t subIdx = -RADIUS; subIdx <= RADIUS; ++subIdx) {
-            groupIntensity += (abs(subIdx) == RADIUS ? LAST_WEIGHT : 1.0f) * intensities[groupIdx + subIdx];
+        for (int8_t subIdx = -CALC.radius; subIdx <= CALC.radius; ++subIdx) {
+            groupIntensity += (abs(subIdx) == CALC.radius ? CALC.lastWeight : 1.0f) * intensities[groupIdx + subIdx];
         }
 
-        groupIntensities.push_back({ groupIdx, groupIntensity / SUM_WEIGHT });
+        groupIntensities.push_back({ groupIdx, groupIntensity / CALC.sumWeight });
     }
     return groupIntensities;
 }
 
 millimeter_t LinePosCalculator::calculateLinePos(const float * const intensities, const uint8_t centerIdx) {
 
-    const uint8_t startIdx = max(centerIdx, POS_CALC_GROUP_RADIUS) - POS_CALC_GROUP_RADIUS;
-    const uint8_t lastIdx  = min(centerIdx + POS_CALC_GROUP_RADIUS, cfg::NUM_SENSORS - POS_CALC_GROUP_RADIUS);
+    const WeightCalculator calc(cfg::LINE_POS_CALC_GROUP_RADIUS, centerIdx);
 
     float sum  = 0;
     float sumW = 0;
 
-    for (uint8_t i = startIdx; i <= lastIdx; ++i) {
-        const float m = intensities[i];
-        sum  += m;
-        sumW += m * i;
+    for (int8_t subIdx = -calc.radius; subIdx <= calc.radius; ++subIdx) {
+
+        const uint8_t idx = centerIdx + subIdx;
+        const float m     = intensities[idx];
+        const float w     = abs(subIdx) == calc.radius ? calc.lastWeight : 1.0f;
+
+        sum  += m * w;
+        sumW += m * w * idx;
     }
 
     return optoIdxToLinePos(sumW / sum);

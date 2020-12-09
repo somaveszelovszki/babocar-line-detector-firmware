@@ -20,9 +20,11 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
 
     // updates estimated positions for all filtered lines
     for (filteredLine_t& l : this->lines_) {
-        l.estimated = l.samples.size() > cfg::LINE_FILTER_VELO_PEEK_BACK ?
-            l.current() + (l.current() - l.samples.peek_back(cfg::LINE_FILTER_VELO_PEEK_BACK)) / cfg::LINE_FILTER_VELO_PEEK_BACK :
-            l.current();
+        const millimeter_t current = l.current_raw();
+
+        l.estimated = l.samples.size() >= cfg::LINE_VELO_FILTER_SIZE ?
+            current + (current - l.samples.peek_back(cfg::LINE_VELO_FILTER_SIZE - 1)) / cfg::LINE_VELO_FILTER_SIZE :
+            current;
     }
 
     struct posMapping_t {
@@ -106,6 +108,17 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
     }
 
     return trackedLines;
+}
+
+millimeter_t LineFilter::filteredLine_t::current() const {
+    const uint32_t size = min<uint32_t>(this->samples.size(), cfg::LINE_FILTER_WINDOW_SIZE);
+    millimeter_t pos;
+
+    for (uint32_t i = 0; i < size; ++i) {
+        pos += this->samples.peek_back(i);
+    }
+
+    return pos / size;
 }
 
 uint8_t LineFilter::generateNewLineId() {

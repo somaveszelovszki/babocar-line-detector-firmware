@@ -25,11 +25,13 @@ private:
         int8_t cntr = 0;
         bool isValidated;
 
-        const micro::millimeter_t& current() const { return this->samples.peek_back(0); }
-        micro::millimeter_t& current() { return this->samples.peek_back(0); }
+        micro::millimeter_t current() const;
 
-        bool operator<(const filteredLine_t& other) const { return this->current() < other.current(); }
-        bool operator>(const filteredLine_t& other) const { return this->current() > other.current(); }
+        const micro::millimeter_t& current_raw() const { return this->samples.peek_back(0); }
+        micro::millimeter_t& current_raw() { return this->samples.peek_back(0); }
+
+        bool operator<(const filteredLine_t& other) const { return this->current_raw() < other.current_raw(); }
+        bool operator>(const filteredLine_t& other) const { return this->current_raw() > other.current_raw(); }
 
         void increaseCntr() {
             cntr = micro::max<int8_t>(cntr, 0);

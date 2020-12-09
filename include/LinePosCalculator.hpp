@@ -9,6 +9,20 @@
 
 #include <utility>
 
+struct WeightCalculator {
+    int8_t radius    = 0;
+    float lastWeight = 0.0f;
+    float sumWeight  = 0.0f;
+
+    constexpr WeightCalculator(const float radius)
+        : radius(micro::round_up(radius))
+        , lastWeight(radius - micro::round_down(radius - 0.001f))
+        , sumWeight(1.0f + 2 * (this->radius - 1 + this->lastWeight)) {}
+
+    constexpr WeightCalculator(const float radius, const uint8_t centerIdx)
+        : WeightCalculator(radius >= centerIdx ? radius : static_cast<float>(centerIdx)) {}
+};
+
 struct LinePosition {
     micro::millimeter_t pos;
     float probability;
@@ -29,9 +43,6 @@ public:
     static float linePosToOptoPos(const micro::millimeter_t linePos);
 
 private:
-    static constexpr float INTENSITY_GROUP_RADIUS  = 0.5f;
-    static constexpr uint8_t POS_CALC_GROUP_RADIUS = 2;
-
     struct groupIntensity_t {
         uint8_t centerIdx;
         float intensity;
@@ -40,7 +51,7 @@ private:
         bool operator>(const groupIntensity_t& other) const { return this->intensity > other.intensity; }
     };
 
-    typedef micro::vec<groupIntensity_t, cfg::NUM_SENSORS - 2 * micro::round_up(INTENSITY_GROUP_RADIUS)> groupIntensities_t;
+    typedef micro::vec<groupIntensity_t, cfg::NUM_SENSORS - 2 * micro::round_up(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS)> groupIntensities_t;
 
     void normalize(const uint8_t * const measurements, float * const OUT result);
 
