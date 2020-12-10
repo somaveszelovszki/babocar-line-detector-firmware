@@ -89,14 +89,12 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
 
     // added unmatched detected lines to the filtered lines list
     for (LinePositions::const_iterator it : unmatchedDetectedLines) {
-        if (it->probability >= cfg::MIN_LINE_APPEAR_PROBABILITY) {
-            filteredLine_t newLine;
-            newLine.id = this->generateNewLineId();
-            newLine.cntr = 1;
-            newLine.isValidated = false;
-            newLine.samples.push_back(it->pos);
-            this->lines_.insert(newLine);
-        }
+        filteredLine_t newLine;
+        newLine.id = this->generateNewLineId();
+        newLine.cntr = 1;
+        newLine.isValidated = false;
+        newLine.samples.push_back(it->pos);
+        this->lines_.insert(newLine);
     }
 
     // output list will contain all validated lines from the filtered lines list
@@ -111,7 +109,7 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
 }
 
 millimeter_t LineFilter::filteredLine_t::current() const {
-    const uint32_t size = min<uint32_t>(this->samples.size(), cfg::LINE_FILTER_WINDOW_SIZE);
+    const uint32_t size = min<uint32_t>(this->samples.size(), cfg::LINE_POS_FILTER_WINDOW_SIZE);
     millimeter_t pos;
 
     for (uint32_t i = 0; i < size; ++i) {

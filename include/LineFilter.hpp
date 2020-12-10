@@ -16,7 +16,7 @@ public:
     micro::Lines update(const LinePositions& detectedLines);
 
 private:
-    typedef micro::infinite_buffer<micro::millimeter_t, 10> linePosSamples_t;
+    typedef micro::infinite_buffer<micro::millimeter_t, 100> linePosSamples_t;
 
     struct filteredLine_t {
         uint8_t id : 3;

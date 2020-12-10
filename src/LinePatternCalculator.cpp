@@ -35,7 +35,11 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
         this->lastSingleLineId = lines[0].id;
     }
 
-    if (this->isPatternChangeCheckActive) {
+    const LinePatternInfo& currentPatternInfo = *PATTERN_INFO.at(this->currentPattern().type);
+    this->possiblePatterns = currentPatternInfo.validNextPatterns(current, domain);
+
+
+    if (true || this->isPatternChangeCheckActive) {
 
         for (linePatterns_t::iterator it = possiblePatterns.begin(); it != possiblePatterns.end();) {
             const LinePatternInfo& patternInfo = *PATTERN_INFO.at(it->type);
