@@ -7,11 +7,11 @@ namespace {
 LinePatternCalculator::StampedLines peek_back(const LinePatternCalculator::measurement_buffer_t& prevMeas, meter_t peekBackDist) {
     const meter_t dist = prevMeas.peek_back(0).distance - peekBackDist;
 
-    uint32_t startIdx = 1;
-    uint32_t endIdx = prevMeas.size() - 1;
+    int32_t startIdx = 1;
+    int32_t endIdx = prevMeas.size() - 1;
 
     while (startIdx < endIdx - 1) {
-        const uint8_t i = avg(startIdx, endIdx);
+        const int32_t i = avg(startIdx, endIdx);
         if (prevMeas.peek_back(i).distance < dist) {
             endIdx = i;
         } else {
