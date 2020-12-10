@@ -1,9 +1,58 @@
 #pragma once
 
 #include <micro/container/infinite_buffer.hpp>
+#include <micro/container/map.hpp>
 #include <micro/utils/LinePattern.hpp>
 
 #include <functional>
+
+class LinePatternDescriptor {
+public:
+    struct LineSegment {
+        uint8_t numLines;
+        micro::centimeter_t length;
+    };
+
+    typedef micro::set<uint8_t, micro::Line::MAX_NUM_LINES + 1> ValidLinesCount;
+
+    LinePatternDescriptor(const std::initializer_list<LineSegment>& pattern);
+
+    ValidLinesCount getValidLines(micro::Sign dir, micro::centimeter_t patternDist, micro::centimeter_t eps) const;
+
+private:
+    template <typename Iter>
+    std::pair<const LineSegment*, const LineSegment*> getBounds(Iter patternBegin, Iter patternEnd, micro::centimeter_t patternDist, micro::centimeter_t eps) const {
+        std::pair<const LineSegment*, const LineSegment*> bounds = { nullptr, nullptr };
+
+        micro::centimeter_t d(0);
+
+        for (Iter it = patternBegin; it != patternEnd; ++it) {
+
+            if (micro::isBtw(patternDist, d - eps, d + eps)) {
+                bounds.first  = it == patternBegin ? it : std::prev(it);
+                bounds.second = &(*it);
+
+            } else if (micro::isBtw(patternDist, d + eps, d + it->length - eps)) {
+                bounds.first  = &(*it);
+                bounds.second = &(*it);
+
+            } else if (micro::isBtw(patternDist, d + it->length - eps, d + it->length + eps)) {
+                bounds.first  = &(*it);
+                bounds.second = std::next(it) == patternEnd ? it : std::next(it);
+            }
+
+            if (bounds.first) {
+                break;
+            }
+
+            d += it->length;
+        }
+
+        return bounds;
+    }
+
+    micro::vec<LineSegment, 20> pattern;
+};
 
 class LinePatternCalculator {
 public:
@@ -19,10 +68,7 @@ public:
     struct LinePatternInfo {
         micro::meter_t minValidityLength;
         micro::meter_t maxLength;
-        enum {
-            USES_HISTORY,
-            NO_HISTORY
-        } historyDependency;
+
         std::function<bool(const measurement_buffer_t&, const micro::LinePattern&, const micro::Lines&, uint8_t, micro::meter_t)> isValid;
         std::function<linePatterns_t(const micro::LinePattern&, const micro::linePatternDomain_t)> validNextPatterns;
     };
@@ -42,8 +88,6 @@ public:
         return this->isPatternChangeCheckActive;
     }
 
-    static StampedLines peek_back(const measurement_buffer_t& prevMeas, micro::meter_t peekBackDist);
-
     static micro::Lines::const_iterator getMainLine(const micro::Lines& lines, const uint8_t lastSingleLineId);
 
 private:
@@ -60,3 +104,5 @@ private:
     linePatterns_t possiblePatterns;
     uint8_t lastSingleLineId;
 };
+
+extern const micro::sorted_map<micro::LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO;
