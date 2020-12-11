@@ -11,6 +11,9 @@ LinePosCalculator::LinePosCalculator(const std::pair<uint8_t, uint8_t> sensorLim
     : sensorLimits_(sensorLimits) {}
 
 LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
+
+    static constexpr float MAX_GROUP_INTENSITY = 1.0f / (1.0f + cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS);
+
     LinePositions positions;
 
     float intensities[cfg::NUM_SENSORS];
@@ -27,7 +30,7 @@ LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
 
         if (micro::abs(static_cast<int32_t>(lastInsertedIdx) - static_cast<int32_t>(candidate->centerIdx)) >= 4) {
             const millimeter_t linePos = calculateLinePos(intensities, candidate->centerIdx);
-            const float probability = map(candidate->intensity, minGroupIntensity, 1.0f, 0.0f, 1.0f);
+            const float probability = map(candidate->intensity, minGroupIntensity, MAX_GROUP_INTENSITY, 0.0f, 1.0f);
 
             if (probability < cfg::MIN_LINE_PROBABILITY) {
                 break;
