@@ -69,7 +69,7 @@ TEST(LineFilter, one_line) {
 
     EXPECT_EQ(linePositions.size(), lines.size());
     for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_EQ_UNIT(linePositions[i].pos, lines[i].pos);
+        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
         EXPECT_EQ(i + 1, lines[i].id);
     }
 }
@@ -88,7 +88,7 @@ TEST(LineFilter, one_line_noise) {
 
     EXPECT_EQ(linePositions.size(), lines.size());
     for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_EQ_UNIT(linePositions[i].pos, lines[i].pos);
+        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
         EXPECT_EQ(i + 1, lines[i].id);
     }
 }
@@ -126,7 +126,7 @@ TEST(LineFilter, one_line_true_negatives) {
 
     EXPECT_EQ(linePositions.size(), lines.size());
     for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_EQ_UNIT(linePositions[i].pos, lines[i].pos);
+        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
         EXPECT_EQ(i + 1, lines[i].id);
     }
 
@@ -136,7 +136,7 @@ TEST(LineFilter, one_line_true_negatives) {
 
     EXPECT_EQ(linePositions.size(), lines.size());
     for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_EQ_UNIT(linePositions[i].pos, lines[i].pos);
+        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
         EXPECT_EQ(i + 1, lines[i].id);
     }
 
@@ -147,7 +147,7 @@ TEST(LineFilter, one_line_true_negatives) {
 
 TEST(LineFilter, one_moving_line_true_negatives) {
 
-    static constexpr millimeter_t MOVE_DISTANCE = { 5 };
+    static constexpr millimeter_t MOVE_DISTANCE = { 1 };
 
     LinePositions linePositions = { { millimeter_t(0), 1.0f } };
     LinePositions linePositionsTrueNegatives = {};
@@ -162,7 +162,7 @@ TEST(LineFilter, one_moving_line_true_negatives) {
 
     EXPECT_EQ(linePositions.size(), lines.size());
     for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_EQ_UNIT(linePositions[i].pos, lines[i].pos);
+        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
         EXPECT_EQ(i + 1, lines[i].id);
     }
 
@@ -173,7 +173,7 @@ TEST(LineFilter, one_moving_line_true_negatives) {
 
     EXPECT_EQ(linePositions.size(), lines.size());
     for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(1));
+        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
         EXPECT_EQ(i + 1, lines[i].id);
     }
 
