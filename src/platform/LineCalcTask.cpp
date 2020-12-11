@@ -219,6 +219,10 @@ extern "C" void runLineCalcTask(void) {
 
     initializeVehicleCan();
 
+    for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
+        measurements[i] = 0;
+    }
+
     while (true) {
         measurementsQueue.receive(measurements);
 
