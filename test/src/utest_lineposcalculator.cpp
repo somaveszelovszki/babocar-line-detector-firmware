@@ -112,7 +112,7 @@ void test(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines) {
         EXPECT_EQ(lines.size(), linePositions.size());
         for (uint8_t i = 0; i < linePositions.size(); ++i) {
             EXPECT_NEAR_UNIT(lines[i], linePositions[i].pos, millimeter_t(4));
-            EXPECT_LE(0.65f, linePositions[i].probability);
+            EXPECT_LE(0.7f, linePositions[i].probability);
         }
     }
 }

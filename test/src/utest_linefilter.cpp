@@ -108,7 +108,7 @@ TEST(LineFilter, one_line_noise_false_positives) {
 
     EXPECT_EQ(linePositions.size(), lines.size());
     for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_EQ_UNIT(linePositions[i].pos, lines[i].pos);
+        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
         EXPECT_EQ(i + 1, lines[i].id);
     }
 }
