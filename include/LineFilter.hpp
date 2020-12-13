@@ -19,11 +19,11 @@ private:
     typedef micro::infinite_buffer<micro::millimeter_t, 100> linePosSamples_t;
 
     struct filteredLine_t {
-        uint8_t id : 3;
+        uint8_t id = 0;
         linePosSamples_t samples;
         micro::millimeter_t estimated;
         int8_t cntr = 0;
-        bool isValidated;
+        bool isValidated = false;
 
         micro::millimeter_t current() const;
 
