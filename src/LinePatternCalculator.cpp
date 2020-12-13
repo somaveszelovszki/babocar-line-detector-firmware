@@ -12,14 +12,16 @@ LinePatternDescriptor::LinePatternDescriptor(const std::initializer_list<LineSeg
 LinePatternDescriptor::ValidLinesCount LinePatternDescriptor::getValidLines(Sign dir, centimeter_t patternDist, centimeter_t eps) const {
     ValidLinesCount validLines;
 
-    const std::pair<const LineSegment*, const LineSegment*> bounds = this->getBounds(this->pattern.begin(), this->pattern.end(), patternDist, eps);
+    const std::pair<const LineSegment*, const LineSegment*> bounds = dir != Sign::NEGATIVE ?
+        this->getBounds(this->pattern.begin(), this->pattern.end(), patternDist, eps) :
+        this->getBounds(this->pattern.rbegin(), this->pattern.rend(), patternDist, eps);
 
     const std::pair<uint8_t, uint8_t> validLinesRange = {
          std::min(bounds.first->numLines, bounds.second->numLines),
          std::max(bounds.first->numLines, bounds.second->numLines)
     };
 
-    for (uint8_t numLines = validLinesRange.first; numLines < validLinesRange.second; ++numLines) {
+    for (uint8_t numLines = validLinesRange.first; numLines <= validLinesRange.second; ++numLines) {
         validLines.push_back(numLines);
     }
 

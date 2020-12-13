@@ -29,16 +29,16 @@ private:
         for (Iter it = patternBegin; it != patternEnd; ++it) {
 
             if (micro::isBtw(patternDist, d - eps, d + eps)) {
-                bounds.first  = it == patternBegin ? it : std::prev(it);
-                bounds.second = &(*it);
+                bounds.first  = &*(it == patternBegin ? it : std::prev(it));
+                bounds.second = &*it;
 
             } else if (micro::isBtw(patternDist, d + eps, d + it->length - eps)) {
-                bounds.first  = &(*it);
-                bounds.second = &(*it);
+                bounds.first  = &*it;
+                bounds.second = &*it;
 
             } else if (micro::isBtw(patternDist, d + it->length - eps, d + it->length + eps)) {
-                bounds.first  = &(*it);
-                bounds.second = std::next(it) == patternEnd ? it : std::next(it);
+                bounds.first  = &*it;
+                bounds.second = &*(std::next(it) == patternEnd ? it : std::next(it));
             }
 
             if (bounds.first) {
