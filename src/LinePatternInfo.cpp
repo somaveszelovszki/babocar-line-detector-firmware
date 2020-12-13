@@ -77,7 +77,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
         }
     } },
     { LinePattern::ACCELERATE, {
-        centimeter_t(24),
+        centimeter_t(18),
         centimeter_t(85),
         [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t, meter_t currentDist) {
 
@@ -106,7 +106,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
         }
     } },
     { LinePattern::BRAKE, {
-        centimeter_t(16),
+        centimeter_t(12),
         centimeter_t(350),
         [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern& pattern, const Lines& lines, uint8_t, meter_t currentDist) {
             return areClose(lines) && 3 == lines.size();
