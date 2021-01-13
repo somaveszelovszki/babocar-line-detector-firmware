@@ -14,7 +14,7 @@ constexpr micro::millimeter_t MIN_LINE_DIST          = micro::millimeter_t(15);
 constexpr int8_t LINE_FILTER_HYSTERESIS              = 5;
 constexpr uint8_t LINE_VELO_FILTER_SIZE              = 4;
 constexpr uint8_t LINE_POS_FILTER_WINDOW_SIZE        = 8;
-constexpr float MIN_LINE_PROBABILITY                 = 0.4f;
+constexpr float MIN_LINE_PROBABILITY                 = 0.6f;
 constexpr micro::millimeter_t OPTO_ARRAY_LENGTH      = micro::millimeter_t(274.574f);
 
 } // namespace cfg
