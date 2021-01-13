@@ -93,7 +93,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
                 { 3, centimeter_t(8) }
             };
 
-            LinePatternDescriptor::ValidLinesCount validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(1.5f));
+            LinePatternDescriptor::ValidLinesCount validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
 
             return areClose(lines) && std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end();
         },
