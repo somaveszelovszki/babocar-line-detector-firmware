@@ -29,16 +29,16 @@ private:
         for (Iter it = patternBegin; it != patternEnd; ++it) {
 
             if (micro::isBtw(patternDist, d - eps, d + eps)) {
-                bounds.first  = &*(it == patternBegin ? it : std::prev(it));
-                bounds.second = &*it;
+                bounds.first  = micro::to_raw_pointer(it == patternBegin ? it : std::prev(it));
+                bounds.second = micro::to_raw_pointer(it);
 
             } else if (micro::isBtw(patternDist, d + eps, d + it->length - eps)) {
-                bounds.first  = &*it;
-                bounds.second = &*it;
+                bounds.first  = micro::to_raw_pointer(it);
+                bounds.second = micro::to_raw_pointer(it);
 
             } else if (micro::isBtw(patternDist, d + it->length - eps, d + it->length + eps)) {
-                bounds.first  = &*it;
-                bounds.second = &*(std::next(it) == patternEnd ? it : std::next(it));
+                bounds.first  = micro::to_raw_pointer(it);
+                bounds.second = micro::to_raw_pointer(std::next(it) == patternEnd ? it : std::next(it));
             }
 
             if (bounds.first) {
@@ -61,9 +61,9 @@ public:
         micro::meter_t distance;
     };
 
-    typedef micro::infinite_buffer<StampedLines, 200> measurement_buffer_t;
+    typedef micro::infinite_buffer<StampedLines, 1000> measurement_buffer_t;
     typedef micro::infinite_buffer<micro::LinePattern, 200> pattern_buffer_t;
-    typedef micro::vec<micro::LinePattern, 10> linePatterns_t;
+    typedef micro::vec<micro::LinePattern, 20> linePatterns_t;
 
     struct LinePatternInfo {
         micro::meter_t minValidityLength;
