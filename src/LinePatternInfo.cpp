@@ -199,7 +199,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
         centimeter_t(130),
         [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId, meter_t) {
             bool valid = false;
-            const Lines pastLines = peek_back(prevMeas, centimeter_t(8)).lines;
+            const Lines pastLines = peek_back(prevMeas, centimeter_t(25)).lines;
 
             static const std::function<bool(const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines&, uint8_t lastSingleLineId)> areValidFarLines = []
                 (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId) {
@@ -250,7 +250,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
         centimeter_t(130),
         [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId, meter_t) {
             bool valid = false;
-            const Lines pastLines = peek_back(prevMeas, centimeter_t(8)).lines;
+            const Lines pastLines = peek_back(prevMeas, centimeter_t(25)).lines;
 
             static const std::function<bool(const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines&, uint8_t lastSingleLineId)> areValidFarLines = []
                 (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId) {
@@ -312,14 +312,9 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
         centimeter_t(4),
         micro::numeric_limits<meter_t>::infinity(),
         [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern&, const Lines& lines, uint8_t, meter_t) {
-            bool valid = false;
-            const Lines pastLines = peek_back(prevMeas, centimeter_t(20)).lines;
+            const Lines pastLines = peek_back(prevMeas, centimeter_t(25)).lines;
 
-            if (0 == lines.size()) {
-                static constexpr millimeter_t MAX_POS = centimeter_t(8);
-                valid = 1 == pastLines.size() && abs(pastLines[0].pos) <= MAX_POS;
-            }
-            return valid;
+            return 0 == lines.size() && 1 == pastLines.size() && abs(pastLines[0].pos) <= centimeter_t(10);
         },
         [] (const LinePattern& pattern, const linePatternDomain_t domain) {
             LinePatternCalculator::linePatterns_t validPatterns;
