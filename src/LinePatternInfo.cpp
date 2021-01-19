@@ -208,9 +208,9 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
                 if (2 == lines.size() && micro::areFar(lines)) {
                     Lines::const_iterator mainLine = LinePatternCalculator::getMainLine(lines, lastSingleLineId);
                     if (Direction::RIGHT == pattern.side) {
-                        valid = *mainLine == lines[0];
-                    } else if (Direction::LEFT == pattern.side) {
                         valid = *mainLine == lines[1];
+                    } else if (Direction::LEFT == pattern.side) {
+                        valid = *mainLine == lines[0];
                     }
                 }
                 return valid;
@@ -260,19 +260,19 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
                     Lines::const_iterator mainLine = LinePatternCalculator::getMainLine(lines, lastSingleLineId);
                     if (2 == lines.size()) {
                         if (Direction::RIGHT == pattern.side) {
-                            valid = *mainLine == lines[0];
+                            valid = *mainLine == lines[1];
                         } else if (Direction::CENTER == pattern.side) {
                             valid = true;
                         } else if (Direction::LEFT == pattern.side) {
-                            valid = *mainLine == lines[1];
+                            valid = *mainLine == lines[0];
                         }
                     } else if (3 == lines.size()) {
                         if (Direction::RIGHT == pattern.side) {
-                            valid = *mainLine == lines[0];
+                            valid = *mainLine == lines[2];
                         } else if (Direction::CENTER == pattern.side) {
                             valid = *mainLine == lines[1];
                         } else if (Direction::LEFT == pattern.side) {
-                            valid = *mainLine == lines[2];
+                            valid = *mainLine == lines[0];
                         }
                     }
                 }
