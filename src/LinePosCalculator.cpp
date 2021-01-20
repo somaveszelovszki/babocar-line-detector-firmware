@@ -19,33 +19,35 @@ LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
     float intensities[cfg::NUM_SENSORS];
     this->normalize(measurements, intensities);
 
-    groupIntensities_t groupIntensities = calculateGroupIntensities(intensities);
+    if (std::accumulate(&intensities[0], &intensities[cfg::NUM_SENSORS], 0.0f) / cfg::NUM_SENSORS < 0.3f) {
+        groupIntensities_t groupIntensities = calculateGroupIntensities(intensities);
 
-    const float minGroupIntensity = std::min_element(groupIntensities.begin(), groupIntensities.end())->intensity;
-    uint8_t lastInsertedIdx       = 255;
+        const float minGroupIntensity = std::min_element(groupIntensities.begin(), groupIntensities.end())->intensity;
+        uint8_t lastInsertedIdx       = 255;
 
-    while (positions.size() < positions.capacity() && !groupIntensities.empty()) {
+        while (positions.size() < positions.capacity() && !groupIntensities.empty()) {
 
-        const groupIntensities_t::const_iterator candidate = std::max_element(groupIntensities.begin(), groupIntensities.end());
+            const groupIntensities_t::const_iterator candidate = std::max_element(groupIntensities.begin(), groupIntensities.end());
 
-        if (micro::abs(static_cast<int32_t>(lastInsertedIdx) - static_cast<int32_t>(candidate->centerIdx)) >= 4) {
-            const millimeter_t linePos = calculateLinePos(intensities, candidate->centerIdx);
-            const float probability = map(candidate->intensity, minGroupIntensity, MAX_GROUP_INTENSITY, 0.0f, 1.0f);
+            if (micro::abs(static_cast<int32_t>(lastInsertedIdx) - static_cast<int32_t>(candidate->centerIdx)) >= 4) {
+                const millimeter_t linePos = calculateLinePos(intensities, candidate->centerIdx);
+                const float probability = map(candidate->intensity, minGroupIntensity, MAX_GROUP_INTENSITY, 0.0f, 1.0f);
 
-            if (probability < cfg::MIN_LINE_PROBABILITY) {
-                break;
+                if (probability < cfg::MIN_LINE_PROBABILITY) {
+                    break;
+                }
+
+                if (std::find_if(positions.begin(), positions.end(), [linePos] (const LinePosition& pos) {
+                    return abs(pos.pos - linePos) <= cfg::MIN_LINE_DIST;
+                }) == positions.end()) {
+                    positions.insert({ linePos, probability });
+                }
+
+                lastInsertedIdx = candidate->centerIdx;
             }
 
-            if (std::find_if(positions.begin(), positions.end(), [linePos] (const LinePosition& pos) {
-                return abs(pos.pos - linePos) <= cfg::MIN_LINE_DIST;
-            }) == positions.end()) {
-                positions.insert({ linePos, probability });
-            }
-
-            lastInsertedIdx = candidate->centerIdx;
+            groupIntensities.erase(candidate);
         }
-
-        groupIntensities.erase(candidate);
     }
 
     return positions;
