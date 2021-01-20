@@ -57,6 +57,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
         [] (const LinePattern&, const linePatternDomain_t domain) {
             LinePatternCalculator::linePatterns_t validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
+                validPatterns.push_back({ LinePattern::NONE,        Sign::NEUTRAL,  Direction::CENTER });
                 validPatterns.push_back({ LinePattern::JUNCTION_1,  Sign::NEGATIVE, Direction::CENTER });
                 validPatterns.push_back({ LinePattern::JUNCTION_2,  Sign::NEGATIVE, Direction::LEFT   });
                 validPatterns.push_back({ LinePattern::JUNCTION_2,  Sign::NEGATIVE, Direction::RIGHT  });
@@ -65,7 +66,6 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
                 validPatterns.push_back({ LinePattern::JUNCTION_3,  Sign::NEGATIVE, Direction::RIGHT  });
                 validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::POSITIVE, Direction::RIGHT  });
                 validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::NEGATIVE, Direction::LEFT   });
-                validPatterns.push_back({ LinePattern::DEAD_END,    Sign::NEUTRAL,  Direction::CENTER });
 
             } else if (linePatternDomain_t::Race == domain) {
                 validPatterns.push_back({ LinePattern::NONE,       Sign::NEUTRAL, Direction::CENTER });
@@ -303,22 +303,6 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
                 } else if (Sign::POSITIVE == pattern.dir) {
                     validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
                 }
-            }
-            return validPatterns;
-        }
-    } },
-    { LinePattern::DEAD_END, {
-        centimeter_t(7),
-        micro::numeric_limits<meter_t>::infinity(),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern&, const Lines& lines, uint8_t, meter_t) {
-            const Lines pastLines = peek_back(prevMeas, centimeter_t(25)).lines;
-
-            return 0 == lines.size() && 1 == pastLines.size() && abs(pastLines[0].pos) <= centimeter_t(10);
-        },
-        [] (const LinePattern& pattern, const linePatternDomain_t domain) {
-            LinePatternCalculator::linePatterns_t validPatterns;
-            if (linePatternDomain_t::Labyrinth == domain) {
-                validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
             }
             return validPatterns;
         }
