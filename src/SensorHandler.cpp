@@ -9,15 +9,30 @@ using namespace micro;
 
 namespace {
 
-constexpr uint8_t OPTO_BUFFERS[8][cfg::NUM_SENSORS / 8] = { // selects every 8th optical sensor
-    { 1,   1,   1,   1,   1,   1   },
-    { 2,   2,   2,   2,   2,   2   },
-    { 4,   4,   4,   4,   4,   4   },
-    { 8,   8,   8,   8,   8,   8   },
-    { 16,  16,  16,  16,  16,  16  },
-    { 32,  32,  32,  32,  32,  32  },
-    { 64,  64,  64,  64,  64,  64  },
-    { 128, 128, 128, 128, 128, 128 }
+constexpr uint8_t SENSOR_POSITIONS[16] = {
+    0, 8,  4, 12,
+    1, 9,  5, 13,
+    2, 10, 6, 14,
+    3, 11, 7, 15
+};
+
+constexpr uint8_t SENSOR_SELECTORS[16][cfg::NUM_SENSORS / 8] = {
+    { 0,   1,   0,   1,   0,   1   },
+    { 0,   2,   0,   2,   0,   2   },
+    { 0,   4,   0,   4,   0,   4   },
+    { 0,   8,   0,   8,   0,   8   },
+    { 0,   16,  0,   16,  0,   16  },
+    { 0,   32,  0,   32,  0,   32  },
+    { 0,   64,  0,   64,  0,   64  },
+    { 0,   128, 0,   128, 0,   128 },
+    { 1,   0,   1,   0,   1,   0   },
+    { 2,   0,   2,   0,   2,   0   },
+    { 4,   0,   4,   0,   4,   0   },
+    { 8,   0,   8,   0,   8,   0   },
+    { 16,  0,   16,  0,   16,  0   },
+    { 32,  0,   32,  0,   32,  0   },
+    { 64,  0,   64,  0,   64,  0   },
+    { 128, 0,   128, 0,   128, 0   }
 };
 
 } // namespace
@@ -48,37 +63,31 @@ void SensorHandler::initialize() {
 }
 
 void SensorHandler::readSensors(Measurements& OUT measurements, const std::pair<uint8_t, uint8_t>& scanRange) {
-    for (uint8_t optoIdx = 0; optoIdx < 8; ++optoIdx) {
 
-        this->exchangeData(OPTO_BUFFERS[optoIdx], nullptr, cfg::NUM_SENSORS / 8);
+    for (uint8_t i = 0; i < 16; ++i) {
+        const uint8_t optoIdx = SENSOR_POSITIONS[i];
+        this->exchangeData(SENSOR_SELECTORS[optoIdx], nullptr, cfg::NUM_SENSORS / 8);
 
         gpio_write(this->LE_opto_, gpioPinState_t::SET);
         gpio_write(this->LE_opto_, gpioPinState_t::RESET);
+        gpio_write(this->OE_opto_, gpioPinState_t::RESET);
 
-        // first measurement always needs to be repeated, otherwise it states an invalid intensity value
-        uint8_t readCntr = 0;
-        bool repeat      = false;
+        for (volatile uint32_t t = 0; t < 800; ++t) {} // waits between the LED light-up and the ADC read
 
-        for (uint8_t adcIdx = 0; adcIdx < cfg::NUM_SENSORS / 8; adcIdx = repeat ? adcIdx : adcIdx + 1) {
-            const uint8_t pos = adcIdx * 8 + optoIdx;
+        for (uint8_t adcIdx = optoIdx / 8; adcIdx < cfg::NUM_SENSORS / 8; adcIdx += 2) {
+            const uint8_t absPos = adcIdx * 8 + (optoIdx % 8);
 
-            if (micro::isBtw(pos, scanRange.first, scanRange.second)) {
+            if (micro::isBtw(absPos, scanRange.first, scanRange.second)) {
                 const gpio_t& adcEnPin = this->adcEnPins_[adcIdx];
 
                 gpio_write(adcEnPin, gpioPinState_t::RESET);
-                gpio_write(this->OE_opto_, gpioPinState_t::RESET);
-
-                measurements[pos] = this->readAdc(optoIdx);
-
-                gpio_write(this->OE_opto_, gpioPinState_t::SET);
+                measurements[absPos] = this->readAdc(optoIdx);
                 gpio_write(adcEnPin, gpioPinState_t::SET);
-
-                repeat = !readCntr && !repeat;
-                ++readCntr;
             }
         }
+
+        gpio_write(this->OE_opto_, gpioPinState_t::SET);
     }
-    gpio_write(this->OE_opto_, gpioPinState_t::SET);
 }
 
 void SensorHandler::writeLeds(const Leds& leds) {
