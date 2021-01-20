@@ -41,6 +41,8 @@ std::pair<uint8_t, uint8_t> getScanRange() {
 extern "C" void runSensorTask(void) {
     SystemManager::instance().registerTask();
 
+    sensorHandler.initialize();
+
     while (true) {
         sensorHandler.writeLeds(sensorControl.leds);
 
