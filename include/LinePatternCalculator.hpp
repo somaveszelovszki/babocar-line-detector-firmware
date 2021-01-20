@@ -69,7 +69,7 @@ public:
         micro::meter_t minValidityLength;
         micro::meter_t maxLength;
 
-        std::function<bool(const measurement_buffer_t&, const micro::LinePattern&, const micro::Lines&, uint8_t, micro::meter_t)> isValid;
+        std::function<bool(const measurement_buffer_t&, const micro::LinePattern&, const micro::Lines&, uint8_t, micro::meter_t, micro::Sign)> isValid;
         std::function<linePatterns_t(const micro::LinePattern&, const micro::linePatternDomain_t)> validNextPatterns;
     };
 
@@ -78,7 +78,7 @@ public:
         , lastSingleLineId(0) {
         this->prevPatterns.push_back({ micro::LinePattern::SINGLE_LINE, micro::Sign::NEUTRAL, micro::Direction::CENTER, micro::meter_t(0) });
     }
-    void update(const micro::linePatternDomain_t domain, const micro::Lines& lines, micro::meter_t currentDist);
+    void update(const micro::linePatternDomain_t domain, const micro::Lines& lines, micro::meter_t currentDist, const micro::Sign speedSign);
 
     const micro::LinePattern& pattern() const {
         return const_cast<LinePatternCalculator*>(this)->currentPattern();

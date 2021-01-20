@@ -26,13 +26,62 @@ bool isInJunctionCenter(const Lines& lines) {
     return 1 < lines.size() && micro::areClose(lines);
 }
 
+Lines::const_iterator expectedMainLine(const LinePattern& pattern, const Lines& lines, const Sign speedSign) {
+    Direction expectedMainLineDir = Direction::CENTER;
+
+    if (pattern.dir == speedSign) {
+        expectedMainLineDir = pattern.side;
+    } else {
+        expectedMainLineDir = -pattern.side;
+    }
+
+    Lines::const_iterator line = lines.end();
+
+    switch (expectedMainLineDir) {
+    case Direction::LEFT:
+        line = lines.begin();
+        break;
+
+    case Direction::CENTER:
+        line = std::next(lines.begin(), lines.size() / 2);
+        break;
+
+    case Direction::RIGHT:
+        line = lines.back();
+        break;
+    }
+
+    return line;
+}
+
+bool areValidNegativeFarLines_JUNCTION_2(const LinePattern& pattern, const Lines& lines, const uint8_t lastSingleLineId, const Sign speedSign) {
+    bool valid = false;
+    if (2 == lines.size() && micro::areFar(lines)) {
+        valid = LinePatternCalculator::getMainLine(lines, lastSingleLineId) == expectedMainLine(pattern, lines, speedSign);
+    }
+    return valid;
+};
+
+bool areValidNegativeFarLines_JUNCTION_3(const LinePattern& pattern, const Lines& lines, const uint8_t lastSingleLineId, const Sign speedSign) {
+    bool valid = false;
+    if (1 < lines.size() && micro::areFar(lines)) {
+        if (2 == lines.size() && Direction::CENTER == pattern.side) {
+            // when only 2 lines are detected, center junction is valid
+            valid = true;
+        } else {
+            valid = LinePatternCalculator::getMainLine(lines, lastSingleLineId) == expectedMainLine(pattern, lines, speedSign);
+        }
+    }
+    return valid;
+};
+
 } // namespace
 
 const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
     { LinePattern::NONE, {
         centimeter_t(10),
         micro::numeric_limits<meter_t>::infinity(),
-        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines& lines, uint8_t, meter_t) {
+        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern&, const Lines& lines, uint8_t, meter_t, Sign) {
             return 0 == lines.size();
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
@@ -51,7 +100,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
     { LinePattern::SINGLE_LINE, {
         centimeter_t(7),
         micro::numeric_limits<meter_t>::infinity(),
-        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines& lines, uint8_t, meter_t) {
+        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines& lines, uint8_t, meter_t, Sign) {
             return 1 == lines.size();
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
@@ -78,7 +127,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
     { LinePattern::ACCELERATE, {
         centimeter_t(18),
         centimeter_t(85),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t, meter_t currentDist) {
+        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t, meter_t currentDist, Sign) {
 
             static const LinePatternDescriptor descriptor = {
                 { 3, centimeter_t(8) },
@@ -107,7 +156,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
     { LinePattern::BRAKE, {
         centimeter_t(12),
         centimeter_t(350),
-        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern& pattern, const Lines& lines, uint8_t, meter_t currentDist) {
+        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern& pattern, const Lines& lines, uint8_t, meter_t currentDist, Sign) {
             return areClose(lines) && 3 == lines.size();
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
@@ -121,7 +170,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
     { LinePattern::LANE_CHANGE, {
         centimeter_t(30),
         centimeter_t(120),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId, meter_t currentDist) {
+        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId, meter_t currentDist, Sign) {
 
             static const LinePatternDescriptor descriptor = {
                 { 2, centimeter_t(16) },
@@ -162,7 +211,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
     { LinePattern::JUNCTION_1, {
         centimeter_t(20),
         centimeter_t(130),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t, meter_t currentDist) {
+        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t, meter_t currentDist, Sign) {
             bool valid = false;
             const Lines pastLines = peek_back(prevMeas, centimeter_t(25)).lines;
 
@@ -196,24 +245,9 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
     { LinePattern::JUNCTION_2, {
         centimeter_t(10),
         centimeter_t(130),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId, meter_t) {
+        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId, meter_t, Sign speedSign) {
             bool valid = false;
             const Lines pastLines = peek_back(prevMeas, centimeter_t(15)).lines;
-
-            static const std::function<bool(const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines&, uint8_t lastSingleLineId)> areValidFarLines = []
-                (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId) {
-
-                bool valid = false;
-                if (2 == lines.size() && micro::areFar(lines)) {
-                    Lines::const_iterator mainLine = LinePatternCalculator::getMainLine(lines, lastSingleLineId);
-                    if (Direction::RIGHT == pattern.side) {
-                        valid = *mainLine == lines[1];
-                    } else if (Direction::LEFT == pattern.side) {
-                        valid = *mainLine == lines[0];
-                    }
-                }
-                return valid;
-            };
 
             if (Sign::POSITIVE == pattern.dir) {
                 if (isInJunctionCenter(lines)) {
@@ -222,9 +256,9 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
                     valid = true;
                 }
             } else if (Sign::NEGATIVE == pattern.dir) {
-                if (2 == lines.size() && areValidFarLines(prevMeas, pattern, lines, lastSingleLineId)) {
+                if (2 == lines.size() && areValidNegativeFarLines_JUNCTION_2(pattern, lines, lastSingleLineId, speedSign)) {
                     valid = true;
-                } else if (isInJunctionCenter(lines) && 2 == pastLines.size() && areValidFarLines(prevMeas, pattern, pastLines, lastSingleLineId)) {
+                } else if (isInJunctionCenter(lines) && 2 == pastLines.size() && areValidNegativeFarLines_JUNCTION_2(pattern, pastLines, lastSingleLineId, speedSign)) {
                     valid = true;
                 }
             }
@@ -247,36 +281,9 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
     { LinePattern::JUNCTION_3, {
         centimeter_t(10),
         centimeter_t(130),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId, meter_t) {
+        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId, meter_t, Sign speedSign) {
             bool valid = false;
             const Lines pastLines = peek_back(prevMeas, centimeter_t(15)).lines;
-
-            static const std::function<bool(const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines&, uint8_t lastSingleLineId)> areValidFarLines = []
-                (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t lastSingleLineId) {
-
-                bool valid = false;
-                if (1 < lines.size() && micro::areFar(lines)) {
-                    Lines::const_iterator mainLine = LinePatternCalculator::getMainLine(lines, lastSingleLineId);
-                    if (2 == lines.size()) {
-                        if (Direction::RIGHT == pattern.side) {
-                            valid = *mainLine == lines[1];
-                        } else if (Direction::CENTER == pattern.side) {
-                            valid = true;
-                        } else if (Direction::LEFT == pattern.side) {
-                            valid = *mainLine == lines[0];
-                        }
-                    } else if (3 == lines.size()) {
-                        if (Direction::RIGHT == pattern.side) {
-                            valid = *mainLine == lines[2];
-                        } else if (Direction::CENTER == pattern.side) {
-                            valid = *mainLine == lines[1];
-                        } else if (Direction::LEFT == pattern.side) {
-                            valid = *mainLine == lines[0];
-                        }
-                    }
-                }
-                return valid;
-            };
 
             if (Sign::POSITIVE == pattern.dir) {
                 if (isInJunctionCenter(lines)) {
@@ -285,9 +292,9 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
                     valid = true;
                 }
             } else if (Sign::NEGATIVE == pattern.dir) {
-                if (areValidFarLines(prevMeas, pattern, lines, lastSingleLineId)) {
+                if (areValidNegativeFarLines_JUNCTION_3(pattern, lines, lastSingleLineId, speedSign)) {
                     valid = true;
-                } else if (isInJunctionCenter(lines) && 3 == pastLines.size() && areValidFarLines(prevMeas, pattern, pastLines, lastSingleLineId)) {
+                } else if (isInJunctionCenter(lines) && 3 == pastLines.size() && areValidNegativeFarLines_JUNCTION_3(pattern, pastLines, lastSingleLineId, speedSign)) {
                     valid = true;
                 }
             }

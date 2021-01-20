@@ -228,7 +228,7 @@ extern "C" void runLineCalcTask(void) {
 
         const LinePositions linePositions = linePosCalc.calculate(measurements);
         const Lines lines = lineFilter.update(linePositions);
-        linePatternCalc.update(domain, lines, distance);
+        linePatternCalc.update(domain, lines, distance, PANEL_VERSION_FRONT == getPanelVersion() ? sgn(speed) : -sgn(speed));
 
         if (PANEL_VERSION_FRONT == getPanelVersion()) {
             vehicleCanManager.periodicSend<can::FrontLines>(vehicleCanSubscriberId, lines);

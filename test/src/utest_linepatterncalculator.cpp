@@ -13,11 +13,19 @@ void test(const linePatternDomain_t domain, const LineDetections& lineDetections
     LinePatternCalculator calc;
     LinePatterns patterns;
 
+    uint8_t lineId = 0;
+
     for (uint32_t i = 0; i < lineDetections.size(); ++i) {
         const centimeter_t distance = centimeter_t(i);
-        const Lines& lines = lineDetections[i];
+        Lines lines = lineDetections[i];
 
-        calc.update(domain, lines, distance);
+        // Sets different line identifiers for each line in each iteration
+        // to prevent main line search from line id optimization.
+        for (Line& line : lines) {
+            line.id = ++lineId;
+        }
+
+        calc.update(domain, lines, distance, Sign::POSITIVE);
 
         const LinePattern& currentPattern = calc.pattern();
         if (patterns.empty() || *patterns.back() != currentPattern) {
@@ -56,6 +64,15 @@ TEST(LinePatternCalculator, SINGLE_LINE) {
 TEST(LinePatternCalculator, NONE) {
 
     const LineDetections lineDetections = {
+        { { millimeter_t(0) } },
+        { { millimeter_t(0) } },
+        { { millimeter_t(0) } },
+        { { millimeter_t(0) } },
+        { { millimeter_t(0) } },
+        { { millimeter_t(0) } },
+        { { millimeter_t(0) } },
+        { { millimeter_t(0) } },
+        { { millimeter_t(0) } },
         {},
         {},
         {},

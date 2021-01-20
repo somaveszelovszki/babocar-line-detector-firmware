@@ -28,7 +28,7 @@ LinePatternDescriptor::ValidLinesCount LinePatternDescriptor::getValidLines(Sign
     return validLines;
 }
 
-void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines& lines, meter_t currentDist) {
+void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines& lines, meter_t currentDist, const Sign speedSign) {
 
     this->prevMeas.push_back({ lines, currentDist });
     LinePattern& current = this->currentPattern();
@@ -41,7 +41,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
 
         for (linePatterns_t::iterator it = possiblePatterns.begin(); it != possiblePatterns.end();) {
             const LinePatternInfo& patternInfo = *PATTERN_INFO.at(it->type);
-            if (patternInfo.isValid(this->prevMeas, *it, lines, this->lastSingleLineId, currentDist)) {
+            if (patternInfo.isValid(this->prevMeas, *it, lines, this->lastSingleLineId, currentDist, speedSign)) {
                 if (1 == possiblePatterns.size() && currentDist - it->startDist >= patternInfo.minValidityLength) {
                     this->changePattern(*it);
                     break;
@@ -63,7 +63,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
             // under normal circumstances, maxLength should never be exceeded
             this->changePattern({ LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER, meter_t(0) });
 
-        } else if (!currentPatternInfo.isValid(this->prevMeas, current, lines, this->lastSingleLineId, currentDist)) {
+        } else if (!currentPatternInfo.isValid(this->prevMeas, current, lines, this->lastSingleLineId, currentDist, speedSign)) {
             this->isPatternChangeCheckActive = true;
             this->possiblePatterns = currentPatternInfo.validNextPatterns(current, domain);
 
