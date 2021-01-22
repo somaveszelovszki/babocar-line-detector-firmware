@@ -126,6 +126,7 @@ constexpr std::pair<uint8_t, uint8_t> REAR_SENSOR_LIMITS[cfg::NUM_SENSORS] = {
     { 8,   151 }  // 47
 };
 
+LinePosCalculator linePosCalc;
 LineFilter lineFilter;
 LinePatternCalculator linePatternCalc;
 
@@ -152,8 +153,8 @@ const Leds& updateFailureLeds() {
     animationTimer.checkTimeout();
     angle = map(getTime(), animationTimer.startTime(), animationTimer.startTime() + animationTimer.period(), radian_t(0), 2 * PI);
 
-    leds.reset();
-    leds.set(static_cast<uint32_t>(micro::round(SENSOR_OFFSET + micro::cos(angle) * SENSOR_OFFSET)), true);
+    leds.fill(false);
+    leds[static_cast<uint32_t>(micro::round(SENSOR_OFFSET + micro::cos(angle) * SENSOR_OFFSET))] = true;
 
     return leds;
 }
@@ -166,7 +167,7 @@ void updateSensorControl(const Lines& lines) {
     if (!numFailingTasksQueue.peek(numFailingTasks, millisecond_t(0)) || numFailingTasks > 0) {
         sensorControl.leds = updateFailureLeds();
     } else {
-        sensorControl.leds.reset();
+        sensorControl.leds.fill(false);
 
         if (indicatorLedsEnabled) {
             for (const Line& l : lines) {
@@ -176,7 +177,7 @@ void updateSensorControl(const Lines& lines) {
                 const uint8_t endIdx = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
 
                 for (uint8_t i = startIdx; i < endIdx; ++i) {
-                    sensorControl.leds.set(i, true);
+                    sensorControl.leds[i] = true;
                 }
             }
         }
@@ -214,8 +215,6 @@ void initializeVehicleCan() {
 
 extern "C" void runLineCalcTask(void) {
     SystemManager::instance().registerTask();
-
-    LinePosCalculator linePosCalc(PANEL_VERSION_FRONT == getPanelVersion() ? FRONT_SENSOR_LIMITS : REAR_SENSOR_LIMITS);
 
     initializeVehicleCan();
 

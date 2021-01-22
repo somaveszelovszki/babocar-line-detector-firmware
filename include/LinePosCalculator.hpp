@@ -40,7 +40,7 @@ typedef micro::sorted_vec<LinePosition, micro::Line::MAX_NUM_LINES> LinePosition
 
 class LinePosCalculator {
 public:
-    explicit LinePosCalculator(const std::pair<uint8_t, uint8_t> sensorLimits[cfg::NUM_SENSORS]);
+    LinePosCalculator() {}
 
     LinePositions calculate(const Measurements& measurements);
 
@@ -58,10 +58,15 @@ private:
 
     typedef micro::vec<groupIntensity_t, cfg::NUM_SENSORS - 2 * micro::round_up(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS)> groupIntensities_t;
 
-    void normalize(const uint8_t * const measurements, float * const OUT result);
+    LinePositions runCalculation(const Measurements& measurements);
+
+    void runCalibration(const Measurements& measurements);
+
+    void normalize(const Measurements& measurements, float * const OUT result);
 
     static groupIntensities_t calculateGroupIntensities(const float * const intensities);
     static micro::millimeter_t calculateLinePos(const float * const intensities, const uint8_t centerIdx);
 
-    const std::pair<uint8_t, uint8_t> *sensorLimits_;
+    Measurements whiteLevels_;
+    micro::vec<Measurements, 200> whiteLevelCalibrationBuffer_;
 };

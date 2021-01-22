@@ -7,11 +7,27 @@
 
 using namespace micro;
 
-LinePosCalculator::LinePosCalculator(const std::pair<uint8_t, uint8_t> sensorLimits[cfg::NUM_SENSORS])
-    : sensorLimits_(sensorLimits) {}
-
 LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
+    LinePositions positions;
 
+    if (this->whiteLevelCalibrationBuffer_.size() == this->whiteLevelCalibrationBuffer_.capacity()) {
+        positions = this->runCalculation(measurements);
+    } else {
+        this->runCalibration(measurements);
+    }
+
+    return positions;
+}
+
+millimeter_t LinePosCalculator::optoIdxToLinePos(const float optoIdx) {
+    return map(optoIdx, 0.0f, cfg::NUM_SENSORS - 1.0f, -cfg::OPTO_ARRAY_LENGTH / 2, cfg::OPTO_ARRAY_LENGTH / 2);
+}
+
+float LinePosCalculator::linePosToOptoPos(const micro::millimeter_t linePos) {
+    return map(linePos, -cfg::OPTO_ARRAY_LENGTH / 2, cfg::OPTO_ARRAY_LENGTH / 2, 0.0f, cfg::NUM_SENSORS - 1.0f);
+}
+
+LinePositions LinePosCalculator::runCalculation(const Measurements& measurements) {
     static constexpr float MAX_GROUP_INTENSITY = 1.0f / (1.0f + cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS);
 
     LinePositions positions;
@@ -53,21 +69,26 @@ LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
     return positions;
 }
 
-millimeter_t LinePosCalculator::optoIdxToLinePos(const float optoIdx) {
-    return map(optoIdx, 0.0f, cfg::NUM_SENSORS - 1.0f, -cfg::OPTO_ARRAY_LENGTH / 2, cfg::OPTO_ARRAY_LENGTH / 2);
+void LinePosCalculator::runCalibration(const Measurements& measurements) {
+    this->whiteLevelCalibrationBuffer_.push_back(measurements);
+    if (this->whiteLevelCalibrationBuffer_.size() == this->whiteLevelCalibrationBuffer_.capacity()) {
+        for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
+            float sum = 0.0f;
+            for (const Measurements& meas : this->whiteLevelCalibrationBuffer_) {
+                sum += meas[i];
+            }
+            this->whiteLevels_[i] = micro::round(sum / this->whiteLevelCalibrationBuffer_.size());
+        }
+    }
 }
 
-float LinePosCalculator::linePosToOptoPos(const micro::millimeter_t linePos) {
-    return map(linePos, -cfg::OPTO_ARRAY_LENGTH / 2, cfg::OPTO_ARRAY_LENGTH / 2, 0.0f, cfg::NUM_SENSORS - 1.0f);
-}
-
-void LinePosCalculator::normalize(const uint8_t * const measurements, float * const OUT result) {
+void LinePosCalculator::normalize(const Measurements& measurements, float * const OUT result) {
 
     float scaled[cfg::NUM_SENSORS];
 
     // removes sensor-specific offset
     for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
-        scaled[i] = micro::map(measurements[i], this->sensorLimits_[i].first, this->sensorLimits_[i].second, 0.0f, 1.0f);
+        scaled[i] = micro::map<uint8_t>(measurements[i], this->whiteLevels_[i], 255, 0.0f, 1.0f);
     }
 
     // removes dynamic light-related offset, that applies to the neighboring sensors

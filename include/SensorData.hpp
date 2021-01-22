@@ -1,12 +1,13 @@
 #pragma once
 
-#include <micro/container/bit_array.hpp>
 #include <micro/utils/types.hpp>
 
 #include <cfg_sensor.hpp>
 
-typedef uint8_t Measurements[cfg::NUM_SENSORS];
-typedef micro::bit_array<cfg::NUM_SENSORS> Leds;
+#include <array>
+
+typedef std::array<uint8_t, cfg::NUM_SENSORS> Measurements;
+typedef std::array<bool, cfg::NUM_SENSORS> Leds;
 
 struct SensorControlData {
     Leds leds;
