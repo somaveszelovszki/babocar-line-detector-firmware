@@ -62,6 +62,8 @@ private:
 
     void runCalibration(const Measurements& measurements);
 
+    void updateInvalidWhiteLevels();
+
     void normalize(const Measurements& measurements, float * const OUT result);
 
     static groupIntensities_t calculateGroupIntensities(const float * const intensities);

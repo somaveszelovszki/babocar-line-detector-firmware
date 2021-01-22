@@ -79,6 +79,28 @@ void LinePosCalculator::runCalibration(const Measurements& measurements) {
             }
             this->whiteLevels_[i] = micro::round(sum / this->whiteLevelCalibrationBuffer_.size());
         }
+
+        this->updateInvalidWhiteLevels();
+    }
+}
+
+void LinePosCalculator::updateInvalidWhiteLevels() {
+    Measurements sortedWhiteLevels;
+    std::copy(this->whiteLevels_.begin(), this->whiteLevels_.end(), sortedWhiteLevels.begin());
+    std::sort(sortedWhiteLevels.begin(), sortedWhiteLevels.end());
+    const uint8_t whiteLevelMedian = sortedWhiteLevels[sortedWhiteLevels.size() / 2];
+
+    for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
+        const std::pair<Measurements::iterator, Measurements::iterator> range = {
+            std::next(this->whiteLevels_.begin(), max<uint8_t>(i, cfg::WHITE_LEVEL_LINE_GROUP_RADIUS) - cfg::WHITE_LEVEL_LINE_GROUP_RADIUS),
+            std::next(this->whiteLevels_.begin(), min<uint8_t>(i + cfg::WHITE_LEVEL_LINE_GROUP_RADIUS + 1, cfg::NUM_SENSORS))
+        };
+
+        if (*std::max_element(range.first, range.second) > 200) {
+            for (Measurements::iterator it = range.first; it != range.second; ++it) {
+                *it = whiteLevelMedian;
+            }
+        }
     }
 }
 

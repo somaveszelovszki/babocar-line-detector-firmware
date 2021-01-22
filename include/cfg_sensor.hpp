@@ -6,6 +6,7 @@ namespace cfg {
 
 constexpr uint8_t MAX_NUM_FILTERED_LINES             = 6;
 constexpr uint8_t NUM_SENSORS                        = 48;
+constexpr uint8_t WHITE_LEVEL_LINE_GROUP_RADIUS      = 2;
 constexpr uint8_t LINE_POS_CALC_OFFSET_FILTER_RADIUS = 3;
 constexpr float LINE_POS_CALC_INTENSITY_GROUP_RADIUS = 0.5f;
 constexpr float LINE_POS_CALC_GROUP_RADIUS           = 1.0f;
