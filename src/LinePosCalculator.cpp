@@ -96,8 +96,11 @@ void LinePosCalculator::normalize(const Measurements& measurements, float * cons
         const uint8_t startIdx = max<uint8_t>(i, cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS) - cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS;
         const uint8_t endIdx = min<uint8_t>(i + cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS + 1, cfg::NUM_SENSORS);
 
-        const float moving_min = *std::min_element(&scaled[startIdx], &scaled[endIdx]);
-        result[i] = map(scaled[i], moving_min, 1.0f, 0.0f, 1.0f);
+        std::array<float, 2 * cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS + 1> group;
+        std::copy(&scaled[startIdx], &scaled[endIdx], group.begin());
+        std::sort(group.begin(), std::next(group.begin(), endIdx - startIdx));
+
+        result[i] = map(scaled[i], group[group.size() / 3], 1.0f, 0.0f, 1.0f);
     }
 }
 
