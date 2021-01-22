@@ -17,57 +17,6 @@ namespace {
 
 constexpr uint32_t NUM_TESTS_PER_SCENARIO = 10000;
 
-constexpr std::pair<uint8_t, uint8_t> SENSOR_LIMITS[cfg::NUM_SENSORS] = {
-    { 0,  255 }, // 0
-    { 0,  255 }, // 1
-    { 0,  255 }, // 2
-    { 0,  255 }, // 3
-    { 0,  255 }, // 4
-    { 0,  255 }, // 5
-    { 0,  255 }, // 6
-    { 0,  255 }, // 7
-    { 0,  255 }, // 8
-    { 0,  255 }, // 9
-    { 0,  255 }, // 10
-    { 0,  255 }, // 11
-    { 0,  255 }, // 12
-    { 0,  255 }, // 13
-    { 0,  255 }, // 14
-    { 0,  255 }, // 15
-    { 0,  255 }, // 16
-    { 0,  255 }, // 17
-    { 0,  255 }, // 18
-    { 0,  255 }, // 19
-    { 0,  255 }, // 20
-    { 0,  255 }, // 21
-    { 0,  255 }, // 22
-    { 0,  255 }, // 23
-    { 0,  255 }, // 24
-    { 0,  255 }, // 25
-    { 0,  255 }, // 26
-    { 0,  255 }, // 27
-    { 0,  255 }, // 28
-    { 0,  255 }, // 29
-    { 0,  255 }, // 30
-    { 0,  255 }, // 31
-    { 0,  255 }, // 32
-    { 0,  255 }, // 33
-    { 0,  255 }, // 34
-    { 0,  255 }, // 35
-    { 0,  255 }, // 36
-    { 0,  255 }, // 37
-    { 0,  255 }, // 38
-    { 0,  255 }, // 39
-    { 0,  255 }, // 40
-    { 0,  255 }, // 41
-    { 0,  255 }, // 42
-    { 0,  255 }, // 43
-    { 0,  255 }, // 44
-    { 0,  255 }, // 45
-    { 0,  255 }, // 46
-    { 0,  255 }  // 47
-};
-
 void createMeasurements(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines, Measurements& meas) {
 
     static constexpr double RAND_WEIGHT = 0.25;
@@ -90,7 +39,7 @@ void createMeasurements(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines, Mea
 }
 
 void test(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines) {
-    LinePosCalculator linePosCalculator(SENSOR_LIMITS);
+    LinePosCalculator linePosCalculator(false);
     Measurements measurements;
 
     for (uint32_t i = 0; i < NUM_TESTS_PER_SCENARIO; ++i) {

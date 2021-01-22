@@ -40,7 +40,7 @@ typedef micro::sorted_vec<LinePosition, micro::Line::MAX_NUM_LINES> LinePosition
 
 class LinePosCalculator {
 public:
-    LinePosCalculator() {}
+    explicit LinePosCalculator(const bool whiteLevelCalibrationEnabled);
 
     LinePositions calculate(const Measurements& measurements);
 
@@ -69,6 +69,7 @@ private:
     static groupIntensities_t calculateGroupIntensities(const float * const intensities);
     static micro::millimeter_t calculateLinePos(const float * const intensities, const uint8_t centerIdx);
 
+    bool whiteLevelCalibrationEnabled_;
     Measurements whiteLevels_;
     micro::vec<Measurements, 200> whiteLevelCalibrationBuffer_;
 };

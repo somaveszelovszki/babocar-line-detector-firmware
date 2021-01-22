@@ -7,10 +7,15 @@
 
 using namespace micro;
 
+LinePosCalculator::LinePosCalculator(const bool whiteLevelCalibrationEnabled)
+    : whiteLevelCalibrationEnabled_(whiteLevelCalibrationEnabled) {
+    this->whiteLevels_.fill(0);
+}
+
 LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
     LinePositions positions;
 
-    if (this->whiteLevelCalibrationBuffer_.size() == this->whiteLevelCalibrationBuffer_.capacity()) {
+    if (!this->whiteLevelCalibrationEnabled_ || this->whiteLevelCalibrationBuffer_.size() == this->whiteLevelCalibrationBuffer_.capacity()) {
         positions = this->runCalculation(measurements);
     } else {
         this->runCalibration(measurements);

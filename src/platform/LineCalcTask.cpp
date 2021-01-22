@@ -22,7 +22,7 @@ queue_t<SensorControlData, 1> sensorControlDataQueue;
 
 namespace {
 
-LinePosCalculator linePosCalc;
+LinePosCalculator linePosCalc(true);
 LineFilter lineFilter;
 LinePatternCalculator linePatternCalc;
 
