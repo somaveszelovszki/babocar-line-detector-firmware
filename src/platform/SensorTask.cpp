@@ -1,13 +1,9 @@
-#include <cfg_board.hpp>
-#include <micro/debug/DebugLed.hpp>
-#include <micro/debug/SystemManager.hpp>
-#include <micro/panel/CanManager.hpp>
-#include <micro/panel/vehicleCanTypes.hpp>
 #include <micro/port/queue.hpp>
 #include <micro/port/task.hpp>
 #include <micro/utils/log.hpp>
 #include <micro/utils/str_utils.hpp>
 
+#include <cfg_board.hpp>
 #include <SensorHandler.hpp>
 
 #include <cstring>
@@ -39,7 +35,6 @@ std::pair<uint8_t, uint8_t> getScanRange() {
 } // namespace
 
 extern "C" void runSensorTask(void) {
-    SystemManager::instance().registerTask();
 
     sensorHandler.initialize();
 
@@ -56,8 +51,6 @@ extern "C" void runSensorTask(void) {
 
         measurementsQueue.send(measurements);
         sensorControlDataQueue.receive(sensorControl);
-
-        SystemManager::instance().notify(true);
     }
 }
 
