@@ -98,7 +98,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
         }
     } },
     { LinePattern::SINGLE_LINE, {
-        centimeter_t(7),
+        centimeter_t(5),
         micro::numeric_limits<meter_t>::infinity(),
         [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines& lines, uint8_t, meter_t, Sign) {
             return 1 == lines.size();
@@ -209,11 +209,11 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
         }
     } },
     { LinePattern::JUNCTION_1, {
-        centimeter_t(20),
+        centimeter_t(4),
         centimeter_t(130),
         [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, uint8_t, meter_t currentDist, Sign) {
             bool valid = false;
-            const Lines pastLines = peek_back(prevMeas, centimeter_t(25)).lines;
+            const Lines pastLines = peek_back(prevMeas, centimeter_t(8)).lines;
 
             if (Sign::POSITIVE == pattern.dir) {
                 if (isInJunctionCenter(lines)) {
