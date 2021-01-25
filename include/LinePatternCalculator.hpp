@@ -69,13 +69,12 @@ public:
         micro::meter_t minValidityLength;
         micro::meter_t maxLength;
 
-        std::function<bool(const measurement_buffer_t&, const micro::LinePattern&, const micro::Lines&, uint8_t, micro::meter_t, micro::Sign)> isValid;
+        std::function<bool(const measurement_buffer_t&, const micro::LinePattern&, const micro::Lines&, const micro::Line&, micro::meter_t, micro::Sign)> isValid;
         std::function<linePatterns_t(const micro::LinePattern&, const micro::linePatternDomain_t)> validNextPatterns;
     };
 
     LinePatternCalculator()
-        : isPatternChangeCheckActive(false)
-        , lastSingleLineId(0) {
+        : isPatternChangeCheckActive(false) {
         this->prevPatterns.push_back({ micro::LinePattern::SINGLE_LINE, micro::Sign::NEUTRAL, micro::Direction::CENTER, micro::meter_t(0) });
     }
     void update(const micro::linePatternDomain_t domain, const micro::Lines& lines, micro::meter_t currentDist, const micro::Sign speedSign);
@@ -88,7 +87,7 @@ public:
         return this->isPatternChangeCheckActive;
     }
 
-    static micro::Lines::const_iterator getMainLine(const micro::Lines& lines, const uint8_t lastSingleLineId);
+    static micro::Lines::const_iterator getMainLine(const micro::Lines& lines, const micro::Line& lastSingleLine);
 
 private:
     micro::LinePattern& currentPattern() {
@@ -102,7 +101,7 @@ private:
 
     bool isPatternChangeCheckActive;
     linePatterns_t possiblePatterns;
-    uint8_t lastSingleLineId;
+    micro::Line lastSingleLine;
 };
 
 extern const micro::sorted_map<micro::LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO;

@@ -334,6 +334,98 @@ TEST(LinePatternCalculator, JUNCTION_2_NEGATIVE_LEFT_TO_JUNCTION_2_POSITIVE_RIGH
     test(linePatternDomain_t::Labyrinth, lineDetections, expectedPatterns);
 }
 
+TEST(LinePatternCalculator, JUNCTION_1_NEGATIVE_CENTER_TO_JUNCTION_2_POSITIVE_RIGHT) {
+
+    const LineDetections lineDetections = {
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(0) } },
+        { { millimeter_t(-38) }, { millimeter_t(1) } },
+        { { millimeter_t(-38) }, { millimeter_t(2) } },
+        { { millimeter_t(-38) }, { millimeter_t(3) } },
+        { { millimeter_t(-38) }, { millimeter_t(4) } },
+        { { millimeter_t(-38) }, { millimeter_t(6) } },
+        { { millimeter_t(-38) }, { millimeter_t(8) } },
+        { { millimeter_t(-38) }, { millimeter_t(10) } },
+        { { millimeter_t(-38) }, { millimeter_t(13) } },
+        { { millimeter_t(-38) }, { millimeter_t(16) } },
+        { { millimeter_t(-38) }, { millimeter_t(19) } },
+        { { millimeter_t(-38) }, { millimeter_t(22) } },
+        { { millimeter_t(-38) }, { millimeter_t(25) } },
+        { { millimeter_t(-38) }, { millimeter_t(29) } },
+        { { millimeter_t(-38) }, { millimeter_t(33) } },
+        { { millimeter_t(-38) }, { millimeter_t(37) } },
+        { { millimeter_t(-38) }, { millimeter_t(42) } },
+        { { millimeter_t(-38) }, { millimeter_t(47) } },
+        { { millimeter_t(-38) }, { millimeter_t(52) } },
+        { { millimeter_t(-38) }, { millimeter_t(58) } },
+        { { millimeter_t(-38) }, { millimeter_t(66) } },
+        { { millimeter_t(-38) }, { millimeter_t(72) } },
+        { { millimeter_t(-38) }, { millimeter_t(78) } },
+        { { millimeter_t(-38) }, { millimeter_t(84) } },
+        { { millimeter_t(-38) }, { millimeter_t(90) } },
+        { { millimeter_t(-38) }, { millimeter_t(97) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } },
+        { { millimeter_t(-38) } }
+    };
+
+    const LinePatterns& expectedPatterns = {
+        { LinePattern::type_t::SINGLE_LINE, Sign::NEUTRAL,  Direction::CENTER },
+        { LinePattern::type_t::JUNCTION_1,  Sign::NEGATIVE, Direction::CENTER },
+        { LinePattern::type_t::JUNCTION_2,  Sign::POSITIVE, Direction::RIGHT  },
+        { LinePattern::type_t::SINGLE_LINE, Sign::NEUTRAL,  Direction::CENTER }
+    };
+
+    test(linePatternDomain_t::Labyrinth, lineDetections, expectedPatterns);
+}
+
 TEST(LinePatternCalculator, JUNCTION_3_NEGATIVE_LEFT_TO_JUNCTION_3_POSITIVE_CENTER) {
 
     const LineDetections lineDetections = {

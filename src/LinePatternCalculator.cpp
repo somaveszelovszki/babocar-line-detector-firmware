@@ -34,14 +34,14 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
     LinePattern& current = this->currentPattern();
 
     if (LinePattern::SINGLE_LINE == current.type && 1 == lines.size()) {
-        this->lastSingleLineId = lines[0].id;
+        this->lastSingleLine = lines[0];
     }
 
     if (this->isPatternChangeCheckActive) {
 
         for (linePatterns_t::iterator it = possiblePatterns.begin(); it != possiblePatterns.end();) {
             const LinePatternInfo& patternInfo = *PATTERN_INFO.at(it->type);
-            if (patternInfo.isValid(this->prevMeas, *it, lines, this->lastSingleLineId, currentDist, speedSign)) {
+            if (patternInfo.isValid(this->prevMeas, *it, lines, this->lastSingleLine, currentDist, speedSign)) {
                 if (1 == possiblePatterns.size() && currentDist - it->startDist >= patternInfo.minValidityLength) {
                     this->changePattern(*it);
                     break;
@@ -63,7 +63,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
             // under normal circumstances, maxLength should never be exceeded
             this->changePattern({ LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER, currentDist });
 
-        } else if (!currentPatternInfo.isValid(this->prevMeas, current, lines, this->lastSingleLineId, currentDist, speedSign)) {
+        } else if (!currentPatternInfo.isValid(this->prevMeas, current, lines, this->lastSingleLine, currentDist, speedSign)) {
             this->isPatternChangeCheckActive = true;
             this->possiblePatterns = currentPatternInfo.validNextPatterns(current, domain);
 
@@ -79,10 +79,10 @@ void LinePatternCalculator::changePattern(const LinePattern& newPattern) {
     this->isPatternChangeCheckActive = false;
 }
 
-Lines::const_iterator LinePatternCalculator::getMainLine(const Lines& lines, const uint8_t lastSingleLineId) {
-    Lines::const_iterator mainLine = micro::findLine(lines, lastSingleLineId);
+Lines::const_iterator LinePatternCalculator::getMainLine(const Lines& lines, const micro::Line& lastSingleLine) {
+    Lines::const_iterator mainLine = micro::findLine(lines, lastSingleLine.id);
     if (mainLine == lines.end()) {
-        mainLine = micro::findClosestLine(lines, millimeter_t(0));
+        mainLine = micro::findClosestLine(lines, lastSingleLine.pos);
     }
     return mainLine;
 }
