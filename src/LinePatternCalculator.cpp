@@ -61,7 +61,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
 
         if (currentDist - current.startDist > currentPatternInfo.maxLength) {
             // under normal circumstances, maxLength should never be exceeded
-            this->changePattern({ LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER, meter_t(0) });
+            this->changePattern({ LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER, currentDist });
 
         } else if (!currentPatternInfo.isValid(this->prevMeas, current, lines, this->lastSingleLineId, currentDist, speedSign)) {
             this->isPatternChangeCheckActive = true;
