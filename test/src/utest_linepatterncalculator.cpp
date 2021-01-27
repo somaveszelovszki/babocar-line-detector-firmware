@@ -524,7 +524,7 @@ TEST(LinePatternCalculator, JUNCTION_3_NEGATIVE_LEFT_TO_JUNCTION_3_POSITIVE_CENT
     test(linePatternDomain_t::Labyrinth, lineDetections, expectedPatterns);
 }
 
-TEST(LinePatternCalculator, LANE_CHANGE) {
+TEST(LinePatternCalculator, LANE_CHANGE_POSITIVE_RIGHT) {
 
     const LineDetections lineDetections = {
         { { millimeter_t(0) } },
@@ -667,7 +667,7 @@ TEST(LinePatternCalculator, LANE_CHANGE) {
     test(linePatternDomain_t::Labyrinth, lineDetections, expectedPatterns);
 }
 
-TEST(LinePatternCalculator, LANE_CHANGE_noisy) {
+TEST(LinePatternCalculator, LANE_CHANGE_POSITIVE_RIGHT_noisy) {
 
     const LineDetections lineDetections = {
         { { millimeter_t(0) } },
