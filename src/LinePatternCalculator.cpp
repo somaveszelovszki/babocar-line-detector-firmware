@@ -16,13 +16,15 @@ LinePatternDescriptor::ValidLinesCount LinePatternDescriptor::getValidLines(Sign
         this->getBounds(this->pattern.begin(), this->pattern.end(), patternDist, eps) :
         this->getBounds(this->pattern.rbegin(), this->pattern.rend(), patternDist, eps);
 
-    const std::pair<uint8_t, uint8_t> validLinesRange = {
-         std::min(bounds.first->numLines, bounds.second->numLines),
-         std::max(bounds.first->numLines, bounds.second->numLines)
-    };
+    if (bounds.first && bounds.second) {
+        const std::pair<uint8_t, uint8_t> validLinesRange = {
+             std::min(bounds.first->numLines, bounds.second->numLines),
+             std::max(bounds.first->numLines, bounds.second->numLines)
+        };
 
-    for (uint8_t numLines = validLinesRange.first; numLines <= validLinesRange.second; ++numLines) {
-        validLines.push_back(numLines);
+        for (uint8_t numLines = validLinesRange.first; numLines <= validLinesRange.second; ++numLines) {
+            validLines.push_back(numLines);
+        }
     }
 
     return validLines;

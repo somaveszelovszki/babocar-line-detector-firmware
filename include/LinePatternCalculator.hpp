@@ -41,7 +41,7 @@ private:
                 bounds.second = micro::to_raw_pointer(std::next(it) == patternEnd ? it : std::next(it));
             }
 
-            if (bounds.first) {
+            if (bounds.first && bounds.second) {
                 break;
             }
 
