@@ -185,7 +185,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
             };
 
             bool valid = false;
-            const LinePatternDescriptor::ValidLinesCount validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(2));
+            const LinePatternDescriptor::ValidLinesCount validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
 
             if (std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end() && micro::areClose(lines)) {
                 const Lines::const_iterator mainLine = LinePatternCalculator::getMainLine(lines, lastSingleLine);
