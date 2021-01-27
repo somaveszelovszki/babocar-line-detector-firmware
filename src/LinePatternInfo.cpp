@@ -29,10 +29,18 @@ bool isInJunctionCenter(const Lines& lines) {
 Lines::const_iterator expectedMainLine(const LinePattern& pattern, const Lines& lines, const Sign speedSign) {
     Direction expectedMainLineDir = Direction::CENTER;
 
-    if (pattern.dir == speedSign) {
-        expectedMainLineDir = pattern.side;
+    if (LinePattern::LANE_CHANGE == pattern.type) {
+        if (Sign::POSITIVE == speedSign) {
+            expectedMainLineDir = -pattern.side;
+        } else {
+            expectedMainLineDir = pattern.side;
+        }
     } else {
-        expectedMainLineDir = -pattern.side;
+        if (pattern.dir == speedSign) {
+            expectedMainLineDir = pattern.side;
+        } else {
+            expectedMainLineDir = -pattern.side;
+        }
     }
 
     Lines::const_iterator line = lines.end();
@@ -170,7 +178,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
     { LinePattern::LANE_CHANGE, {
         centimeter_t(30),
         centimeter_t(120),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t currentDist, Sign) {
+        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t currentDist, Sign speedSign) {
 
             static const LinePatternDescriptor descriptor = {
                 { 2, centimeter_t(16) },
@@ -184,20 +192,11 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
                 { 2, centimeter_t(8)  }
             };
 
-            bool valid = false;
             const LinePatternDescriptor::ValidLinesCount validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
 
-            if (std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end() && micro::areClose(lines)) {
-                const Lines::const_iterator mainLine = LinePatternCalculator::getMainLine(lines, lastSingleLine);
-
-                if (Direction::LEFT == pattern.side) {
-                    valid = mainLine == lines.back();
-                } else if (Direction::RIGHT == pattern.side) {
-                    valid = mainLine == lines.begin();
-                }
-            }
-
-            return valid;
+            return micro::areClose(lines)                                                            &&
+                   std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end() &&
+                   LinePatternCalculator::getMainLine(lines, lastSingleLine) == expectedMainLine(pattern, lines, speedSign);
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
             LinePatternCalculator::linePatterns_t validPatterns;
