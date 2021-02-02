@@ -62,7 +62,7 @@ private:
 
     void runCalibration(const Measurements& measurements);
 
-    void updateInvalidWhiteLevels();
+    void updateInvalidWhiteLevels(const LinePositions& linePositions);
 
     void normalize(const Measurements& measurements, float * const OUT result);
 

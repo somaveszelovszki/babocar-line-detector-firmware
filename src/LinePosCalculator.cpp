@@ -77,6 +77,9 @@ LinePositions LinePosCalculator::runCalculation(const Measurements& measurements
 void LinePosCalculator::runCalibration(const Measurements& measurements) {
     this->whiteLevelCalibrationBuffer_.push_back(measurements);
     if (this->whiteLevelCalibrationBuffer_.size() == this->whiteLevelCalibrationBuffer_.capacity()) {
+
+        const LinePositions linePositions = this->runCalculation(measurements);
+
         for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
             float sum = 0.0f;
             for (const Measurements& meas : this->whiteLevelCalibrationBuffer_) {
@@ -85,26 +88,26 @@ void LinePosCalculator::runCalibration(const Measurements& measurements) {
             this->whiteLevels_[i] = micro::round(sum / this->whiteLevelCalibrationBuffer_.size());
         }
 
-        this->updateInvalidWhiteLevels();
+        this->updateInvalidWhiteLevels(linePositions);
     }
 }
 
-void LinePosCalculator::updateInvalidWhiteLevels() {
+void LinePosCalculator::updateInvalidWhiteLevels(const LinePositions& linePositions) {
     Measurements sortedWhiteLevels;
     std::copy(this->whiteLevels_.begin(), this->whiteLevels_.end(), sortedWhiteLevels.begin());
     std::sort(sortedWhiteLevels.begin(), sortedWhiteLevels.end());
-    const uint8_t whiteLevelMedian = sortedWhiteLevels[sortedWhiteLevels.size() / 2];
+    const uint8_t whiteLevelMedian = sortedWhiteLevels[cfg::NUM_SENSORS / 2];
 
-    for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
+    for (const LinePosition& linePos : linePositions) {
+        const uint8_t sensorIdx = micro::round(linePosToOptoPos(linePos.pos));
+
         const std::pair<Measurements::iterator, Measurements::iterator> range = {
-            std::next(this->whiteLevels_.begin(), max<uint8_t>(i, cfg::WHITE_LEVEL_LINE_GROUP_RADIUS) - cfg::WHITE_LEVEL_LINE_GROUP_RADIUS),
-            std::next(this->whiteLevels_.begin(), min<uint8_t>(i + cfg::WHITE_LEVEL_LINE_GROUP_RADIUS + 1, cfg::NUM_SENSORS))
+            std::next(this->whiteLevels_.begin(), max<uint8_t>(sensorIdx, cfg::WHITE_LEVEL_LINE_GROUP_RADIUS) - cfg::WHITE_LEVEL_LINE_GROUP_RADIUS),
+            std::next(this->whiteLevels_.begin(), min<uint8_t>(sensorIdx + cfg::WHITE_LEVEL_LINE_GROUP_RADIUS + 1, cfg::NUM_SENSORS))
         };
 
-        if (*std::max_element(range.first, range.second) > 200) {
-            for (Measurements::iterator it = range.first; it != range.second; ++it) {
-                *it = whiteLevelMedian;
-            }
+        for (Measurements::iterator it = range.first; it != range.second; ++it) {
+            *it = whiteLevelMedian;
         }
     }
 }
