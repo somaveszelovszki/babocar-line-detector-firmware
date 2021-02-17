@@ -221,8 +221,7 @@ const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10
                     valid = true;
                 }
             } else if (Sign::NEGATIVE == pattern.dir) {
-                const Lines pastLines = peek_back(prevMeas, centimeter_t(25)).lines;
-                if (isInJunctionCenter(lines) && 1 == pastLines.size()) {
+                if (isInJunctionCenter(lines)) {
                     valid = true;
                 }
             }
