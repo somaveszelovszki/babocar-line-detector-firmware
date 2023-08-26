@@ -1,5 +1,8 @@
+#include <etl/vector.h>
+
 #include <micro/math/numeric.hpp>
 #include <micro/test/utils.hpp>
+
 #include <LinePosCalculator.hpp>
 
 #define PRINT_MEAS false
@@ -17,7 +20,7 @@ namespace {
 
 constexpr uint32_t NUM_TESTS_PER_SCENARIO = 10000;
 
-void createMeasurements(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines, Measurements& meas) {
+void createMeasurements(const etl::vector<millimeter_t, Line::MAX_NUM_LINES>& lines, Measurements& meas) {
 
     static constexpr double RAND_WEIGHT = 0.25;
     static constexpr double SIGMA = 1.0;
@@ -38,7 +41,7 @@ void createMeasurements(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines, Mea
     }
 }
 
-void test(const vec<millimeter_t, Line::MAX_NUM_LINES>& lines) {
+void test(const etl::vector<millimeter_t, Line::MAX_NUM_LINES>& lines) {
     LinePosCalculator linePosCalculator(false);
     Measurements measurements;
 

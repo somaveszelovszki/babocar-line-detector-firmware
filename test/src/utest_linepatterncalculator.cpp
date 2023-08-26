@@ -1,13 +1,16 @@
+#include <etl/vector.h>
+
 #include <micro/math/numeric.hpp>
 #include <micro/test/utils.hpp>
+
 #include <LinePatternCalculator.hpp>
 
 using namespace micro;
 
 namespace {
 
-typedef vec<Lines, 500> LineDetections;
-typedef vec<LinePattern, 10> LinePatterns;
+typedef etl::vector<Lines, 500> LineDetections;
+typedef etl::vector<LinePattern, 10> LinePatterns;
 
 void test(const linePatternDomain_t domain, const LineDetections& lineDetections, const LinePatterns& expectedPatterns) {
     LinePatternCalculator calc;
@@ -28,7 +31,7 @@ void test(const linePatternDomain_t domain, const LineDetections& lineDetections
         calc.update(domain, lines, distance, Sign::POSITIVE);
 
         const LinePattern& currentPattern = calc.pattern();
-        if (patterns.empty() || *patterns.back() != currentPattern) {
+        if (patterns.empty() || patterns.back() != currentPattern) {
             patterns.push_back(currentPattern);
         }
     }
