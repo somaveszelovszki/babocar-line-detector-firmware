@@ -63,7 +63,7 @@ void updateSensorControl(const Lines& lines, const bool isOk) {
 
         if (indicatorLedsEnabled) {
             for (const Line& l : lines) {
-                const uint8_t centerIdx = static_cast<uint8_t>(round(LinePosCalculator::linePosToOptoPos(l.pos)));
+                const uint8_t centerIdx = static_cast<uint8_t>(micro::round(LinePosCalculator::linePosToOptoPos(l.pos)));
 
                 const uint8_t startIdx = max<uint8_t>(centerIdx, LED_RADIUS) - LED_RADIUS;
                 const uint8_t endIdx = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
@@ -83,7 +83,7 @@ void updateSensorControl(const Lines& lines, const bool isOk) {
         const millimeter_t avgLinePos = std::accumulate(lines.begin(), lines.end(), millimeter_t(0),
             [] (const millimeter_t& sum, const Line& line) { return sum + line.pos; }) / lines.size();
 
-        sensorControl.scanRangeCenter = round(LinePosCalculator::linePosToOptoPos(avgLinePos));
+        sensorControl.scanRangeCenter = micro::round(LinePosCalculator::linePosToOptoPos(avgLinePos));
     }
 }
 
