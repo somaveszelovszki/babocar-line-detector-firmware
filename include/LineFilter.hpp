@@ -1,7 +1,6 @@
 #pragma once
 
 #include <micro/container/infinite_buffer.hpp>
-#include <micro/container/vec.hpp>
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/Line.hpp>
 

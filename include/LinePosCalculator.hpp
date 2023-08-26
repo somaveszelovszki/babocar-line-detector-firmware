@@ -1,6 +1,9 @@
 #pragma once
 
-#include <micro/container/vec.hpp>
+#include <utility>
+
+#include <etl/vector.h>
+
 #include <micro/math/numeric.hpp>
 #include <micro/utils/Line.hpp>
 #include <micro/utils/units.hpp>
@@ -8,7 +11,6 @@
 #include <cfg_sensor.hpp>
 #include <SensorData.hpp>
 
-#include <utility>
 
 struct WeightCalculator {
     int8_t radius    = 0;
@@ -56,7 +58,7 @@ private:
         bool operator>(const groupIntensity_t& other) const { return this->intensity > other.intensity; }
     };
 
-    typedef micro::vec<groupIntensity_t, cfg::NUM_SENSORS - 2 * micro::round_up(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS)> groupIntensities_t;
+    typedef etl::vector<groupIntensity_t, cfg::NUM_SENSORS - 2 * micro::round_up(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS)> groupIntensities_t;
 
     LinePositions runCalculation(const Measurements& measurements);
 
@@ -71,5 +73,5 @@ private:
 
     bool whiteLevelCalibrationEnabled_;
     Measurements whiteLevels_;
-    micro::vec<Measurements, 200> whiteLevelCalibrationBuffer_;
+    etl::vector<Measurements, 200> whiteLevelCalibrationBuffer_;
 };

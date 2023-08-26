@@ -1,5 +1,4 @@
 #include <micro/container/map.hpp>
-#include <micro/container/vec.hpp>
 #include <micro/math/unit_utils.hpp>
 
 #include <LinePatternCalculator.hpp>

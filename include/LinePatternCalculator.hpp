@@ -1,10 +1,12 @@
 #pragma once
 
+#include <functional>
+
+#include <etl/vector.h>
+
 #include <micro/container/infinite_buffer.hpp>
 #include <micro/container/map.hpp>
 #include <micro/utils/LinePattern.hpp>
-
-#include <functional>
 
 class LinePatternDescriptor {
 public:
@@ -51,7 +53,7 @@ private:
         return bounds;
     }
 
-    micro::vec<LineSegment, 20> pattern;
+    etl::vector<LineSegment, 20> pattern;
 };
 
 class LinePatternCalculator {
@@ -63,7 +65,7 @@ public:
 
     typedef micro::infinite_buffer<StampedLines, 1000> measurement_buffer_t;
     typedef micro::infinite_buffer<micro::LinePattern, 200> pattern_buffer_t;
-    typedef micro::vec<micro::LinePattern, 20> linePatterns_t;
+    typedef etl::vector<micro::LinePattern, 20> linePatterns_t;
 
     struct LinePatternInfo {
         micro::meter_t minValidityLength;

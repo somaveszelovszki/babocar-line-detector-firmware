@@ -1,18 +1,19 @@
 #pragma once
 
-#include <micro/container/vec.hpp>
+#include <utility>
+
+#include <etl/vector.h>
+
 #include <micro/port/gpio.hpp>
 #include <micro/port/spi.hpp>
 #include <micro/port/semaphore.hpp>
 
 #include <SensorData.hpp>
 
-#include <utility>
-
 class SensorHandler {
 public:
     SensorHandler(const micro::spi_t& spi,
-        const micro::vec<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
+        const etl::vector<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
         const micro::gpio_t& LE_opto,
         const micro::gpio_t& OE_opto,
         const micro::gpio_t& LE_ind,
@@ -32,7 +33,7 @@ private:
 private:
     micro::semaphore_t semaphore_;
     const micro::spi_t spi_;
-    const micro::vec<micro::gpio_t, cfg::NUM_SENSORS / 8> adcEnPins_;
+    const etl::vector<micro::gpio_t, cfg::NUM_SENSORS / 8> adcEnPins_;
     const micro::gpio_t LE_opto_;
     const micro::gpio_t OE_opto_;
     const micro::gpio_t LE_ind_;
