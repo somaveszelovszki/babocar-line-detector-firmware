@@ -2,8 +2,9 @@
 
 #include <functional>
 
-#include <etl/vector.h>
 #include <etl/map.h>
+#include <etl/set.h>
+#include <etl/vector.h>
 
 #include <micro/container/infinite_buffer.hpp>
 #include <micro/utils/LinePattern.hpp>
@@ -15,7 +16,7 @@ public:
         micro::centimeter_t length;
     };
 
-    typedef micro::set<uint8_t, micro::Line::MAX_NUM_LINES + 1> ValidLinesCount;
+    using ValidLinesCount = etl::set<uint8_t, micro::Line::MAX_NUM_LINES + 1>;
 
     LinePatternDescriptor(const std::initializer_list<LineSegment>& pattern);
 

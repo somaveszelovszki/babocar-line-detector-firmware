@@ -7,7 +7,7 @@ using namespace micro;
 LinePatternDescriptor::LinePatternDescriptor(const std::initializer_list<LineSegment>& pattern)
     : pattern(pattern) {}
 
-LinePatternDescriptor::ValidLinesCount LinePatternDescriptor::getValidLines(Sign dir, centimeter_t patternDist, centimeter_t eps) const {
+auto LinePatternDescriptor::getValidLines(Sign dir, centimeter_t patternDist, centimeter_t eps) const -> ValidLinesCount {
     ValidLinesCount validLines;
 
     const std::pair<const LineSegment*, const LineSegment*> bounds = dir != Sign::NEGATIVE ?
@@ -21,7 +21,7 @@ LinePatternDescriptor::ValidLinesCount LinePatternDescriptor::getValidLines(Sign
         };
 
         for (uint8_t numLines = validLinesRange.first; numLines <= validLinesRange.second; ++numLines) {
-            validLines.push_back(numLines);
+            validLines.insert(numLines);
         }
     }
 

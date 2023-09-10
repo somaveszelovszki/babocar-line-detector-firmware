@@ -149,8 +149,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
                 { 3, centimeter_t(8) }
             };
 
-            LinePatternDescriptor::ValidLinesCount validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
-
+            const auto validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
             return areClose(lines) && std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end();
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
@@ -192,7 +191,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
                 { 2, centimeter_t(8)  }
             };
 
-            const LinePatternDescriptor::ValidLinesCount validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
+            const auto validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
 
             return micro::areClose(lines)                                                            &&
                    std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end() &&
