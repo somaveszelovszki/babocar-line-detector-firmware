@@ -1,4 +1,3 @@
-#include <micro/container/map.hpp>
 #include <micro/math/unit_utils.hpp>
 
 #include <LinePatternCalculator.hpp>
@@ -41,7 +40,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
     if (this->isPatternChangeCheckActive) {
 
         for (linePatterns_t::iterator it = possiblePatterns.begin(); it != possiblePatterns.end();) {
-            const LinePatternInfo& patternInfo = *PATTERN_INFO.at(it->type);
+            const LinePatternInfo& patternInfo = PATTERN_INFO.at(it->type);
             if (patternInfo.isValid(this->prevMeas, *it, lines, this->lastSingleLine, currentDist, speedSign)) {
                 if (1 == possiblePatterns.size() && currentDist - it->startDist >= patternInfo.minValidityLength) {
                     this->changePattern(*it);
@@ -58,7 +57,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
         }
 
     } else {
-        const LinePatternInfo& currentPatternInfo = *PATTERN_INFO.at(this->currentPattern().type);
+        const LinePatternInfo& currentPatternInfo = PATTERN_INFO.at(this->currentPattern().type);
 
         if (currentDist - current.startDist > currentPatternInfo.maxLength) {
             // under normal circumstances, maxLength should never be exceeded

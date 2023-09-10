@@ -1,6 +1,5 @@
 #include <etl/vector.h>
 
-#include <micro/container/map.hpp>
 #include <micro/math/numeric.hpp>
 
 #include <LineFilter.hpp>

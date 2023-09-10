@@ -3,9 +3,9 @@
 #include <functional>
 
 #include <etl/vector.h>
+#include <etl/map.h>
 
 #include <micro/container/infinite_buffer.hpp>
-#include <micro/container/map.hpp>
 #include <micro/utils/LinePattern.hpp>
 
 class LinePatternDescriptor {
@@ -106,4 +106,4 @@ private:
     micro::Line lastSingleLine;
 };
 
-extern const micro::sorted_map<micro::LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO;
+extern const etl::map<micro::LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO;

@@ -85,7 +85,7 @@ bool areValidNegativeFarLines_JUNCTION_3(const LinePattern& pattern, const Lines
 
 } // namespace
 
-const sorted_map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
+const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
     { LinePattern::NONE, {
         centimeter_t(10),
         micro::numeric_limits<meter_t>::infinity(),
