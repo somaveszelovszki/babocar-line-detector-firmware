@@ -60,11 +60,13 @@ void test(const etl::vector<millimeter_t, Line::MAX_NUM_LINES>& lines) {
         }
 #endif // PRINT_MEAS
 
-        const LinePositions linePositions = linePosCalculator.calculate(measurements);
-        EXPECT_EQ(lines.size(), linePositions.size());
-        for (uint8_t i = 0; i < linePositions.size(); ++i) {
-            EXPECT_NEAR_UNIT(lines[i], linePositions[i].pos, millimeter_t(4));
-            EXPECT_LE(0.7f, linePositions[i].probability);
+        const auto linePositions = linePosCalculator.calculate(measurements);
+        ASSERT_EQ(lines.size(), linePositions.size());
+        size_t j = 0;
+        for (const auto& line : linePositions) {
+            EXPECT_NEAR_UNIT(lines[j], line.pos, millimeter_t(4));
+            EXPECT_LE(0.7f, line.probability);
+            j++;
         }
     }
 }

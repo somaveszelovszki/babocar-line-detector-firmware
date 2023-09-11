@@ -58,7 +58,7 @@ LinePositions LinePosCalculator::runCalculation(const Measurements& measurements
                     break;
                 }
 
-                if (std::find_if(positions.begin(), positions.end(), [linePos] (const LinePosition& pos) {
+                if (std::find_if(positions.begin(), positions.end(), [linePos] (const auto& pos) {
                     return abs(pos.pos - linePos) <= cfg::MIN_LINE_DIST;
                 }) == positions.end()) {
                     positions.insert({ linePos, probability });

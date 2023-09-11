@@ -34,7 +34,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
     LinePattern& current = this->currentPattern();
 
     if (LinePattern::SINGLE_LINE == current.type && 1 == lines.size()) {
-        this->lastSingleLine = lines[0];
+        this->lastSingleLine = *lines.begin();
     }
 
     if (this->isPatternChangeCheckActive) {

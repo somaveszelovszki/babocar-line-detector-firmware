@@ -1,3 +1,5 @@
+#include <micro/math/unit_utils.hpp>
+
 #include <LinePatternCalculator.hpp>
 
 using namespace micro;
@@ -43,23 +45,23 @@ Lines::const_iterator expectedMainLine(const LinePattern& pattern, const Lines& 
         }
     }
 
-    Lines::const_iterator line = lines.end();
+    if (lines.empty()) {
+        return lines.end();
+    }
 
     switch (expectedMainLineDir) {
     case Direction::LEFT:
-        line = lines.begin();
-        break;
+        return lines.begin();
 
     case Direction::CENTER:
-        line = std::next(lines.begin(), lines.size() / 2);
-        break;
+        return std::next(lines.begin(), lines.size() / 2);
 
     case Direction::RIGHT:
-        line = lines.back();
-        break;
-    }
+        return std::next(lines.begin(), lines.size() - 1);
 
-    return line;
+    default:
+        return lines.end();
+    }
 }
 
 bool areValidNegativeFarLines_JUNCTION_2(const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, const Sign speedSign) {

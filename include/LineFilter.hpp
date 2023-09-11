@@ -1,5 +1,7 @@
 #pragma once
 
+#include <etl/set.h>
+
 #include <micro/container/infinite_buffer.hpp>
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/Line.hpp>
@@ -15,11 +17,9 @@ public:
     micro::Lines update(const LinePositions& detectedLines);
 
 private:
-    typedef micro::infinite_buffer<micro::millimeter_t, 100> linePosSamples_t;
-
-    struct filteredLine_t {
+    struct FilteredLine {
         uint8_t id = 0;
-        linePosSamples_t samples;
+        micro::infinite_buffer<micro::millimeter_t, 100> samples;
         micro::millimeter_t estimated;
         int8_t cntr = 0;
         bool isValidated = false;
@@ -29,8 +29,8 @@ private:
         const micro::millimeter_t& current_raw() const { return this->samples.peek_back(0); }
         micro::millimeter_t& current_raw() { return this->samples.peek_back(0); }
 
-        bool operator<(const filteredLine_t& other) const { return this->current_raw() < other.current_raw(); }
-        bool operator>(const filteredLine_t& other) const { return this->current_raw() > other.current_raw(); }
+        bool operator<(const FilteredLine& other) const { return this->current_raw() < other.current_raw(); }
+        bool operator>(const FilteredLine& other) const { return this->current_raw() > other.current_raw(); }
 
         void increaseCntr() {
             cntr = micro::max<int8_t>(cntr, 0);
@@ -43,9 +43,9 @@ private:
         }
     };
 
-    typedef micro::sorted_vec<filteredLine_t, cfg::MAX_NUM_FILTERED_LINES> filteredLines_t;
+    using FilteredLines = etl::set<FilteredLine, cfg::MAX_NUM_FILTERED_LINES>;
 
     uint8_t generateNewLineId();
 
-    filteredLines_t lines_;
+    FilteredLines lines_;
 };

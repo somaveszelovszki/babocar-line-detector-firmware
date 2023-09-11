@@ -42,6 +42,16 @@ LinePositions move(const LinePositions& linePositions, const millimeter_t distan
     return result;
 }
 
+void expectEq(const LinePositions& linePositions, const Lines& lines) {
+    ASSERT_EQ(linePositions.size(), lines.size());
+    for (uint32_t i = 0; i < lines.size(); ++i) {
+        const auto& linePos = *std::next(linePositions.begin(), i);
+        const auto& line = *std::next(lines.begin(), i);
+        EXPECT_NEAR_UNIT(linePos.pos, line.pos, millimeter_t(10));
+        EXPECT_EQ(i + 1, line.id);
+    }
+}
+
 } // namespace
 
 TEST(LineFilter, one_line_few_detections) {
@@ -67,11 +77,7 @@ TEST(LineFilter, one_line) {
         lines = lineFilter.update(linePositions);
     }
 
-    EXPECT_EQ(linePositions.size(), lines.size());
-    for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
-        EXPECT_EQ(i + 1, lines[i].id);
-    }
+    expectEq(linePositions, lines);
 }
 
 TEST(LineFilter, one_line_noise) {
@@ -86,11 +92,7 @@ TEST(LineFilter, one_line_noise) {
         lines = lineFilter.update(linePositions);
     }
 
-    EXPECT_EQ(linePositions.size(), lines.size());
-    for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
-        EXPECT_EQ(i + 1, lines[i].id);
-    }
+    expectEq(linePositions, lines);
 }
 
 TEST(LineFilter, one_line_noise_false_positives) {
@@ -106,11 +108,7 @@ TEST(LineFilter, one_line_noise_false_positives) {
         lines = lineFilter.update(linePositions);
     }
 
-    EXPECT_EQ(linePositions.size(), lines.size());
-    for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
-        EXPECT_EQ(i + 1, lines[i].id);
-    }
+    expectEq(linePositions, lines);
 }
 
 TEST(LineFilter, one_line_true_negatives) {
@@ -124,21 +122,13 @@ TEST(LineFilter, one_line_true_negatives) {
         lines = lineFilter.update(linePositions);
     }
 
-    EXPECT_EQ(linePositions.size(), lines.size());
-    for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
-        EXPECT_EQ(i + 1, lines[i].id);
-    }
+    expectEq(linePositions, lines);
 
     for (uint32_t i = 0; i < cfg::LINE_FILTER_HYSTERESIS - 1; ++i) {
         lines = lineFilter.update(linePositionsTrueNegatives);
     }
 
-    EXPECT_EQ(linePositions.size(), lines.size());
-    for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
-        EXPECT_EQ(i + 1, lines[i].id);
-    }
+    expectEq(linePositions, lines);
 
     lines = lineFilter.update(linePositionsTrueNegatives);
 
@@ -160,22 +150,14 @@ TEST(LineFilter, one_moving_line_true_negatives) {
         lines = lineFilter.update(linePositions);
     }
 
-    EXPECT_EQ(linePositions.size(), lines.size());
-    for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
-        EXPECT_EQ(i + 1, lines[i].id);
-    }
+    expectEq(linePositions, lines);
 
     for (uint32_t i = 0; i < cfg::LINE_FILTER_HYSTERESIS - 1; ++i) {
         linePositions = move(linePositions, MOVE_DISTANCE);
         lines = lineFilter.update(linePositionsTrueNegatives);
     }
 
-    EXPECT_EQ(linePositions.size(), lines.size());
-    for (uint32_t i = 0; i < lines.size(); ++i) {
-        EXPECT_NEAR_UNIT(linePositions[i].pos, lines[i].pos, millimeter_t(10));
-        EXPECT_EQ(i + 1, lines[i].id);
-    }
+    expectEq(linePositions, lines);
 
     linePositions = move(linePositions, MOVE_DISTANCE);
     lines = lineFilter.update(linePositionsTrueNegatives);

@@ -8,20 +8,20 @@ using namespace micro;
 
 Lines LineFilter::update(const LinePositions& detectedLines) {
 
-    typedef etl::vector<LinePositions::const_iterator, cfg::MAX_NUM_FILTERED_LINES> linePositionIterators_t;
-    linePositionIterators_t unmatchedDetectedLines;
+    using LinePositionIters = etl::vector<LinePositions::const_iterator, cfg::MAX_NUM_FILTERED_LINES>;
+    LinePositionIters unmatchedDetectedLines;
     for (LinePositions::const_iterator it = detectedLines.begin(); it != detectedLines.end(); ++it) {
         unmatchedDetectedLines.push_back(it);
     }
 
-    typedef etl::vector<filteredLines_t::iterator, cfg::MAX_NUM_FILTERED_LINES> filteredLineIterators_t;
-    filteredLineIterators_t unmatchedFilteredLines;
-    for (filteredLines_t::iterator it = this->lines_.begin(); it != this->lines_.end(); ++it) {
+    using FilteredLineIters = etl::vector<FilteredLines::iterator, cfg::MAX_NUM_FILTERED_LINES> ;
+    FilteredLineIters unmatchedFilteredLines;
+    for (FilteredLines::iterator it = this->lines_.begin(); it != this->lines_.end(); ++it) {
         unmatchedFilteredLines.push_back(it);
     }
 
     // updates estimated positions for all filtered lines
-    for (filteredLine_t& l : this->lines_) {
+    for (FilteredLine& l : this->lines_) {
         const millimeter_t current = l.current_raw();
 
         l.estimated = l.samples.size() >= cfg::LINE_VELO_FILTER_SIZE ?
@@ -30,8 +30,8 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
     }
 
     struct posMapping_t {
-        linePositionIterators_t::iterator detectedLine;
-        filteredLineIterators_t::iterator filteredLine;
+        LinePositionIters::iterator detectedLine;
+        FilteredLineIters::iterator filteredLine;
         millimeter_t diff;
     };
 
@@ -42,8 +42,8 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
 
         // maps all previous and current line positions to each other
         posMappings_t posMappings;
-        for (linePositionIterators_t::iterator detectedLine = unmatchedDetectedLines.begin(); detectedLine != unmatchedDetectedLines.end(); ++detectedLine) {
-            for (filteredLineIterators_t::iterator filteredLine = unmatchedFilteredLines.begin(); filteredLine != unmatchedFilteredLines.end(); ++filteredLine) {
+        for (LinePositionIters::iterator detectedLine = unmatchedDetectedLines.begin(); detectedLine != unmatchedDetectedLines.end(); ++detectedLine) {
+            for (FilteredLineIters::iterator filteredLine = unmatchedFilteredLines.begin(); filteredLine != unmatchedFilteredLines.end(); ++filteredLine) {
                 posMappings.push_back({ detectedLine, filteredLine, abs((*detectedLine)->pos - (*filteredLine)->estimated) });
             }
         }
@@ -68,13 +68,13 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
     }
 
     // decreases counters for unmatched previous lines
-    for (filteredLines_t::iterator it : unmatchedFilteredLines) {
+    for (FilteredLines::iterator it : unmatchedFilteredLines) {
         it->decreaseCntr();
         it->samples.push_back(it->estimated);
     }
 
     // erases lines from the filtered lines list that have not been detected for a given number of measurements
-    for (filteredLines_t::const_iterator it = this->lines_.begin(); it != this->lines_.end();) {
+    for (FilteredLines::const_iterator it = this->lines_.begin(); it != this->lines_.end();) {
         if (-cfg::LINE_FILTER_HYSTERESIS == it->cntr) {
             it = this->lines_.erase(it);
         } else {
@@ -83,7 +83,7 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
     }
 
     // if a line has been in the filtered lines list for at least LINE_FILTER_HYSTERESIS measurements, then it is a valid line
-    for (filteredLine_t& l : this->lines_) {
+    for (FilteredLine& l : this->lines_) {
         if (cfg::LINE_FILTER_HYSTERESIS == l.cntr) {
             l.isValidated = true;
         }
@@ -91,7 +91,7 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
 
     // added unmatched detected lines to the filtered lines list
     for (LinePositions::const_iterator it : unmatchedDetectedLines) {
-        filteredLine_t newLine;
+        FilteredLine newLine;
         newLine.id = this->generateNewLineId();
         newLine.cntr = 1;
         newLine.isValidated = false;
@@ -101,7 +101,7 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
 
     // output list will contain all validated lines from the filtered lines list
     Lines trackedLines;
-    for (const filteredLine_t& l : this->lines_) {
+    for (const FilteredLine& l : this->lines_) {
         if (l.isValidated) {
             trackedLines.insert({ l.current(), l.id });
         }
@@ -110,7 +110,7 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
     return trackedLines;
 }
 
-millimeter_t LineFilter::filteredLine_t::current() const {
+millimeter_t LineFilter::FilteredLine::current() const {
     const uint32_t size = min<uint32_t>(this->samples.size(), cfg::LINE_POS_FILTER_WINDOW_SIZE);
     millimeter_t pos;
 
@@ -123,6 +123,6 @@ millimeter_t LineFilter::filteredLine_t::current() const {
 
 uint8_t LineFilter::generateNewLineId() {
     uint8_t id = 1;
-    while (std::find_if(this->lines_.begin(), this->lines_.end(), [id] (const filteredLine_t& l) { return id == l.id; }) != this->lines_.end()) { ++id; }
+    while (std::find_if(this->lines_.begin(), this->lines_.end(), [id] (const FilteredLine& l) { return id == l.id; }) != this->lines_.end()) { ++id; }
     return id;
 }
