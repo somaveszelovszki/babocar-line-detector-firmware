@@ -34,7 +34,6 @@ bool indicatorLedsEnabled = true;
 Measurements measurements;
 SensorControlData sensorControl;
 
-canFrame_t rxCanFrame;
 CanFrameHandler vehicleCanFrameHandler;
 CanSubscriber::id_t vehicleCanSubscriberId = CanSubscriber::INVALID_ID;
 
@@ -130,8 +129,8 @@ extern "C" void runLineCalcTask(void) {
             vehicleCanManager.periodicSend<can::RearLinePattern>(vehicleCanSubscriberId, linePatternCalc.pattern());
         }
 
-        while (vehicleCanManager.read(vehicleCanSubscriberId, rxCanFrame)) {
-            vehicleCanFrameHandler.handleFrame(rxCanFrame);
+        while (const auto frame = vehicleCanManager.read(vehicleCanSubscriberId)) {
+            vehicleCanFrameHandler.handleFrame(*frame);
         }
 
         const bool isOk = !vehicleCanManager.hasTimedOut(vehicleCanSubscriberId);
