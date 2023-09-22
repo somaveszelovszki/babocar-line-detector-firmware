@@ -64,8 +64,7 @@ public:
         micro::meter_t distance;
     };
 
-    typedef micro::infinite_buffer<StampedLines, 1000> measurement_buffer_t;
-    typedef micro::infinite_buffer<micro::LinePattern, 200> pattern_buffer_t;
+    typedef micro::infinite_buffer<StampedLines, 100> measurement_buffer_t;
     typedef etl::vector<micro::LinePattern, 20> linePatterns_t;
 
     struct LinePatternInfo {
@@ -77,13 +76,13 @@ public:
     };
 
     LinePatternCalculator()
-        : isPatternChangeCheckActive(false) {
-        this->prevPatterns.push_back({ micro::LinePattern::SINGLE_LINE, micro::Sign::NEUTRAL, micro::Direction::CENTER, micro::meter_t(0) });
-    }
+        : pattern_{micro::LinePattern::SINGLE_LINE, micro::Sign::NEUTRAL, micro::Direction::CENTER, micro::meter_t(0)}
+        , isPatternChangeCheckActive(false) {}
+
     void update(const micro::linePatternDomain_t domain, const micro::Lines& lines, micro::meter_t currentDist, const micro::Sign speedSign);
 
     const micro::LinePattern& pattern() const {
-        return const_cast<LinePatternCalculator*>(this)->currentPattern();
+        return pattern_;
     }
 
     bool isPending() const {
@@ -93,14 +92,11 @@ public:
     static micro::Lines::const_iterator getMainLine(const micro::Lines& lines, const micro::Line& lastSingleLine);
 
 private:
-    micro::LinePattern& currentPattern() {
-        return this->prevPatterns.peek_back(0);
-    }
-
     void changePattern(const micro::LinePattern& newPattern);
 
     measurement_buffer_t prevMeas;
-    pattern_buffer_t prevPatterns;
+    size_t prevMeasCntr{};
+    micro::LinePattern pattern_;
 
     bool isPatternChangeCheckActive;
     linePatterns_t possiblePatterns;

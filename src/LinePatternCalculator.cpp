@@ -30,10 +30,13 @@ auto LinePatternDescriptor::getValidLines(Sign dir, centimeter_t patternDist, ce
 
 void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines& lines, meter_t currentDist, const Sign speedSign) {
 
-    this->prevMeas.push_back({ lines, currentDist });
-    LinePattern& current = this->currentPattern();
+    // saving every 10th measurement, so that the rough history can be queried
+    if (prevMeasCntr++ == 10) {
+        prevMeas.push_back({ lines, currentDist });
+        prevMeasCntr = 0;
+    }
 
-    if (LinePattern::SINGLE_LINE == current.type && 1 == lines.size()) {
+    if (LinePattern::SINGLE_LINE == pattern_.type && 1 == lines.size()) {
         this->lastSingleLine = *lines.begin();
     }
 
@@ -57,15 +60,15 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
         }
 
     } else {
-        const LinePatternInfo& currentPatternInfo = PATTERN_INFO.at(this->currentPattern().type);
+        const LinePatternInfo& currentPatternInfo = PATTERN_INFO.at(pattern_.type);
 
-        if (currentDist - current.startDist > currentPatternInfo.maxLength) {
+        if (currentDist - pattern_.startDist > currentPatternInfo.maxLength) {
             // under normal circumstances, maxLength should never be exceeded
             this->changePattern({ LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER, currentDist });
 
-        } else if (!currentPatternInfo.isValid(this->prevMeas, current, lines, this->lastSingleLine, currentDist, speedSign)) {
+        } else if (!currentPatternInfo.isValid(this->prevMeas, pattern_, lines, this->lastSingleLine, currentDist, speedSign)) {
             this->isPatternChangeCheckActive = true;
-            this->possiblePatterns = currentPatternInfo.validNextPatterns(current, domain);
+            this->possiblePatterns = currentPatternInfo.validNextPatterns(pattern_, domain);
 
             for (LinePattern& pattern : this->possiblePatterns) {
                 pattern.startDist = currentDist;
@@ -75,7 +78,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
 }
 
 void LinePatternCalculator::changePattern(const LinePattern& newPattern) {
-    this->prevPatterns.push_back(newPattern);
+    this->pattern_ = newPattern;
     this->isPatternChangeCheckActive = false;
 }
 

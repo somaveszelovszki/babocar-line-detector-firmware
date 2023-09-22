@@ -91,7 +91,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::NONE, {
         centimeter_t(10),
         micro::numeric_limits<meter_t>::infinity(),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
+        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
             return 0 == lines.size();
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
@@ -137,7 +137,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::ACCELERATE, {
         centimeter_t(18),
         centimeter_t(85),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
+        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
 
             static const LinePatternDescriptor descriptor = {
                 { 3, centimeter_t(8) },
@@ -179,7 +179,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::LANE_CHANGE, {
         centimeter_t(30),
         centimeter_t(120),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t currentDist, Sign speedSign) {
+        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t currentDist, Sign speedSign) {
 
             static const LinePatternDescriptor descriptor = {
                 { 2, centimeter_t(16) },
