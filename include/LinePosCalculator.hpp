@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <utility>
 
 #include <etl/set.h>
@@ -19,8 +20,8 @@ struct WeightCalculator {
     float sumWeight  = 0.0f;
 
     constexpr WeightCalculator(const float radius)
-        : radius(micro::round_up(radius))
-        , lastWeight(radius - micro::round_down(radius - 0.001f))
+        : radius(static_cast<int8_t>(std::ceil(radius)))
+        , lastWeight(radius - std::floor(radius - 0.001f))
         , sumWeight(1.0f + 2 * (this->radius - 1 + this->lastWeight)) {}
 
     constexpr WeightCalculator(const float radius, const uint8_t centerIdx)
@@ -59,7 +60,9 @@ private:
         bool operator>(const groupIntensity_t& other) const { return this->intensity > other.intensity; }
     };
 
-    typedef etl::vector<groupIntensity_t, cfg::NUM_SENSORS - 2 * micro::round_up(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS)> groupIntensities_t;
+    using groupIntensities_t = etl::vector<
+        groupIntensity_t,
+        cfg::NUM_SENSORS - 2 * static_cast<size_t>(std::ceil(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS))>;
 
     LinePositions runCalculation(const Measurements& measurements);
 

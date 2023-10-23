@@ -85,7 +85,7 @@ void LinePosCalculator::runCalibration(const Measurements& measurements) {
             for (const Measurements& meas : this->whiteLevelCalibrationBuffer_) {
                 sum += meas[i];
             }
-            this->whiteLevels_[i] = micro::round(sum / this->whiteLevelCalibrationBuffer_.size());
+            this->whiteLevels_[i] = std::lround(sum / this->whiteLevelCalibrationBuffer_.size());
         }
 
         this->updateInvalidWhiteLevels(linePositions);
@@ -99,7 +99,7 @@ void LinePosCalculator::updateInvalidWhiteLevels(const LinePositions& linePositi
     const uint8_t whiteLevelMedian = sortedWhiteLevels[cfg::NUM_SENSORS / 2];
 
     for (const LinePosition& linePos : linePositions) {
-        const uint8_t sensorIdx = micro::round(linePosToOptoPos(linePos.pos));
+        const uint8_t sensorIdx = std::lround(linePosToOptoPos(linePos.pos));
 
         const std::pair<Measurements::iterator, Measurements::iterator> range = {
             std::next(this->whiteLevels_.begin(), max<uint8_t>(sensorIdx, cfg::WHITE_LEVEL_LINE_GROUP_RADIUS) - cfg::WHITE_LEVEL_LINE_GROUP_RADIUS),

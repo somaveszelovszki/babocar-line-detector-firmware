@@ -49,7 +49,7 @@ const Leds& updateFailureLeds() {
     angle = map(getTime(), animationTimer.startTime(), animationTimer.startTime() + animationTimer.period(), radian_t(0), 2 * PI);
 
     leds.fill(false);
-    leds[static_cast<uint32_t>(micro::round(SENSOR_OFFSET + micro::cos(angle) * SENSOR_OFFSET))] = true;
+    leds[static_cast<uint32_t>(std::lround(SENSOR_OFFSET + micro::cos(angle) * SENSOR_OFFSET))] = true;
 
     return leds;
 }
@@ -62,7 +62,7 @@ void updateSensorControl(const Lines& lines, const bool isOk) {
 
         if (indicatorLedsEnabled) {
             for (const Line& l : lines) {
-                const uint8_t centerIdx = static_cast<uint8_t>(micro::round(LinePosCalculator::linePosToOptoPos(l.pos)));
+                const uint8_t centerIdx = static_cast<uint8_t>(std::lround(LinePosCalculator::linePosToOptoPos(l.pos)));
 
                 const uint8_t startIdx = max<uint8_t>(centerIdx, LED_RADIUS) - LED_RADIUS;
                 const uint8_t endIdx = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
@@ -82,7 +82,7 @@ void updateSensorControl(const Lines& lines, const bool isOk) {
         const millimeter_t avgLinePos = std::accumulate(lines.begin(), lines.end(), millimeter_t(0),
             [] (const millimeter_t& sum, const Line& line) { return sum + line.pos; }) / lines.size();
 
-        sensorControl.scanRangeCenter = micro::round(LinePosCalculator::linePosToOptoPos(avgLinePos));
+        sensorControl.scanRangeCenter = static_cast<uint8_t>(std::lround(LinePosCalculator::linePosToOptoPos(avgLinePos)));
     }
 }
 
