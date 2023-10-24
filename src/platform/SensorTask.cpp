@@ -1,6 +1,5 @@
 #include <micro/port/queue.hpp>
 #include <micro/port/task.hpp>
-#include <micro/utils/log.hpp>
 #include <micro/utils/str_utils.hpp>
 
 #include <cfg_board.hpp>
