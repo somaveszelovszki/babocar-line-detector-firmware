@@ -6,22 +6,26 @@ using namespace micro;
 
 namespace {
 
-LinePatternCalculator::StampedLines peek_back(const LinePatternCalculator::measurement_buffer_t& prevMeas, meter_t peekBackDist) {
-    const meter_t dist = prevMeas.peek_back(0).distance - peekBackDist;
+LinePatternCalculator::StampedLines peek_back(const LinePatternCalculator::Measurements& measurements, meter_t peekBackDist) {
+    if (measurements.empty()) {
+        return {};
+    }
+
+    const meter_t dist = measurements.back().distance - peekBackDist;
 
     int32_t startIdx = 1;
-    int32_t endIdx = prevMeas.size() - 1;
+    int32_t endIdx = static_cast<int32_t>(measurements.size()) - 1;
 
     while (startIdx < endIdx - 1) {
-        const int32_t i = avg(startIdx, endIdx);
-        if (prevMeas.peek_back(i).distance < dist) {
+        const int32_t i = micro::avg(startIdx, endIdx);
+        if (std::next(measurements.rbegin(), i)->distance < dist) {
             endIdx = i;
         } else {
             startIdx = i;
         }
     }
 
-    return prevMeas.peek_back(endIdx);
+    return *std::next(measurements.rbegin(), endIdx);
 }
 
 bool isInJunctionCenter(const Lines& lines) {
@@ -91,11 +95,11 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::NONE, {
         centimeter_t(10),
         micro::numeric_limits<meter_t>::infinity(),
-        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
+        [] (const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
             return 0 == lines.size();
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
-            LinePatternCalculator::linePatterns_t validPatterns;
+            LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
                 validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
 
@@ -110,11 +114,11 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::SINGLE_LINE, {
         centimeter_t(5),
         micro::numeric_limits<meter_t>::infinity(),
-        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
+        [] (const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
             return 1 == lines.size();
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
-            LinePatternCalculator::linePatterns_t validPatterns;
+            LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
                 validPatterns.push_back({ LinePattern::NONE,        Sign::NEUTRAL,  Direction::CENTER });
                 validPatterns.push_back({ LinePattern::JUNCTION_1,  Sign::NEGATIVE, Direction::CENTER });
@@ -137,7 +141,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::ACCELERATE, {
         centimeter_t(18),
         centimeter_t(85),
-        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
+        [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
 
             static const LinePatternDescriptor descriptor = {
                 { 3, centimeter_t(8) },
@@ -155,7 +159,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             return areClose(lines) && std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end();
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
-            LinePatternCalculator::linePatterns_t validPatterns;
+            LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Race == domain) {
                 validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
             }
@@ -165,11 +169,11 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::BRAKE, {
         centimeter_t(12),
         centimeter_t(350),
-        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
+        [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
             return areClose(lines) && 3 == lines.size();
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
-            LinePatternCalculator::linePatterns_t validPatterns;
+            LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Race == domain) {
                 validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
             }
@@ -179,7 +183,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::LANE_CHANGE, {
         centimeter_t(30),
         centimeter_t(120),
-        [] (const LinePatternCalculator::measurement_buffer_t&, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t currentDist, Sign speedSign) {
+        [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t currentDist, Sign speedSign) {
 
             static const LinePatternDescriptor descriptor = {
                 { 2, centimeter_t(16) },
@@ -200,7 +204,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
                    LinePatternCalculator::getMainLine(lines, lastSingleLine) == expectedMainLine(pattern, lines, speedSign);
         },
         [] (const LinePattern&, const linePatternDomain_t domain) {
-            LinePatternCalculator::linePatterns_t validPatterns;
+            LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
                 validPatterns.push_back({ LinePattern::NONE,        Sign::NEUTRAL, Direction::CENTER });
                 validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
@@ -211,11 +215,11 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::JUNCTION_1, {
         centimeter_t(4),
         centimeter_t(130),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
+        [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
             bool valid = false;
 
             if (Sign::POSITIVE == pattern.dir) {
-                const Lines pastLines = peek_back(prevMeas, centimeter_t(8)).lines;
+                const Lines pastLines = peek_back(measurements, centimeter_t(8)).lines;
                 if (isInJunctionCenter(lines)) {
                     valid = true;
                 } else if (1 == lines.size() && isInJunctionCenter(pastLines)) {
@@ -229,7 +233,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             return valid;
         },
         [] (const LinePattern& pattern, const linePatternDomain_t domain) {
-            LinePatternCalculator::linePatterns_t validPatterns;
+            LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
                 if (Sign::NEGATIVE == pattern.dir) {
                     validPatterns.push_back({ LinePattern::JUNCTION_1, Sign::POSITIVE, Direction::CENTER });
@@ -245,9 +249,9 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::JUNCTION_2, {
         centimeter_t(8),
         centimeter_t(130),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
+        [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
             bool valid = false;
-            const Lines pastLines = peek_back(prevMeas, centimeter_t(15)).lines;
+            const Lines pastLines = peek_back(measurements, centimeter_t(15)).lines;
 
             if (Sign::POSITIVE == pattern.dir) {
                 if (isInJunctionCenter(lines)) {
@@ -265,7 +269,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             return valid;
         },
         [] (const LinePattern& pattern, const linePatternDomain_t domain) {
-            LinePatternCalculator::linePatterns_t validPatterns;
+            LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
                 if (Sign::NEGATIVE == pattern.dir) {
                     validPatterns.push_back({ LinePattern::JUNCTION_1, Sign::POSITIVE, Direction::CENTER });
@@ -281,9 +285,9 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
     { LinePattern::JUNCTION_3, {
         centimeter_t(8),
         centimeter_t(130),
-        [] (const LinePatternCalculator::measurement_buffer_t& prevMeas, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
+        [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
             bool valid = false;
-            const Lines pastLines = peek_back(prevMeas, centimeter_t(15)).lines;
+            const Lines pastLines = peek_back(measurements, centimeter_t(15)).lines;
 
             if (Sign::POSITIVE == pattern.dir) {
                 if (isInJunctionCenter(lines)) {
@@ -301,7 +305,7 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             return valid;
         },
         [] (const LinePattern& pattern, const linePatternDomain_t domain) {
-            LinePatternCalculator::linePatterns_t validPatterns;
+            LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
                 if (Sign::NEGATIVE == pattern.dir) {
                     validPatterns.push_back({ LinePattern::JUNCTION_1, Sign::POSITIVE, Direction::CENTER });

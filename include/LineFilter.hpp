@@ -1,8 +1,8 @@
 #pragma once
 
+#include <etl/circular_buffer.h>
 #include <etl/set.h>
 
-#include <micro/container/infinite_buffer.hpp>
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/Line.hpp>
 
@@ -19,18 +19,17 @@ public:
 private:
     struct FilteredLine {
         uint8_t id = 0;
-        micro::infinite_buffer<micro::millimeter_t, 100> samples;
+        etl::circular_buffer<micro::millimeter_t, 100> samples;
         micro::millimeter_t estimated;
         int8_t cntr = 0;
         bool isValidated = false;
 
         micro::millimeter_t current() const;
 
-        const micro::millimeter_t& current_raw() const { return this->samples.peek_back(0); }
-        micro::millimeter_t& current_raw() { return this->samples.peek_back(0); }
+        micro::millimeter_t current_raw() const { return samples.empty() ? micro::millimeter_t(0) : samples.back(); }
 
-        bool operator<(const FilteredLine& other) const { return this->current_raw() < other.current_raw(); }
-        bool operator>(const FilteredLine& other) const { return this->current_raw() > other.current_raw(); }
+        bool operator<(const FilteredLine& other) const { return current_raw() < other.current_raw(); }
+        bool operator>(const FilteredLine& other) const { return current_raw() > other.current_raw(); }
 
         void increaseCntr() {
             cntr = micro::max<int8_t>(cntr, 0);

@@ -11,8 +11,8 @@ auto LinePatternDescriptor::getValidLines(Sign dir, centimeter_t patternDist, ce
     ValidLinesCount validLines;
 
     const std::pair<const LineSegment*, const LineSegment*> bounds = dir != Sign::NEGATIVE ?
-        this->getBounds(this->pattern.begin(), this->pattern.end(), patternDist, eps) :
-        this->getBounds(this->pattern.rbegin(), this->pattern.rend(), patternDist, eps);
+        getBounds(pattern.begin(), pattern.end(), patternDist, eps) :
+        getBounds(pattern.rbegin(), pattern.rend(), patternDist, eps);
 
     if (bounds.first && bounds.second) {
         const std::pair<uint8_t, uint8_t> validLinesRange = {
@@ -29,48 +29,50 @@ auto LinePatternDescriptor::getValidLines(Sign dir, centimeter_t patternDist, ce
 }
 
 void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines& lines, meter_t currentDist, const Sign speedSign) {
-
     // saving every 10th measurement, so that the rough history can be queried
-    if (prevMeasCntr++ == 10) {
-        prevMeas.push_back({ lines, currentDist });
-        prevMeasCntr = 0;
+    if (measurementsUpdateCntr++ == 10) {
+        if (measurements.full()) {
+            measurements.pop();
+        }
+        measurements.push({ lines, currentDist });
+        measurementsUpdateCntr = 0;
     }
 
     if (LinePattern::SINGLE_LINE == pattern_.type && 1 == lines.size()) {
-        this->lastSingleLine = *lines.begin();
+        lastSingleLine = *lines.begin();
     }
 
-    if (this->isPatternChangeCheckActive) {
+    if (isPatternChangeCheckActive) {
 
-        for (linePatterns_t::iterator it = possiblePatterns.begin(); it != possiblePatterns.end();) {
-            const LinePatternInfo& patternInfo = PATTERN_INFO.at(it->type);
-            if (patternInfo.isValid(this->prevMeas, *it, lines, this->lastSingleLine, currentDist, speedSign)) {
+        for (auto it = possiblePatterns.begin(); it != possiblePatterns.end();) {
+            const auto& patternInfo = PATTERN_INFO.at(it->type);
+            if (patternInfo.isValid(measurements, *it, lines, lastSingleLine, currentDist, speedSign)) {
                 if (1 == possiblePatterns.size() && currentDist - it->startDist >= patternInfo.minValidityLength) {
-                    this->changePattern(*it);
+                    changePattern(*it);
                     break;
                 }
                 ++it;
             } else {
-                it = this->possiblePatterns.erase(it);
+                it = possiblePatterns.erase(it);
             }
         }
 
-        if (this->possiblePatterns.empty()) {
-            this->isPatternChangeCheckActive = false;
+        if (possiblePatterns.empty()) {
+            isPatternChangeCheckActive = false;
         }
 
     } else {
-        const LinePatternInfo& currentPatternInfo = PATTERN_INFO.at(pattern_.type);
+        const auto& currentPatternInfo = PATTERN_INFO.at(pattern_.type);
 
         if (currentDist - pattern_.startDist > currentPatternInfo.maxLength) {
             // under normal circumstances, maxLength should never be exceeded
-            this->changePattern({ LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER, currentDist });
+            changePattern({ LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER, currentDist });
 
-        } else if (!currentPatternInfo.isValid(this->prevMeas, pattern_, lines, this->lastSingleLine, currentDist, speedSign)) {
-            this->isPatternChangeCheckActive = true;
-            this->possiblePatterns = currentPatternInfo.validNextPatterns(pattern_, domain);
+        } else if (!currentPatternInfo.isValid(measurements, pattern_, lines, lastSingleLine, currentDist, speedSign)) {
+            isPatternChangeCheckActive = true;
+            possiblePatterns = currentPatternInfo.validNextPatterns(pattern_, domain);
 
-            for (LinePattern& pattern : this->possiblePatterns) {
+            for (LinePattern& pattern : possiblePatterns) {
                 pattern.startDist = currentDist;
             }
         }
@@ -78,12 +80,12 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
 }
 
 void LinePatternCalculator::changePattern(const LinePattern& newPattern) {
-    this->pattern_ = newPattern;
-    this->isPatternChangeCheckActive = false;
+    pattern_ = newPattern;
+    isPatternChangeCheckActive = false;
 }
 
 Lines::const_iterator LinePatternCalculator::getMainLine(const Lines& lines, const micro::Line& lastSingleLine) {
-    Lines::const_iterator mainLine = micro::findLine(lines, lastSingleLine.id);
+    auto mainLine = micro::findLine(lines, lastSingleLine.id);
     if (mainLine == lines.end()) {
         mainLine = micro::findClosestLine(lines, lastSingleLine.pos);
     }

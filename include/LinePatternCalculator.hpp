@@ -2,11 +2,11 @@
 
 #include <functional>
 
+#include <etl/circular_buffer.h>
 #include <etl/map.h>
 #include <etl/set.h>
 #include <etl/vector.h>
 
-#include <micro/container/infinite_buffer.hpp>
 #include <micro/utils/LinePattern.hpp>
 
 class LinePatternDescriptor {
@@ -64,15 +64,15 @@ public:
         micro::meter_t distance;
     };
 
-    typedef micro::infinite_buffer<StampedLines, 100> measurement_buffer_t;
-    typedef etl::vector<micro::LinePattern, 20> linePatterns_t;
+    using Measurements = etl::circular_buffer<StampedLines, 100>;
+    using LinePatterns = etl::vector<micro::LinePattern, 20>;
 
     struct LinePatternInfo {
         micro::meter_t minValidityLength;
         micro::meter_t maxLength;
 
-        std::function<bool(const measurement_buffer_t&, const micro::LinePattern&, const micro::Lines&, const micro::Line&, micro::meter_t, micro::Sign)> isValid;
-        std::function<linePatterns_t(const micro::LinePattern&, const micro::linePatternDomain_t)> validNextPatterns;
+        std::function<bool(const Measurements&, const micro::LinePattern&, const micro::Lines&, const micro::Line&, micro::meter_t, micro::Sign)> isValid;
+        std::function<LinePatterns(const micro::LinePattern&, const micro::linePatternDomain_t)> validNextPatterns;
     };
 
     LinePatternCalculator()
@@ -94,12 +94,12 @@ public:
 private:
     void changePattern(const micro::LinePattern& newPattern);
 
-    measurement_buffer_t prevMeas;
-    size_t prevMeasCntr{};
+    Measurements measurements;
+    size_t measurementsUpdateCntr{};
     micro::LinePattern pattern_;
 
     bool isPatternChangeCheckActive;
-    linePatterns_t possiblePatterns;
+    LinePatterns possiblePatterns;
     micro::Line lastSingleLine;
 };
 
