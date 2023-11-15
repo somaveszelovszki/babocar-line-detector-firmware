@@ -34,8 +34,8 @@ void createMeasurements(const etl::vector<millimeter_t, Line::MAX_NUM_LINES>& li
         for (millimeter_t linePos : lines) {
             const double z_score = (i - LinePosCalculator::linePosToOptoPos(linePos)) / SIGMA;
             const double value = 1.0 / (SIGMA * std::sqrt(2 * M_PI)) * exp(-0.5 * z_score * z_score);
-            const float rand_mul = map<uint32_t, double>(rand() % 10000, 0, 10000, 1 - RAND_WEIGHT, 1 + RAND_WEIGHT);
-            const uint8_t incr = clamp<int32_t>(map(value / MAX_Z_SCORE, 0.0, 1.0, 0, 255) * rand_mul, 0, 255);
+            const float rand_mul = micro::lerp<uint32_t, double>(rand() % 10000, 0, 10000, 1 - RAND_WEIGHT, 1 + RAND_WEIGHT);
+            const uint8_t incr = micro::clamp<int32_t>(micro::lerp(value / MAX_Z_SCORE, 0.0, 1.0, 0, 255) * rand_mul, 0, 255);
             meas[i] = std::numeric_limits<uint8_t>::max() - incr > meas[i] ? meas[i] + incr : std::numeric_limits<uint8_t>::max();
         }
     }

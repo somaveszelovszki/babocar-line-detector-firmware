@@ -25,11 +25,11 @@ LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
 }
 
 millimeter_t LinePosCalculator::optoIdxToLinePos(const float optoIdx) {
-    return map(optoIdx, 0.0f, cfg::NUM_SENSORS - 1.0f, -cfg::OPTO_ARRAY_LENGTH / 2, cfg::OPTO_ARRAY_LENGTH / 2);
+    return micro::lerp(optoIdx, 0.0f, cfg::NUM_SENSORS - 1.0f, -cfg::OPTO_ARRAY_LENGTH / 2, cfg::OPTO_ARRAY_LENGTH / 2);
 }
 
 float LinePosCalculator::linePosToOptoPos(const micro::millimeter_t linePos) {
-    return map(linePos, -cfg::OPTO_ARRAY_LENGTH / 2, cfg::OPTO_ARRAY_LENGTH / 2, 0.0f, cfg::NUM_SENSORS - 1.0f);
+    return micro::lerp(linePos, -cfg::OPTO_ARRAY_LENGTH / 2, cfg::OPTO_ARRAY_LENGTH / 2, 0.0f, cfg::NUM_SENSORS - 1.0f);
 }
 
 LinePositions LinePosCalculator::runCalculation(const Measurements& measurements) {
@@ -52,7 +52,7 @@ LinePositions LinePosCalculator::runCalculation(const Measurements& measurements
 
             if (micro::abs(static_cast<int32_t>(lastInsertedIdx) - static_cast<int32_t>(candidate->centerIdx)) >= 4) {
                 const millimeter_t linePos = calculateLinePos(intensities, candidate->centerIdx);
-                const float probability = map(candidate->intensity, minGroupIntensity, MAX_GROUP_INTENSITY, 0.0f, 1.0f);
+                const float probability = micro::lerp(candidate->intensity, minGroupIntensity, MAX_GROUP_INTENSITY, 0.0f, 1.0f);
 
                 if (probability < cfg::MIN_LINE_PROBABILITY) {
                     break;
@@ -118,7 +118,7 @@ void LinePosCalculator::normalize(const Measurements& measurements, float * cons
 
     // removes sensor-specific offset
     for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
-        scaled[i] = micro::map<uint8_t>(measurements[i], this->whiteLevels_[i], 255, 0.0f, 1.0f);
+        scaled[i] = micro::lerp<uint8_t>(measurements[i], this->whiteLevels_[i], 255, 0.0f, 1.0f);
     }
 
     // removes dynamic light-related offset, that applies to the neighboring sensors
@@ -130,7 +130,7 @@ void LinePosCalculator::normalize(const Measurements& measurements, float * cons
         std::copy(&scaled[startIdx], &scaled[endIdx], group.begin());
         std::sort(group.begin(), std::next(group.begin(), endIdx - startIdx));
 
-        result[i] = map(scaled[i], group[group.size() / 3], 1.0f, 0.0f, 1.0f);
+        result[i] = micro::lerp(scaled[i], group[group.size() / 3], 1.0f, 0.0f, 1.0f);
     }
 }
 

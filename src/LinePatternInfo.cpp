@@ -1,3 +1,7 @@
+#include <LinePatternInfo.hpp>
+
+#include <etl/vector.h>
+
 #include <micro/math/unit_utils.hpp>
 
 #include <LinePatternCalculator.hpp>
@@ -89,10 +93,8 @@ bool areValidNegativeFarLines_JUNCTION_3(const LinePattern& pattern, const Lines
     return valid;
 };
 
-} // namespace
-
-const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
-    { LinePattern::NONE, {
+const etl::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
+    { // NONE
         centimeter_t(10),
         micro::numeric_limits<meter_t>::infinity(),
         [] (const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
@@ -110,8 +112,8 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             }
             return validPatterns;
         }
-    } },
-    { LinePattern::SINGLE_LINE, {
+    },
+    { // SINGLE_LINE
         centimeter_t(5),
         micro::numeric_limits<meter_t>::infinity(),
         [] (const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
@@ -137,8 +139,8 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             }
             return validPatterns;
         }
-    } },
-    { LinePattern::ACCELERATE, {
+    },
+    { // ACCELERATE
         centimeter_t(18),
         centimeter_t(85),
         [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
@@ -165,8 +167,8 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             }
             return validPatterns;
         }
-    } },
-    { LinePattern::BRAKE, {
+    },
+    { // BRAKE
         centimeter_t(12),
         centimeter_t(350),
         [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
@@ -179,8 +181,8 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             }
             return validPatterns;
         }
-    } },
-    { LinePattern::LANE_CHANGE, {
+    },
+    { // LANE_CHANGE
         centimeter_t(30),
         centimeter_t(120),
         [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t currentDist, Sign speedSign) {
@@ -211,8 +213,8 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             }
             return validPatterns;
         }
-    } },
-    { LinePattern::JUNCTION_1, {
+    },
+    { // JUNCTION_1
         centimeter_t(4),
         centimeter_t(130),
         [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
@@ -245,8 +247,8 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             }
             return validPatterns;
         }
-    } },
-    { LinePattern::JUNCTION_2, {
+    },
+    { // JUNCTION_2
         centimeter_t(8),
         centimeter_t(130),
         [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
@@ -281,8 +283,8 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             }
             return validPatterns;
         }
-    } },
-    { LinePattern::JUNCTION_3, {
+    },
+    { // JUNCTION_3
         centimeter_t(8),
         centimeter_t(130),
         [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
@@ -317,5 +319,11 @@ const etl::map<LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> 
             }
             return validPatterns;
         }
-    } }
+    }
 };
+
+} // namespace
+
+const LinePatternCalculator::LinePatternInfo& getLinePatternInfo(const micro::LinePattern::type_t type) {
+    return PATTERN_INFO[static_cast<size_t>(type)];
+}

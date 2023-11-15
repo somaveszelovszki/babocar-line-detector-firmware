@@ -1,6 +1,7 @@
 #include <micro/math/unit_utils.hpp>
 
 #include <LinePatternCalculator.hpp>
+#include <LinePatternInfo.hpp>
 
 using namespace micro;
 
@@ -45,7 +46,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
     if (isPatternChangeCheckActive) {
 
         for (auto it = possiblePatterns.begin(); it != possiblePatterns.end();) {
-            const auto& patternInfo = PATTERN_INFO.at(it->type);
+            const auto& patternInfo = getLinePatternInfo(it->type);
             if (patternInfo.isValid(measurements, *it, lines, lastSingleLine, currentDist, speedSign)) {
                 if (1 == possiblePatterns.size() && currentDist - it->startDist >= patternInfo.minValidityLength) {
                     changePattern(*it);
@@ -62,7 +63,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
         }
 
     } else {
-        const auto& currentPatternInfo = PATTERN_INFO.at(pattern_.type);
+        const auto& currentPatternInfo = getLinePatternInfo(pattern_.type);
 
         if (currentDist - pattern_.startDist > currentPatternInfo.maxLength) {
             // under normal circumstances, maxLength should never be exceeded

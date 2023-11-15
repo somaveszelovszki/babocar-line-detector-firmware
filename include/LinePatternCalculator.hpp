@@ -3,10 +3,11 @@
 #include <functional>
 
 #include <etl/circular_buffer.h>
-#include <etl/map.h>
 #include <etl/set.h>
 #include <etl/vector.h>
 
+#include <micro/container/map.hpp>
+#include <micro/math/unit_utils.hpp>
 #include <micro/utils/LinePattern.hpp>
 
 class LinePatternDescriptor {
@@ -102,5 +103,3 @@ private:
     LinePatterns possiblePatterns;
     micro::Line lastSingleLine;
 };
-
-extern const etl::map<micro::LinePattern::type_t, LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO;

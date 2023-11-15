@@ -24,7 +24,7 @@ LinePositions addNoise(const LinePositions& linePositions) {
     LinePositions result = linePositions;
 
     for (LinePosition& linePos : result) {
-        const millimeter_t noise = map<uint32_t, millimeter_t>(rand() % 10000, 0, 10000, -MAX_RAND_NOISE, MAX_RAND_NOISE);
+        const millimeter_t noise = micro::lerp<uint32_t, millimeter_t>(rand() % 10000, 0, 10000, -MAX_RAND_NOISE, MAX_RAND_NOISE);
         linePos.pos += noise;
     }
 

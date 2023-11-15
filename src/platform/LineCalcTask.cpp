@@ -35,7 +35,7 @@ Measurements measurements;
 SensorControlData sensorControl;
 
 CanFrameHandler vehicleCanFrameHandler;
-CanSubscriber::id_t vehicleCanSubscriberId = CanSubscriber::INVALID_ID;
+CanSubscriber::Id vehicleCanSubscriberId = CanSubscriber::INVALID_ID;
 
 const Leds& updateFailureLeds() {
 
@@ -46,7 +46,7 @@ const Leds& updateFailureLeds() {
     static radian_t angle = radian_t(0);
 
     animationTimer.checkTimeout();
-    angle = map(getTime(), animationTimer.startTime(), animationTimer.startTime() + animationTimer.period(), radian_t(0), 2 * PI);
+    angle = micro::lerp(getTime(), animationTimer.startTime(), animationTimer.startTime() + animationTimer.period(), radian_t(0), 2 * PI);
 
     leds.fill(false);
     leds[static_cast<uint32_t>(std::lround(SENSOR_OFFSET + micro::cos(angle) * SENSOR_OFFSET))] = true;
