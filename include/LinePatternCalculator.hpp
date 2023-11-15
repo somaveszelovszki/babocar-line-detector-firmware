@@ -4,9 +4,8 @@
 
 #include <etl/circular_buffer.h>
 #include <etl/set.h>
-#include <etl/vector.h>
-
 #include <micro/container/map.hpp>
+#include <micro/container/vector.hpp>
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/LinePattern.hpp>
 
@@ -55,7 +54,7 @@ private:
         return bounds;
     }
 
-    etl::vector<LineSegment, 20> pattern;
+    micro::vector<LineSegment, 20> pattern;
 };
 
 class LinePatternCalculator {
@@ -66,7 +65,7 @@ public:
     };
 
     using Measurements = etl::circular_buffer<StampedLines, 100>;
-    using LinePatterns = etl::vector<micro::LinePattern, 20>;
+    using LinePatterns = micro::vector<micro::LinePattern, 20>;
 
     struct LinePatternInfo {
         micro::meter_t minValidityLength;

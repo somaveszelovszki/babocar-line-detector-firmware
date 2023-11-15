@@ -1,5 +1,4 @@
-#include <etl/vector.h>
-
+#include <micro/container/vector.hpp>
 #include <micro/math/numeric.hpp>
 #include <micro/test/utils.hpp>
 
@@ -20,7 +19,7 @@ namespace {
 
 constexpr uint32_t NUM_TESTS_PER_SCENARIO = 10000;
 
-void createMeasurements(const etl::vector<millimeter_t, Line::MAX_NUM_LINES>& lines, Measurements& meas) {
+void createMeasurements(const micro::vector<millimeter_t, Line::MAX_NUM_LINES>& lines, Measurements& meas) {
 
     static constexpr double RAND_WEIGHT = 0.25;
     static constexpr double SIGMA = 1.0;
@@ -41,7 +40,7 @@ void createMeasurements(const etl::vector<millimeter_t, Line::MAX_NUM_LINES>& li
     }
 }
 
-void test(const etl::vector<millimeter_t, Line::MAX_NUM_LINES>& lines) {
+void test(const micro::vector<millimeter_t, Line::MAX_NUM_LINES>& lines) {
     LinePosCalculator linePosCalculator(false);
     Measurements measurements;
 

@@ -1,5 +1,4 @@
-#include <etl/vector.h>
-
+#include <micro/container/vector.hpp>
 #include <micro/math/numeric.hpp>
 
 #include <LineFilter.hpp>
@@ -8,13 +7,13 @@ using namespace micro;
 
 Lines LineFilter::update(const LinePositions& detectedLines) {
 
-    using LinePositionIters = etl::vector<LinePositions::const_iterator, cfg::MAX_NUM_FILTERED_LINES>;
+    using LinePositionIters = micro::vector<LinePositions::const_iterator, cfg::MAX_NUM_FILTERED_LINES>;
     LinePositionIters unmatchedDetectedLines;
     for (LinePositions::const_iterator it = detectedLines.begin(); it != detectedLines.end(); ++it) {
         unmatchedDetectedLines.push_back(it);
     }
 
-    using FilteredLineIters = etl::vector<FilteredLines::iterator, cfg::MAX_NUM_FILTERED_LINES> ;
+    using FilteredLineIters = micro::vector<FilteredLines::iterator, cfg::MAX_NUM_FILTERED_LINES> ;
     FilteredLineIters unmatchedFilteredLines;
     for (FilteredLines::iterator it = lines_.begin(); it != lines_.end(); ++it) {
         unmatchedFilteredLines.push_back(it);
@@ -35,7 +34,7 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
         millimeter_t diff;
     };
 
-    typedef etl::vector<posMapping_t, Line::MAX_NUM_LINES * cfg::MAX_NUM_FILTERED_LINES> posMappings_t;
+    typedef micro::vector<posMapping_t, Line::MAX_NUM_LINES * cfg::MAX_NUM_FILTERED_LINES> posMappings_t;
 
     // finds all close position pairs from the current and the previous measurements (expected positions), and updates filtered lines
     while (unmatchedDetectedLines.size() && unmatchedFilteredLines.size()) {

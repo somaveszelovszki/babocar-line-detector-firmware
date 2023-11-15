@@ -1,7 +1,6 @@
 #include <LinePatternInfo.hpp>
 
-#include <etl/vector.h>
-
+#include <micro/container/vector.hpp>
 #include <micro/math/unit_utils.hpp>
 
 #include <LinePatternCalculator.hpp>
@@ -93,7 +92,7 @@ bool areValidNegativeFarLines_JUNCTION_3(const LinePattern& pattern, const Lines
     return valid;
 };
 
-const etl::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
+const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
     { // NONE
         centimeter_t(10),
         micro::numeric_limits<meter_t>::infinity(),

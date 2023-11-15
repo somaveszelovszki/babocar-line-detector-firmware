@@ -4,8 +4,8 @@
 #include <utility>
 
 #include <etl/set.h>
-#include <etl/vector.h>
 
+#include <micro/container/vector.hpp>
 #include <micro/math/numeric.hpp>
 #include <micro/utils/Line.hpp>
 #include <micro/utils/units.hpp>
@@ -60,7 +60,7 @@ private:
         bool operator>(const groupIntensity_t& other) const { return this->intensity > other.intensity; }
     };
 
-    using groupIntensities_t = etl::vector<
+    using groupIntensities_t = micro::vector<
         groupIntensity_t,
         cfg::NUM_SENSORS - 2 * static_cast<size_t>(std::ceil(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS))>;
 
@@ -77,5 +77,5 @@ private:
 
     bool whiteLevelCalibrationEnabled_;
     Measurements whiteLevels_;
-    etl::vector<Measurements, 200> whiteLevelCalibrationBuffer_;
+    micro::vector<Measurements, 200> whiteLevelCalibrationBuffer_;
 };

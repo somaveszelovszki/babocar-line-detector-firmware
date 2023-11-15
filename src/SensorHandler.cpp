@@ -1,7 +1,6 @@
 #include <utility>
 
-#include <etl/vector.h>
-
+#include <micro/container/vector.hpp>
 #include <micro/math/numeric.hpp>
 
 #include <cfg_sensor.hpp>
@@ -40,7 +39,7 @@ constexpr uint8_t SENSOR_SELECTORS[16][cfg::NUM_SENSORS / 8] = {
 } // namespace
 
 SensorHandler::SensorHandler(const spi_t& spi,
-    const etl::vector<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
+    const micro::vector<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
     const micro::gpio_t& LE_opto,
     const micro::gpio_t& OE_opto,
     const micro::gpio_t& LE_ind,

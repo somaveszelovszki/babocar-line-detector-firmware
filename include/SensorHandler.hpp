@@ -2,8 +2,7 @@
 
 #include <utility>
 
-#include <etl/vector.h>
-
+#include <micro/container/vector.hpp>
 #include <micro/port/gpio.hpp>
 #include <micro/port/spi.hpp>
 #include <micro/port/semaphore.hpp>
@@ -13,7 +12,7 @@
 class SensorHandler {
 public:
     SensorHandler(const micro::spi_t& spi,
-        const etl::vector<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
+        const micro::vector<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
         const micro::gpio_t& LE_opto,
         const micro::gpio_t& OE_opto,
         const micro::gpio_t& LE_ind,
@@ -33,7 +32,7 @@ private:
 private:
     micro::semaphore_t semaphore_;
     const micro::spi_t spi_;
-    const etl::vector<micro::gpio_t, cfg::NUM_SENSORS / 8> adcEnPins_;
+    const micro::vector<micro::gpio_t, cfg::NUM_SENSORS / 8> adcEnPins_;
     const micro::gpio_t LE_opto_;
     const micro::gpio_t OE_opto_;
     const micro::gpio_t LE_ind_;

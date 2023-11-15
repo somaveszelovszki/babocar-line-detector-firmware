@@ -1,5 +1,4 @@
-#include <etl/vector.h>
-
+#include <micro/container/vector.hpp>
 #include <micro/math/numeric.hpp>
 #include <micro/test/utils.hpp>
 
@@ -9,8 +8,8 @@ using namespace micro;
 
 namespace {
 
-typedef etl::vector<Lines, 500> LineDetections;
-typedef etl::vector<LinePattern, 10> LinePatterns;
+typedef micro::vector<Lines, 500> LineDetections;
+typedef micro::vector<LinePattern, 10> LinePatterns;
 
 void test(const linePatternDomain_t domain, const LineDetections& lineDetections, const LinePatterns& expectedPatterns) {
     LinePatternCalculator calc;
