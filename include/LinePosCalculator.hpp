@@ -3,8 +3,7 @@
 #include <cmath>
 #include <utility>
 
-#include <etl/set.h>
-
+#include <micro/container/set.hpp>
 #include <micro/container/vector.hpp>
 #include <micro/math/numeric.hpp>
 #include <micro/utils/Line.hpp>
@@ -40,7 +39,7 @@ struct LinePosition {
     bool operator>(const LinePosition& other) const { return this->pos > other.pos; }
 };
 
-using LinePositions = etl::set<LinePosition, micro::Line::MAX_NUM_LINES>;
+using LinePositions = micro::set<LinePosition, micro::Line::MAX_NUM_LINES>;
 
 class LinePosCalculator {
 public:

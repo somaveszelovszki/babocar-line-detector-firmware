@@ -3,8 +3,9 @@
 #include <functional>
 
 #include <etl/circular_buffer.h>
-#include <etl/set.h>
+
 #include <micro/container/map.hpp>
+#include <micro/container/set.hpp>
 #include <micro/container/vector.hpp>
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/LinePattern.hpp>
@@ -16,7 +17,7 @@ public:
         micro::centimeter_t length;
     };
 
-    using ValidLinesCount = etl::set<uint8_t, micro::Line::MAX_NUM_LINES + 1>;
+    using ValidLinesCount = micro::set<uint8_t, micro::Line::MAX_NUM_LINES + 1>;
 
     LinePatternDescriptor(const std::initializer_list<LineSegment>& pattern);
 

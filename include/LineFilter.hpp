@@ -1,8 +1,8 @@
 #pragma once
 
 #include <etl/circular_buffer.h>
-#include <etl/set.h>
 
+#include <micro/container/set.hpp>
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/Line.hpp>
 
@@ -42,7 +42,7 @@ private:
         }
     };
 
-    using FilteredLines = etl::set<FilteredLine, cfg::MAX_NUM_FILTERED_LINES>;
+    using FilteredLines = micro::set<FilteredLine, cfg::MAX_NUM_FILTERED_LINES>;
 
     uint8_t generateNewLineId();
 
