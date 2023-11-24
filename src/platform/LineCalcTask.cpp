@@ -122,11 +122,11 @@ extern "C" void runLineCalcTask(void) {
         linePatternCalc.update(domain, lines, distance, PANEL_VERSION_FRONT == getPanelVersion() ? sgn(speed) : -sgn(speed));
 
         if (PANEL_VERSION_FRONT == getPanelVersion()) {
-            vehicleCanManager.periodicSend<can::FrontLines>(vehicleCanSubscriberId, lines);
-            vehicleCanManager.periodicSend<can::FrontLinePattern>(vehicleCanSubscriberId, linePatternCalc.pattern());
+            vehicleCanManager.send<can::FrontLines>(vehicleCanSubscriberId, lines);
+            vehicleCanManager.send<can::FrontLinePattern>(vehicleCanSubscriberId, linePatternCalc.pattern());
         } else if (PANEL_VERSION_REAR == getPanelVersion()) {
-            vehicleCanManager.periodicSend<can::RearLines>(vehicleCanSubscriberId, lines);
-            vehicleCanManager.periodicSend<can::RearLinePattern>(vehicleCanSubscriberId, linePatternCalc.pattern());
+            vehicleCanManager.send<can::RearLines>(vehicleCanSubscriberId, lines);
+            vehicleCanManager.send<can::RearLinePattern>(vehicleCanSubscriberId, linePatternCalc.pattern());
         }
 
         while (const auto frame = vehicleCanManager.read(vehicleCanSubscriberId)) {
