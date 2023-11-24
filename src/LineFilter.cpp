@@ -92,7 +92,7 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
             }
 
             // output list will contain all validated lines from the filtered lines list
-            if (it->isValidated) {
+            if (it->isValidated && !validLines.full()) {
                 validLines.insert({ it->current(), it->id });
             }
 
@@ -103,6 +103,10 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
 
     // added unmatched detected lines to the filtered lines list
     for (LinePositions::const_iterator it : unmatchedDetectedLines) {
+        if (lines_.full()) {
+            break;
+        }
+
         FilteredLine newLine;
         newLine.id = generateNewLineId();
         newLine.cntr = 1;

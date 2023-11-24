@@ -46,7 +46,7 @@ LinePositions LinePosCalculator::runCalculation(const Measurements& measurements
         const float minGroupIntensity = std::min_element(groupIntensities.begin(), groupIntensities.end())->intensity;
         uint8_t lastInsertedIdx       = 255;
 
-        while (positions.size() < positions.capacity() && !groupIntensities.empty()) {
+        while (!positions.full() && !groupIntensities.empty()) {
 
             const groupIntensities_t::const_iterator candidate = std::max_element(groupIntensities.begin(), groupIntensities.end());
 
