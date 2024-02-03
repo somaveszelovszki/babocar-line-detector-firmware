@@ -65,7 +65,7 @@ private:
 
     LinePositions runCalculation(const Measurements& measurements, const size_t maxLines);
 
-    void runCalibration(const Measurements& measurements);
+    void runCalibration(const Measurements& measurements, const size_t maxLines);
 
     void updateInvalidWhiteLevels(const LinePositions& linePositions);
 

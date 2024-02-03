@@ -15,16 +15,13 @@ using namespace micro;
 
 namespace {
 
-constexpr uint32_t NUM_TESTS_PER_SCENARIO = 1;
-
 LinePositions addNoise(const LinePositions& linePositions) {
-
-    static constexpr millimeter_t MAX_RAND_NOISE = { 3 };
+    static constexpr millimeter_t MAX_RANDOM_NOISE = { 3 };
 
     LinePositions result = linePositions;
 
     for (LinePosition& linePos : result) {
-        const millimeter_t noise = micro::lerp<uint32_t, millimeter_t>(rand() % 10000, 0, 10000, -MAX_RAND_NOISE, MAX_RAND_NOISE);
+        const millimeter_t noise = micro::lerp<uint32_t, millimeter_t>(rand() % 10000, 0, 10000, -MAX_RANDOM_NOISE, MAX_RANDOM_NOISE);
         linePos.pos += noise;
     }
 
@@ -61,7 +58,7 @@ TEST(LineFilter, one_line_few_detections) {
     Lines lines;
     
     for (uint32_t i = 0; i < cfg::LINE_FILTER_HYSTERESIS - 1; ++i) {
-        lines = lineFilter.update(linePositions);
+        lines = lineFilter.update(linePositions, Line::MAX_NUM_LINES);
     }
 
     EXPECT_EQ(0, lines.size());
@@ -74,7 +71,7 @@ TEST(LineFilter, one_line) {
     Lines lines;
     
     for (uint32_t i = 0; i < cfg::LINE_FILTER_HYSTERESIS; ++i) {
-        lines = lineFilter.update(linePositions);
+        lines = lineFilter.update(linePositions, Line::MAX_NUM_LINES);
     }
 
     expectEq(linePositions, lines);
@@ -89,7 +86,7 @@ TEST(LineFilter, one_line_noise) {
     
     for (uint32_t i = 0; i < cfg::LINE_FILTER_HYSTERESIS; ++i) {
         linePositions = addNoise(linePositions_base);
-        lines = lineFilter.update(linePositions);
+        lines = lineFilter.update(linePositions, Line::MAX_NUM_LINES);
     }
 
     expectEq(linePositions, lines);
@@ -105,7 +102,7 @@ TEST(LineFilter, one_line_noise_false_positives) {
     
     for (uint32_t i = 0; i < cfg::LINE_FILTER_HYSTERESIS; ++i) {
         linePositions = addNoise(i == 0 ? linePositionsFalsePositives_base : linePositions_base);
-        lines = lineFilter.update(linePositions);
+        lines = lineFilter.update(linePositions, Line::MAX_NUM_LINES);
     }
 
     expectEq(linePositions, lines);
@@ -119,18 +116,18 @@ TEST(LineFilter, one_line_true_negatives) {
     Lines lines;
     
     for (uint32_t i = 0; i < cfg::LINE_FILTER_HYSTERESIS; ++i) {
-        lines = lineFilter.update(linePositions);
+        lines = lineFilter.update(linePositions, Line::MAX_NUM_LINES);
     }
 
     expectEq(linePositions, lines);
 
     for (uint32_t i = 0; i < cfg::LINE_FILTER_HYSTERESIS - 1; ++i) {
-        lines = lineFilter.update(linePositionsTrueNegatives);
+        lines = lineFilter.update(linePositionsTrueNegatives, Line::MAX_NUM_LINES);
     }
 
     expectEq(linePositions, lines);
 
-    lines = lineFilter.update(linePositionsTrueNegatives);
+    lines = lineFilter.update(linePositionsTrueNegatives, Line::MAX_NUM_LINES);
 
     EXPECT_EQ(0, lines.size());
 }
@@ -147,20 +144,20 @@ TEST(LineFilter, one_moving_line_true_negatives) {
     
     for (uint32_t i = 0; i < cfg::LINE_FILTER_HYSTERESIS; ++i) {
         linePositions = move(linePositions, MOVE_DISTANCE);
-        lines = lineFilter.update(linePositions);
+        lines = lineFilter.update(linePositions, Line::MAX_NUM_LINES);
     }
 
     expectEq(linePositions, lines);
 
     for (uint32_t i = 0; i < cfg::LINE_FILTER_HYSTERESIS - 1; ++i) {
         linePositions = move(linePositions, MOVE_DISTANCE);
-        lines = lineFilter.update(linePositionsTrueNegatives);
+        lines = lineFilter.update(linePositionsTrueNegatives, Line::MAX_NUM_LINES);
     }
 
     expectEq(linePositions, lines);
 
     linePositions = move(linePositions, MOVE_DISTANCE);
-    lines = lineFilter.update(linePositionsTrueNegatives);
+    lines = lineFilter.update(linePositionsTrueNegatives, Line::MAX_NUM_LINES);
 
     EXPECT_EQ(0, lines.size());
 }

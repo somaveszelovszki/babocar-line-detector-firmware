@@ -2,6 +2,7 @@
 
 #include <micro/container/vector.hpp>
 #include <micro/math/unit_utils.hpp>
+#include <micro/utils/Line.hpp>
 
 #include <LinePatternCalculator.hpp>
 
@@ -9,12 +10,16 @@ using namespace micro;
 
 namespace {
 
-LinePatternCalculator::StampedLines peek_back(const LinePatternCalculator::Measurements& measurements, meter_t peekBackDist) {
+const micro::Lines& pastLines(const LinePatternCalculator::Measurements& measurements) {
+    static const micro::Lines EMPTY_LINES{};
+
     if (measurements.empty()) {
-        return {};
+        return EMPTY_LINES;
     }
 
-    const meter_t dist = measurements.back().distance - peekBackDist;
+    constexpr auto PEEK_BACK_DISTANCE = centimeter_t(15);
+
+    const meter_t dist = measurements.back().distance - PEEK_BACK_DISTANCE;
 
     int32_t startIdx = 1;
     int32_t endIdx = static_cast<int32_t>(measurements.size()) - 1;
@@ -28,7 +33,7 @@ LinePatternCalculator::StampedLines peek_back(const LinePatternCalculator::Measu
         }
     }
 
-    return *std::next(measurements.rbegin(), endIdx);
+    return std::next(measurements.rbegin(), endIdx)->lines;
 }
 
 bool isInJunctionCenter(const Lines& lines) {
@@ -71,30 +76,9 @@ Lines::const_iterator expectedMainLine(const LinePattern& pattern, const Lines& 
     }
 }
 
-bool areValidNegativeFarLines_JUNCTION_2(const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, const Sign speedSign) {
-    bool valid = false;
-    if (2 == lines.size() && micro::areFar(lines)) {
-        valid = LinePatternCalculator::getMainLine(lines, lastSingleLine) == expectedMainLine(pattern, lines, speedSign);
-    }
-    return valid;
-};
-
-bool areValidNegativeFarLines_JUNCTION_3(const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, const Sign speedSign) {
-    bool valid = false;
-    if (1 < lines.size() && micro::areFar(lines)) {
-        if (2 == lines.size() && Direction::CENTER == pattern.side) {
-            // when only 2 lines are detected, center junction is valid
-            valid = true;
-        } else {
-            valid = LinePatternCalculator::getMainLine(lines, lastSingleLine) == expectedMainLine(pattern, lines, speedSign);
-        }
-    }
-    return valid;
-};
-
 const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
     { // NONE
-        centimeter_t(10),
+        [](const micro::Sign&) { return centimeter_t(10); },
         micro::numeric_limits<meter_t>::infinity(),
         [] (const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
             return 0 == lines.size();
@@ -113,7 +97,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // SINGLE_LINE
-        centimeter_t(5),
+        [](const micro::Sign&) { return centimeter_t(5); },
         micro::numeric_limits<meter_t>::infinity(),
         [] (const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
             return 1 == lines.size();
@@ -140,7 +124,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // ACCELERATE
-        centimeter_t(18),
+        [](const micro::Sign&) { return centimeter_t(18); },
         centimeter_t(85),
         [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
 
@@ -168,7 +152,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // BRAKE
-        centimeter_t(12),
+        [](const micro::Sign&) { return centimeter_t(12); },
         centimeter_t(350),
         [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
             return areClose(lines) && 3 == lines.size();
@@ -182,7 +166,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // LANE_CHANGE
-        centimeter_t(30),
+        [](const micro::Sign&) { return centimeter_t(35); },
         centimeter_t(120),
         [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t currentDist, Sign speedSign) {
 
@@ -214,24 +198,21 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // JUNCTION_1
-        centimeter_t(4),
-        centimeter_t(130),
-        [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
-            bool valid = false;
+        [](const micro::Sign& dir) { return centimeter_t(dir == micro::Sign::POSITIVE ? 30 : 4); },
+        centimeter_t(80),
+        [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {     
 
-            if (Sign::POSITIVE == pattern.dir) {
-                const Lines pastLines = peek_back(measurements, centimeter_t(8)).lines;
-                if (isInJunctionCenter(lines)) {
-                    valid = true;
-                } else if (1 == lines.size() && isInJunctionCenter(pastLines)) {
-                    valid = true;
-                }
-            } else if (Sign::NEGATIVE == pattern.dir) {
-                if (isInJunctionCenter(lines)) {
-                    valid = true;
-                }
+            switch (pattern.dir) {
+            case micro::Sign::NEGATIVE: {
+                return isInJunctionCenter(lines);
             }
-            return valid;
+
+            case micro::Sign::POSITIVE:
+                return 1 == lines.size();
+
+            default:
+                return false;
+            }
         },
         [] (const LinePattern& pattern, const linePatternDomain_t domain) {
             LinePatternCalculator::LinePatterns validPatterns;
@@ -248,26 +229,27 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // JUNCTION_2
-        centimeter_t(8),
-        centimeter_t(130),
+        [](const micro::Sign&) { return centimeter_t(8); },
+        centimeter_t(80),
         [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
-            bool valid = false;
-            const Lines pastLines = peek_back(measurements, centimeter_t(15)).lines;
+            const auto areValidFarLines = [&pattern, &lastSingleLine, &speedSign](const Lines& lines) {
+                return 2 == lines.size() && areFar(lines) &&
+                    LinePatternCalculator::getMainLine(lines, lastSingleLine) == expectedMainLine(pattern, lines, speedSign);
+            };
+            
 
-            if (Sign::POSITIVE == pattern.dir) {
-                if (isInJunctionCenter(lines)) {
-                    valid = true;
-                } else if (2 == lines.size() && micro::areFar(lines) && isInJunctionCenter(pastLines)) {
-                    valid = true;
-                }
-            } else if (Sign::NEGATIVE == pattern.dir) {
-                if (2 == lines.size() && areValidNegativeFarLines_JUNCTION_2(pattern, lines, lastSingleLine, speedSign)) {
-                    valid = true;
-                } else if (isInJunctionCenter(lines) && 2 == pastLines.size() && areValidNegativeFarLines_JUNCTION_2(pattern, pastLines, lastSingleLine, speedSign)) {
-                    valid = true;
-                }
+            switch (pattern.dir) {
+            case micro::Sign::NEGATIVE: {
+                return areValidFarLines(lines) ||
+                    (2 == lines.size() && isInJunctionCenter(lines) && areValidFarLines(pastLines(measurements)));
             }
-            return valid;
+
+            case micro::Sign::POSITIVE:
+                return 2 == lines.size();
+
+            default:
+                return false;
+            }
         },
         [] (const LinePattern& pattern, const linePatternDomain_t domain) {
             LinePatternCalculator::LinePatterns validPatterns;
@@ -284,26 +266,26 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // JUNCTION_3
-        centimeter_t(8),
-        centimeter_t(130),
+        [](const micro::Sign&) { return centimeter_t(8); },
+        centimeter_t(80),
         [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
-            bool valid = false;
-            const Lines pastLines = peek_back(measurements, centimeter_t(15)).lines;
+            const auto areValidFarLines = [&pattern, &lastSingleLine, &speedSign](const Lines& lines) {
+                return 1 < lines.size() && micro::areFar(lines) &&
+                    ((2 == lines.size() && Direction::CENTER == pattern.side) ||
+                    LinePatternCalculator::getMainLine(lines, lastSingleLine) == expectedMainLine(pattern, lines, speedSign));
+            };
+            
+            switch (pattern.dir) {
+            case micro::Sign::NEGATIVE:
+                return areValidFarLines(lines) ||
+                    (3 == lines.size() && isInJunctionCenter(lines) && areValidFarLines(pastLines(measurements)));
 
-            if (Sign::POSITIVE == pattern.dir) {
-                if (isInJunctionCenter(lines)) {
-                    valid = true;
-                } else if (3 == lines.size() && micro::areFar(lines) && isInJunctionCenter(pastLines)) {
-                    valid = true;
-                }
-            } else if (Sign::NEGATIVE == pattern.dir) {
-                if (areValidNegativeFarLines_JUNCTION_3(pattern, lines, lastSingleLine, speedSign)) {
-                    valid = true;
-                } else if (isInJunctionCenter(lines) && 3 == pastLines.size() && areValidNegativeFarLines_JUNCTION_3(pattern, pastLines, lastSingleLine, speedSign)) {
-                    valid = true;
-                }
+            case micro::Sign::POSITIVE:
+                return 3 == lines.size();
+
+            default:
+                return false;
             }
-            return valid;
         },
         [] (const LinePattern& pattern, const linePatternDomain_t domain) {
             LinePatternCalculator::LinePatterns validPatterns;

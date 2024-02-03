@@ -37,14 +37,13 @@ void test(const linePatternDomain_t domain, const LineDetections& lineDetections
 
     ASSERT_EQ(expectedPatterns.size(), patterns.size());
     for (uint32_t i = 0; i < patterns.size(); ++i) {
-        EXPECT_EQ(expectedPatterns[i], patterns[i]);
+        EXPECT_EQ_MICRO_LINE_PATTERN(expectedPatterns[i], patterns[i]);
     }
 }
 
 } // namespace
 
 TEST(LinePatternCalculator, SINGLE_LINE) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(0) } },
         { { millimeter_t(0) } },
@@ -64,7 +63,6 @@ TEST(LinePatternCalculator, SINGLE_LINE) {
 }
 
 TEST(LinePatternCalculator, NONE) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(0) } },
         { { millimeter_t(0) } },
@@ -99,7 +97,6 @@ TEST(LinePatternCalculator, NONE) {
 }
 
 TEST(LinePatternCalculator, BRAKE) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(-38) }, { millimeter_t(0) }, { millimeter_t(38) } },
         { { millimeter_t(-38) }, { millimeter_t(0) }, { millimeter_t(38) } },
@@ -133,7 +130,6 @@ TEST(LinePatternCalculator, BRAKE) {
 }
 
 TEST(LinePatternCalculator, ACCELERATION) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(-38) }, { millimeter_t(0) }, { millimeter_t(38) } },
         { { millimeter_t(-38) }, { millimeter_t(0) }, { millimeter_t(38) } },
@@ -186,7 +182,6 @@ TEST(LinePatternCalculator, ACCELERATION) {
 }
 
 TEST(LinePatternCalculator, ACCELERATION_noisy) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(-38) }, { millimeter_t(0) }, { millimeter_t(38) } },
         { { millimeter_t(-38) }, { millimeter_t(0) }, { millimeter_t(38) } },
@@ -239,7 +234,6 @@ TEST(LinePatternCalculator, ACCELERATION_noisy) {
 }
 
 TEST(LinePatternCalculator, JUNCTION_2_NEGATIVE_LEFT_TO_JUNCTION_2_POSITIVE_RIGHT) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(0) } },
         { { millimeter_t(0) } },
@@ -337,7 +331,6 @@ TEST(LinePatternCalculator, JUNCTION_2_NEGATIVE_LEFT_TO_JUNCTION_2_POSITIVE_RIGH
 }
 
 TEST(LinePatternCalculator, JUNCTION_1_NEGATIVE_CENTER_TO_JUNCTION_2_POSITIVE_RIGHT) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(-38) } },
         { { millimeter_t(-38) } },
@@ -429,7 +422,6 @@ TEST(LinePatternCalculator, JUNCTION_1_NEGATIVE_CENTER_TO_JUNCTION_2_POSITIVE_RI
 }
 
 TEST(LinePatternCalculator, JUNCTION_3_NEGATIVE_LEFT_TO_JUNCTION_3_POSITIVE_CENTER) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(0) } },
         { { millimeter_t(0) } },
@@ -527,7 +519,6 @@ TEST(LinePatternCalculator, JUNCTION_3_NEGATIVE_LEFT_TO_JUNCTION_3_POSITIVE_CENT
 }
 
 TEST(LinePatternCalculator, LANE_CHANGE_POSITIVE_RIGHT) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(0) } },
         { { millimeter_t(0) } },
@@ -670,7 +661,6 @@ TEST(LinePatternCalculator, LANE_CHANGE_POSITIVE_RIGHT) {
 }
 
 TEST(LinePatternCalculator, LANE_CHANGE_NEGATIVE_LEFT) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(0) } },
         { { millimeter_t(0) } },
@@ -813,7 +803,6 @@ TEST(LinePatternCalculator, LANE_CHANGE_NEGATIVE_LEFT) {
 }
 
 TEST(LinePatternCalculator, LANE_CHANGE_POSITIVE_RIGHT_noisy) {
-
     const LineDetections lineDetections = {
         { { millimeter_t(0) } },
         { { millimeter_t(0) } },

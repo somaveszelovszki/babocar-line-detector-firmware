@@ -69,7 +69,7 @@ public:
     using LinePatterns = micro::vector<micro::LinePattern, 20>;
 
     struct LinePatternInfo {
-        micro::meter_t minValidityLength;
+        std::function<micro::meter_t(const micro::Sign&)> minValidityLength;
         micro::meter_t maxLength;
 
         std::function<bool(const Measurements&, const micro::LinePattern&, const micro::Lines&, const micro::Line&, micro::meter_t, micro::Sign)> isValid;

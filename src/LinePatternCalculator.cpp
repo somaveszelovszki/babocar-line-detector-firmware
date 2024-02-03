@@ -40,11 +40,10 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
     }
 
     if (isPatternChangeCheckActive) {
-
         for (auto it = possiblePatterns.begin(); it != possiblePatterns.end();) {
             const auto& patternInfo = getLinePatternInfo(it->type);
             if (patternInfo.isValid(measurements, *it, lines, lastSingleLine, currentDist, speedSign)) {
-                if (1 == possiblePatterns.size() && currentDist - it->startDist >= patternInfo.minValidityLength) {
+                if (1 == possiblePatterns.size() && currentDist - it->startDist >= patternInfo.minValidityLength(it->dir)) {
                     changePattern(*it);
                     break;
                 }

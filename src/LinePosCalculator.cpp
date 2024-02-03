@@ -18,7 +18,7 @@ LinePositions LinePosCalculator::calculate(const Measurements& measurements, con
     if (!this->whiteLevelCalibrationEnabled_ || this->whiteLevelCalibrationBuffer_.size() == this->whiteLevelCalibrationBuffer_.capacity()) {
         positions = this->runCalculation(measurements, maxLines);
     } else {
-        this->runCalibration(measurements);
+        this->runCalibration(measurements, maxLines);
     }
 
     return positions;
@@ -74,11 +74,11 @@ LinePositions LinePosCalculator::runCalculation(const Measurements& measurements
     return positions;
 }
 
-void LinePosCalculator::runCalibration(const Measurements& measurements) {
+void LinePosCalculator::runCalibration(const Measurements& measurements, const size_t maxLines) {
     this->whiteLevelCalibrationBuffer_.push_back(measurements);
     if (this->whiteLevelCalibrationBuffer_.size() == this->whiteLevelCalibrationBuffer_.capacity()) {
 
-        const LinePositions linePositions = this->runCalculation(measurements);
+        const LinePositions linePositions = this->runCalculation(measurements, maxLines);
 
         for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
             float sum = 0.0f;
