@@ -33,7 +33,7 @@ struct WeightCalculator {
 
 struct LinePosition {
     micro::millimeter_t pos;
-    float probability;
+    float probability{};
 
     bool operator<(const LinePosition& other) const { return this->pos < other.pos; }
     bool operator>(const LinePosition& other) const { return this->pos > other.pos; }

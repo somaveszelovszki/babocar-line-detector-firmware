@@ -41,14 +41,13 @@ LinePositions LinePosCalculator::runCalculation(const Measurements& measurements
     this->normalize(measurements, intensities);
 
     if (std::accumulate(&intensities[0], &intensities[cfg::NUM_SENSORS], 0.0f) / cfg::NUM_SENSORS < 0.3f) {
-        groupIntensities_t groupIntensities = calculateGroupIntensities(intensities);
+        auto groupIntensities = calculateGroupIntensities(intensities);
 
         const float minGroupIntensity = std::min_element(groupIntensities.begin(), groupIntensities.end())->intensity;
         uint8_t lastInsertedIdx       = 255;
 
         while (positions.size() < maxLines && !groupIntensities.empty()) {
-
-            const groupIntensities_t::const_iterator candidate = std::max_element(groupIntensities.begin(), groupIntensities.end());
+            const auto candidate = std::max_element(groupIntensities.begin(), groupIntensities.end());
 
             if (micro::abs(static_cast<int32_t>(lastInsertedIdx) - static_cast<int32_t>(candidate->centerIdx)) >= 4) {
                 const millimeter_t linePos = calculateLinePos(intensities, candidate->centerIdx);
