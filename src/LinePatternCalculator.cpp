@@ -39,25 +39,7 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
         lastSingleLine = *lines.begin();
     }
 
-    if (isPatternChangeCheckActive) {
-        for (auto it = possiblePatterns.begin(); it != possiblePatterns.end();) {
-            const auto& patternInfo = getLinePatternInfo(it->type);
-            if (patternInfo.isValid(measurements, *it, lines, lastSingleLine, currentDist, speedSign)) {
-                if (1 == possiblePatterns.size() && currentDist - it->startDist >= patternInfo.minValidityLength(it->dir)) {
-                    changePattern(*it);
-                    break;
-                }
-                ++it;
-            } else {
-                it = possiblePatterns.erase(it);
-            }
-        }
-
-        if (possiblePatterns.empty()) {
-            isPatternChangeCheckActive = false;
-        }
-
-    } else {
+    if (nextPatternCandidates_.empty()) {
         const auto& currentPatternInfo = getLinePatternInfo(pattern_.type);
 
         if (currentDist - pattern_.startDist > currentPatternInfo.maxLength) {
@@ -65,19 +47,31 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
             changePattern({ LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER, currentDist });
 
         } else if (!currentPatternInfo.isValid(measurements, pattern_, lines, lastSingleLine, currentDist, speedSign)) {
-            isPatternChangeCheckActive = true;
-            possiblePatterns = currentPatternInfo.validNextPatterns(pattern_, domain);
+            nextPatternCandidates_ = currentPatternInfo.validNextPatterns(pattern_, domain);
 
-            for (LinePattern& pattern : possiblePatterns) {
+            for (LinePattern& pattern : nextPatternCandidates_) {
                 pattern.startDist = currentDist;
             }
+        }
+    }
+
+    for (auto it = nextPatternCandidates_.begin(); it != nextPatternCandidates_.end();) {
+        const auto& patternInfo = getLinePatternInfo(it->type);
+        if (patternInfo.isValid(measurements, *it, lines, lastSingleLine, currentDist, speedSign)) {
+            if (1 == nextPatternCandidates_.size() && currentDist - it->startDist >= patternInfo.minValidityLength) {
+                changePattern(*it);
+                break;
+            }
+            ++it;
+        } else {
+            it = nextPatternCandidates_.erase(it);
         }
     }
 }
 
 void LinePatternCalculator::changePattern(const LinePattern& newPattern) {
     pattern_ = newPattern;
-    isPatternChangeCheckActive = false;
+    nextPatternCandidates_.clear();
 }
 
 Lines::const_iterator LinePatternCalculator::getMainLine(const Lines& lines, const micro::Line& lastSingleLine) {

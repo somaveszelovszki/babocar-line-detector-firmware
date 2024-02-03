@@ -78,7 +78,7 @@ Lines::const_iterator expectedMainLine(const LinePattern& pattern, const Lines& 
 
 const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
     { // NONE
-        [](const micro::Sign&) { return centimeter_t(10); },
+        centimeter_t(10),
         micro::numeric_limits<meter_t>::infinity(),
         [] (const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
             return 0 == lines.size();
@@ -97,7 +97,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // SINGLE_LINE
-        [](const micro::Sign&) { return centimeter_t(5); },
+        centimeter_t(5),
         micro::numeric_limits<meter_t>::infinity(),
         [] (const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
             return 1 == lines.size();
@@ -124,7 +124,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // ACCELERATE
-        [](const micro::Sign&) { return centimeter_t(18); },
+        centimeter_t(18),
         centimeter_t(85),
         [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
 
@@ -152,7 +152,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // BRAKE
-        [](const micro::Sign&) { return centimeter_t(12); },
+        centimeter_t(12),
         centimeter_t(350),
         [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
             return areClose(lines) && 3 == lines.size();
@@ -166,7 +166,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // LANE_CHANGE
-        [](const micro::Sign&) { return centimeter_t(35); },
+        centimeter_t(35),
         centimeter_t(120),
         [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t currentDist, Sign speedSign) {
 
@@ -198,7 +198,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // JUNCTION_1
-        [](const micro::Sign& dir) { return centimeter_t(dir == micro::Sign::POSITIVE ? 30 : 4); },
+        centimeter_t(4),
         centimeter_t(80),
         [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {     
 
@@ -207,7 +207,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
                 return isInJunctionCenter(lines);
 
             case micro::Sign::POSITIVE:
-                return 1 == lines.size();
+                return 1 == lines.size() && currentDist - pattern.startDist < centimeter_t(10);
 
             default:
                 return false;
@@ -227,7 +227,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // JUNCTION_2
-        [](const micro::Sign&) { return centimeter_t(8); },
+        centimeter_t(8),
         centimeter_t(80),
         [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
             const auto areValidFarLines = [&pattern, &lastSingleLine, &speedSign](const Lines& lines) {
@@ -261,7 +261,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // JUNCTION_3
-        [](const micro::Sign&) { return centimeter_t(8); },
+        centimeter_t(8),
         centimeter_t(80),
         [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
             const auto areValidFarLines = [&pattern, &lastSingleLine, &speedSign](const Lines& lines) {
@@ -295,10 +295,10 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         }
     },
     { // JUNCTION_CENTER
-        [](const micro::Sign&) { return centimeter_t(4); },
+        centimeter_t(4),
         centimeter_t(100),
         [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
-            return currentDist - pattern.startDist < centimeter_t(80) && 1 == lines.size() || 4 == lines.size();
+            return (1 == lines.size() || 4 == lines.size()) && currentDist - pattern.startDist < centimeter_t(80);
         },
         [] (const LinePattern& pattern, const linePatternDomain_t domain) {
             LinePatternCalculator::LinePatterns validPatterns;
