@@ -203,9 +203,8 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {     
 
             switch (pattern.dir) {
-            case micro::Sign::NEGATIVE: {
+            case micro::Sign::NEGATIVE:
                 return isInJunctionCenter(lines);
-            }
 
             case micro::Sign::POSITIVE:
                 return 1 == lines.size();
@@ -218,7 +217,6 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
             LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
                 if (Sign::NEGATIVE == pattern.dir) {
-                    validPatterns.push_back({ LinePattern::JUNCTION_1, Sign::POSITIVE, Direction::CENTER });
                     validPatterns.push_back({ LinePattern::JUNCTION_2, Sign::POSITIVE, Direction::RIGHT  });
                     validPatterns.push_back({ LinePattern::JUNCTION_3, Sign::POSITIVE, Direction::CENTER });
                 } else if (Sign::POSITIVE == pattern.dir) {
@@ -239,10 +237,9 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
             
 
             switch (pattern.dir) {
-            case micro::Sign::NEGATIVE: {
+            case micro::Sign::NEGATIVE:
                 return areValidFarLines(lines) ||
                     (2 == lines.size() && isInJunctionCenter(lines) && areValidFarLines(pastLines(measurements)));
-            }
 
             case micro::Sign::POSITIVE:
                 return 2 == lines.size();
@@ -255,9 +252,7 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
             LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
                 if (Sign::NEGATIVE == pattern.dir) {
-                    validPatterns.push_back({ LinePattern::JUNCTION_1, Sign::POSITIVE, Direction::CENTER });
-                    validPatterns.push_back({ LinePattern::JUNCTION_2, Sign::POSITIVE, Direction::RIGHT  });
-                    validPatterns.push_back({ LinePattern::JUNCTION_3, Sign::POSITIVE, Direction::CENTER });
+                    validPatterns.push_back({ LinePattern::JUNCTION_CENTER, Sign::NEUTRAL, Direction::CENTER });
                 } else if (Sign::POSITIVE == pattern.dir) {
                     validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
                 }
@@ -291,12 +286,26 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
             LinePatternCalculator::LinePatterns validPatterns;
             if (linePatternDomain_t::Labyrinth == domain) {
                 if (Sign::NEGATIVE == pattern.dir) {
-                    validPatterns.push_back({ LinePattern::JUNCTION_1, Sign::POSITIVE, Direction::CENTER });
-                    validPatterns.push_back({ LinePattern::JUNCTION_2, Sign::POSITIVE, Direction::RIGHT  });
-                    validPatterns.push_back({ LinePattern::JUNCTION_3, Sign::POSITIVE, Direction::CENTER });
+                    validPatterns.push_back({ LinePattern::JUNCTION_CENTER, Sign::NEUTRAL, Direction::CENTER });
                 } else if (Sign::POSITIVE == pattern.dir) {
                     validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
                 }
+            }
+            return validPatterns;
+        }
+    },
+    { // JUNCTION_CENTER
+        [](const micro::Sign&) { return centimeter_t(4); },
+        centimeter_t(100),
+        [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
+            return currentDist - pattern.startDist < centimeter_t(80) && 1 == lines.size() || 4 == lines.size();
+        },
+        [] (const LinePattern& pattern, const linePatternDomain_t domain) {
+            LinePatternCalculator::LinePatterns validPatterns;
+            if (linePatternDomain_t::Labyrinth == domain) {
+                validPatterns.push_back({ LinePattern::JUNCTION_1, Sign::POSITIVE, Direction::CENTER });
+                validPatterns.push_back({ LinePattern::JUNCTION_2, Sign::POSITIVE, Direction::RIGHT  });
+                validPatterns.push_back({ LinePattern::JUNCTION_3, Sign::POSITIVE, Direction::CENTER });
             }
             return validPatterns;
         }
