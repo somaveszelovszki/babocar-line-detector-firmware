@@ -14,7 +14,7 @@
 
 class LineFilter {
 public:
-    micro::Lines update(const LinePositions& detectedLines);
+    micro::Lines update(const LinePositions& detectedLines, const size_t maxLines);
 
 private:
     struct FilteredLine {

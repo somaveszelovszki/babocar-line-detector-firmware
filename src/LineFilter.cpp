@@ -5,8 +5,7 @@
 
 using namespace micro;
 
-Lines LineFilter::update(const LinePositions& detectedLines) {
-
+Lines LineFilter::update(const LinePositions& detectedLines, const size_t maxLines) {
     using LinePositionIters = micro::vector<LinePositions::const_iterator, cfg::MAX_NUM_FILTERED_LINES>;
     LinePositionIters unmatchedDetectedLines;
     for (LinePositions::const_iterator it = detectedLines.begin(); it != detectedLines.end(); ++it) {
@@ -92,7 +91,7 @@ Lines LineFilter::update(const LinePositions& detectedLines) {
             }
 
             // output list will contain all validated lines from the filtered lines list
-            if (it->isValidated && !validLines.full()) {
+            if (it->isValidated && validLines.size() < maxLines) {
                 validLines.insert({ it->current(), it->id });
             }
 

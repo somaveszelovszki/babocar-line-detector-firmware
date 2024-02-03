@@ -38,7 +38,6 @@ CanFrameHandler vehicleCanFrameHandler;
 CanSubscriber::Id vehicleCanSubscriberId = CanSubscriber::INVALID_ID;
 
 const Leds& updateFailureLeds() {
-
     static constexpr float SENSOR_OFFSET = cfg::NUM_SENSORS / 2.0f - 0.5f;
 
     static Leds leds;
@@ -107,7 +106,6 @@ void initializeVehicleCan() {
 } // namespace
 
 extern "C" void runLineCalcTask(void) {
-
     initializeVehicleCan();
 
     for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
@@ -117,8 +115,9 @@ extern "C" void runLineCalcTask(void) {
     while (true) {
         measurementsQueue.receive(measurements);
 
-        const LinePositions linePositions = linePosCalc.calculate(measurements);
-        const Lines lines = lineFilter.update(linePositions);
+        const auto maxLines = domain == linePatternDomain_t::Labyrinth ? 4 : 3;
+        const LinePositions linePositions = linePosCalc.calculate(measurements, maxLines);
+        const Lines lines = lineFilter.update(linePositions, maxLines);
         linePatternCalc.update(domain, lines, distance, PANEL_VERSION_FRONT == getPanelVersion() ? sgn(speed) : -sgn(speed));
 
         if (PANEL_VERSION_FRONT == getPanelVersion()) {

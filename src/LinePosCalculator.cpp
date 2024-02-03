@@ -12,11 +12,11 @@ LinePosCalculator::LinePosCalculator(const bool whiteLevelCalibrationEnabled)
     this->whiteLevels_.fill(0);
 }
 
-LinePositions LinePosCalculator::calculate(const Measurements& measurements) {
+LinePositions LinePosCalculator::calculate(const Measurements& measurements, const size_t maxLines) {
     LinePositions positions;
 
     if (!this->whiteLevelCalibrationEnabled_ || this->whiteLevelCalibrationBuffer_.size() == this->whiteLevelCalibrationBuffer_.capacity()) {
-        positions = this->runCalculation(measurements);
+        positions = this->runCalculation(measurements, maxLines);
     } else {
         this->runCalibration(measurements);
     }
@@ -32,7 +32,7 @@ float LinePosCalculator::linePosToOptoPos(const micro::millimeter_t linePos) {
     return micro::lerp(linePos, -cfg::OPTO_ARRAY_LENGTH / 2, cfg::OPTO_ARRAY_LENGTH / 2, 0.0f, cfg::NUM_SENSORS - 1.0f);
 }
 
-LinePositions LinePosCalculator::runCalculation(const Measurements& measurements) {
+LinePositions LinePosCalculator::runCalculation(const Measurements& measurements, const size_t maxLines) {
     static constexpr float MAX_GROUP_INTENSITY = 1.0f / (1.0f + cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS);
 
     LinePositions positions;
@@ -46,7 +46,7 @@ LinePositions LinePosCalculator::runCalculation(const Measurements& measurements
         const float minGroupIntensity = std::min_element(groupIntensities.begin(), groupIntensities.end())->intensity;
         uint8_t lastInsertedIdx       = 255;
 
-        while (!positions.full() && !groupIntensities.empty()) {
+        while (positions.size() < maxLines && !groupIntensities.empty()) {
 
             const groupIntensities_t::const_iterator candidate = std::max_element(groupIntensities.begin(), groupIntensities.end());
 
@@ -113,7 +113,6 @@ void LinePosCalculator::updateInvalidWhiteLevels(const LinePositions& linePositi
 }
 
 void LinePosCalculator::normalize(const Measurements& measurements, float * const OUT result) {
-
     float scaled[cfg::NUM_SENSORS];
 
     // removes sensor-specific offset
@@ -121,7 +120,7 @@ void LinePosCalculator::normalize(const Measurements& measurements, float * cons
         scaled[i] = micro::lerp<uint8_t>(measurements[i], this->whiteLevels_[i], 255, 0.0f, 1.0f);
     }
 
-    // removes dynamic light-related offset, that applies to the neighboring sensors
+    // removes dynamic light-related offset, that applies to the adjacent sensors
     for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
         const uint8_t startIdx = max<uint8_t>(i, cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS) - cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS;
         const uint8_t endIdx = min<uint8_t>(i + cfg::LINE_POS_CALC_OFFSET_FILTER_RADIUS + 1, cfg::NUM_SENSORS);
@@ -135,7 +134,6 @@ void LinePosCalculator::normalize(const Measurements& measurements, float * cons
 }
 
 LinePosCalculator::groupIntensities_t LinePosCalculator::calculateGroupIntensities(const float * const intensities) {
-
     static constexpr WeightCalculator CALC(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS);
 
     groupIntensities_t groupIntensities;
@@ -151,14 +149,12 @@ LinePosCalculator::groupIntensities_t LinePosCalculator::calculateGroupIntensiti
 }
 
 millimeter_t LinePosCalculator::calculateLinePos(const float * const intensities, const uint8_t centerIdx) {
-
     const WeightCalculator calc(cfg::LINE_POS_CALC_GROUP_RADIUS, centerIdx);
 
     float sum  = 0;
     float sumW = 0;
 
     for (int8_t subIdx = -calc.radius; subIdx <= calc.radius; ++subIdx) {
-
         const uint8_t idx = centerIdx + subIdx;
         const float m     = intensities[idx];
         const float w     = calc.weight(subIdx);

@@ -45,7 +45,7 @@ class LinePosCalculator {
 public:
     explicit LinePosCalculator(const bool whiteLevelCalibrationEnabled);
 
-    LinePositions calculate(const Measurements& measurements);
+    LinePositions calculate(const Measurements& measurements, const size_t maxLines);
 
     static micro::millimeter_t optoIdxToLinePos(const float optoIdx);
     static float linePosToOptoPos(const micro::millimeter_t linePos);
@@ -63,7 +63,7 @@ private:
         groupIntensity_t,
         cfg::NUM_SENSORS - 2 * static_cast<size_t>(std::ceil(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS))>;
 
-    LinePositions runCalculation(const Measurements& measurements);
+    LinePositions runCalculation(const Measurements& measurements, const size_t maxLines);
 
     void runCalibration(const Measurements& measurements);
 
