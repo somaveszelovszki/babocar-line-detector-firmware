@@ -30,14 +30,10 @@ auto LinePatternDescriptor::getValidLines(Sign dir, centimeter_t patternDist, ce
 }
 
 void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines& lines, meter_t currentDist, const Sign speedSign) {
-    // saving every 10th measurement, so that the rough history can be queried
-    if (measurementsUpdateCntr++ == 10) {
-        if (measurements.full()) {
-            measurements.pop();
-        }
-        measurements.push({ lines, currentDist });
-        measurementsUpdateCntr = 0;
+    if (measurements.full()) {
+        measurements.pop();
     }
+    measurements.push({ lines, currentDist });
 
     if (LinePattern::SINGLE_LINE == pattern_.type && 1 == lines.size()) {
         lastSingleLine = *lines.begin();

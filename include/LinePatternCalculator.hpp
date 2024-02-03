@@ -65,7 +65,7 @@ public:
         micro::meter_t distance;
     };
 
-    using Measurements = etl::circular_buffer<StampedLines, 100>;
+    using Measurements = etl::circular_buffer<StampedLines, 500>;
     using LinePatterns = micro::vector<micro::LinePattern, 20>;
 
     struct LinePatternInfo {
