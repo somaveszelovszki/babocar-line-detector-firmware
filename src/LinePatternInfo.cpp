@@ -112,8 +112,10 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
                 validPatterns.push_back({ LinePattern::JUNCTION_3,  Sign::NEGATIVE, Direction::LEFT   });
                 validPatterns.push_back({ LinePattern::JUNCTION_3,  Sign::NEGATIVE, Direction::CENTER });
                 validPatterns.push_back({ LinePattern::JUNCTION_3,  Sign::NEGATIVE, Direction::RIGHT  });
+                validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::POSITIVE, Direction::LEFT   });
                 validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::POSITIVE, Direction::RIGHT  });
                 validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::NEGATIVE, Direction::LEFT   });
+                validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::NEGATIVE, Direction::RIGHT  });
 
             } else if (linePatternDomain_t::Race == domain) {
                 validPatterns.push_back({ LinePattern::NONE,       Sign::NEUTRAL, Direction::CENTER });
