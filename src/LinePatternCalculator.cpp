@@ -46,7 +46,8 @@ void LinePatternCalculator::update(const linePatternDomain_t domain, const Lines
             // under normal circumstances, maxLength should never be exceeded
             changePattern({ LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER, currentDist });
 
-        } else if (!currentPatternInfo.isValid(measurements, pattern_, lines, lastSingleLine, currentDist, speedSign)) {
+        } else if ((pattern_.type == LinePattern::JUNCTION_1 && pattern_.dir == Sign::NEGATIVE) ||
+            !currentPatternInfo.isValid(measurements, pattern_, lines, lastSingleLine, currentDist, speedSign)) {
             nextPatternCandidates_ = currentPatternInfo.validNextPatterns(pattern_, domain);
 
             for (LinePattern& pattern : nextPatternCandidates_) {

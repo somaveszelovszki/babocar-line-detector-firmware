@@ -112,10 +112,8 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
                 validPatterns.push_back({ LinePattern::JUNCTION_3,  Sign::NEGATIVE, Direction::LEFT   });
                 validPatterns.push_back({ LinePattern::JUNCTION_3,  Sign::NEGATIVE, Direction::CENTER });
                 validPatterns.push_back({ LinePattern::JUNCTION_3,  Sign::NEGATIVE, Direction::RIGHT  });
-                validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::POSITIVE, Direction::LEFT   });
                 validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::POSITIVE, Direction::RIGHT  });
                 validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::NEGATIVE, Direction::LEFT   });
-                validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::NEGATIVE, Direction::RIGHT  });
 
             } else if (linePatternDomain_t::Race == domain) {
                 validPatterns.push_back({ LinePattern::NONE,       Sign::NEUTRAL, Direction::CENTER });
@@ -205,8 +203,18 @@ const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
         [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {     
 
             switch (pattern.dir) {
-            case micro::Sign::NEGATIVE:
-                return isInJunctionCenter(lines);
+            case micro::Sign::NEGATIVE: {
+                if (lines.size() < 2 || lines.size() > 3) {
+                    return false;
+                }
+
+                if (isInJunctionCenter(lines)) {
+                    return true;
+                }
+
+                const auto past = pastLines(measurements);
+                return (1 == past.size() || isInJunctionCenter(past));
+            }
 
             case micro::Sign::POSITIVE:
                 return 1 == lines.size() && currentDist - pattern.startDist < centimeter_t(10);
