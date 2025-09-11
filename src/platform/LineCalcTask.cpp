@@ -1,16 +1,14 @@
-#include <micro/panel/CanManager.hpp>
-#include <micro/panel/panelVersion.hpp>
-#include <micro/utils/algorithm.hpp>
-#include <micro/port/queue.hpp>
-#include <micro/port/task.hpp>
-#include <micro/utils/timer.hpp>
-
-#include <cfg_board.hpp>
 #include <LineFilter.hpp>
 #include <LinePatternCalculator.hpp>
 #include <LinePosCalculator.hpp>
 #include <SensorData.hpp>
-
+#include <cfg_board.hpp>
+#include <micro/panel/CanManager.hpp>
+#include <micro/panel/panelVersion.hpp>
+#include <micro/port/queue.hpp>
+#include <micro/port/task.hpp>
+#include <micro/utils/algorithm.hpp>
+#include <micro/utils/timer.hpp>
 #include <numeric>
 
 using namespace micro;
@@ -45,10 +43,12 @@ const Leds& updateFailureLeds() {
     static radian_t angle = radian_t(0);
 
     animationTimer.checkTimeout();
-    angle = micro::lerp(getTime(), animationTimer.startTime(), animationTimer.startTime() + animationTimer.period(), radian_t(0), 2 * PI);
+    angle = micro::lerp(getTime(), animationTimer.startTime(),
+                        animationTimer.startTime() + animationTimer.period(), radian_t(0), 2 * PI);
 
     leds.fill(false);
-    leds[static_cast<uint32_t>(std::lround(SENSOR_OFFSET + micro::cos(angle) * SENSOR_OFFSET))] = true;
+    leds[static_cast<uint32_t>(std::lround(SENSOR_OFFSET + micro::cos(angle) * SENSOR_OFFSET))] =
+        true;
 
     return leds;
 }
@@ -61,10 +61,11 @@ void updateSensorControl(const Lines& lines, const bool isOk) {
 
         if (indicatorLedsEnabled) {
             for (const Line& l : lines) {
-                const uint8_t centerIdx = static_cast<uint8_t>(std::lround(LinePosCalculator::linePosToOptoPos(l.pos)));
+                const uint8_t centerIdx =
+                    static_cast<uint8_t>(std::lround(LinePosCalculator::linePosToOptoPos(l.pos)));
 
                 const uint8_t startIdx = max<uint8_t>(centerIdx, LED_RADIUS) - LED_RADIUS;
-                const uint8_t endIdx = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
+                const uint8_t endIdx   = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
 
                 for (uint8_t i = startIdx; i < endIdx; ++i) {
                     sensorControl.leds[i] = true;
@@ -78,28 +79,36 @@ void updateSensorControl(const Lines& lines, const bool isOk) {
     sensorControl.scanEnabled = true;
 
     if (lines.size()) {
-        const millimeter_t avgLinePos = std::accumulate(lines.begin(), lines.end(), millimeter_t(0),
-            [] (const millimeter_t& sum, const Line& line) { return sum + line.pos; }) / lines.size();
+        const millimeter_t avgLinePos =
+            std::accumulate(
+                lines.begin(), lines.end(), millimeter_t(0),
+                [](const millimeter_t& sum, const Line& line) { return sum + line.pos; }) /
+            lines.size();
 
-        sensorControl.scanRangeCenter = static_cast<uint8_t>(std::lround(LinePosCalculator::linePosToOptoPos(avgLinePos)));
+        sensorControl.scanRangeCenter =
+            static_cast<uint8_t>(std::lround(LinePosCalculator::linePosToOptoPos(avgLinePos)));
     }
 }
 
 void initializeVehicleCan() {
-    vehicleCanFrameHandler.registerHandler(can::LongitudinalState::id(), [] (const uint8_t * const data) {
-        bool isRemoteControlled;
-        reinterpret_cast<const can::LongitudinalState*>(data)->acquire(speed, isRemoteControlled, distance);
-    });
+    vehicleCanFrameHandler.registerHandler(
+        can::LongitudinalState::id(), [](const uint8_t* const data) {
+            bool isRemoteControlled;
+            reinterpret_cast<const can::LongitudinalState*>(data)->acquire(
+                speed, isRemoteControlled, distance);
+        });
 
-    vehicleCanFrameHandler.registerHandler(can::LineDetectControl::id(), [] (const uint8_t * const data) {
-        reinterpret_cast<const can::LineDetectControl*>(data)->acquire(indicatorLedsEnabled, sensorControl.scanRangeRadius, domain);
-    });
+    vehicleCanFrameHandler.registerHandler(
+        can::LineDetectControl::id(), [](const uint8_t* const data) {
+            reinterpret_cast<const can::LineDetectControl*>(data)->acquire(
+                indicatorLedsEnabled, sensorControl.scanRangeRadius, domain);
+        });
 
     const CanFrameIds rxFilter = vehicleCanFrameHandler.identifiers();
     const CanFrameIds txFilter = {
         PANEL_VERSION_FRONT == getPanelVersion() ? can::FrontLines::id() : can::RearLines::id(),
-        PANEL_VERSION_FRONT == getPanelVersion() ? can::FrontLinePattern::id() : can::RearLinePattern::id()
-    };
+        PANEL_VERSION_FRONT == getPanelVersion() ? can::FrontLinePattern::id()
+                                                 : can::RearLinePattern::id()};
     vehicleCanSubscriberId = vehicleCanManager.registerSubscriber(rxFilter, txFilter);
 }
 
@@ -115,17 +124,20 @@ extern "C" void runLineCalcTask(void) {
     while (true) {
         measurementsQueue.receive(measurements);
 
-        const auto maxLines = domain == linePatternDomain_t::Labyrinth ? 4 : 3;
+        const auto maxLines               = domain == linePatternDomain_t::Labyrinth ? 4 : 3;
         const LinePositions linePositions = linePosCalc.calculate(measurements, maxLines);
-        const Lines lines = lineFilter.update(linePositions, maxLines);
-        linePatternCalc.update(domain, lines, distance, PANEL_VERSION_FRONT == getPanelVersion() ? sgn(speed) : -sgn(speed));
+        const Lines lines                 = lineFilter.update(linePositions, maxLines);
+        linePatternCalc.update(domain, lines, distance,
+                               PANEL_VERSION_FRONT == getPanelVersion() ? sgn(speed) : -sgn(speed));
 
         if (PANEL_VERSION_FRONT == getPanelVersion()) {
             vehicleCanManager.send<can::FrontLines>(vehicleCanSubscriberId, lines);
-            vehicleCanManager.send<can::FrontLinePattern>(vehicleCanSubscriberId, linePatternCalc.pattern());
+            vehicleCanManager.send<can::FrontLinePattern>(vehicleCanSubscriberId,
+                                                          linePatternCalc.pattern());
         } else if (PANEL_VERSION_REAR == getPanelVersion()) {
             vehicleCanManager.send<can::RearLines>(vehicleCanSubscriberId, lines);
-            vehicleCanManager.send<can::RearLinePattern>(vehicleCanSubscriberId, linePatternCalc.pattern());
+            vehicleCanManager.send<can::RearLinePattern>(vehicleCanSubscriberId,
+                                                         linePatternCalc.pattern());
         }
 
         while (const auto frame = vehicleCanManager.read(vehicleCanSubscriberId)) {

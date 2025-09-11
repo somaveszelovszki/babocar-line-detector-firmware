@@ -1,35 +1,39 @@
 #pragma once
 
+#include <LinePosCalculator.hpp>
+#include <cfg_sensor.hpp>
 #include <etl/circular_buffer.h>
-
 #include <micro/container/set.hpp>
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/Line.hpp>
 
-#include <cfg_sensor.hpp>
-#include <LinePosCalculator.hpp>
-
 #define TRACKED_LINE_ID_INVALID 0
-#define TRACKED_LINE_ID_MAX     7
+#define TRACKED_LINE_ID_MAX 7
 
 class LineFilter {
-public:
+  public:
     micro::Lines update(const LinePositions& detectedLines, const size_t maxLines);
 
-private:
+  private:
     struct FilteredLine {
         uint8_t id = 0;
         etl::circular_buffer<micro::millimeter_t, 100> samples;
         micro::millimeter_t estimated;
-        int8_t cntr = 0;
+        int8_t cntr      = 0;
         bool isValidated = false;
 
         micro::millimeter_t current() const;
 
-        micro::millimeter_t current_raw() const { return samples.empty() ? micro::millimeter_t(0) : samples.back(); }
+        micro::millimeter_t current_raw() const {
+            return samples.empty() ? micro::millimeter_t(0) : samples.back();
+        }
 
-        bool operator<(const FilteredLine& other) const { return current_raw() < other.current_raw(); }
-        bool operator>(const FilteredLine& other) const { return current_raw() > other.current_raw(); }
+        bool operator<(const FilteredLine& other) const {
+            return current_raw() < other.current_raw();
+        }
+        bool operator>(const FilteredLine& other) const {
+            return current_raw() > other.current_raw();
+        }
 
         void increaseCntr() {
             cntr = micro::max<int8_t>(cntr, 0);

@@ -1,22 +1,18 @@
 #pragma once
 
-#include <utility>
-
+#include <SensorData.hpp>
 #include <micro/container/vector.hpp>
 #include <micro/port/gpio.hpp>
-#include <micro/port/spi.hpp>
 #include <micro/port/semaphore.hpp>
-
-#include <SensorData.hpp>
+#include <micro/port/spi.hpp>
+#include <utility>
 
 class SensorHandler {
-public:
+  public:
     SensorHandler(const micro::spi_t& spi,
-        const micro::vector<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
-        const micro::gpio_t& LE_opto,
-        const micro::gpio_t& OE_opto,
-        const micro::gpio_t& LE_ind,
-        const micro::gpio_t& OE_ind);
+                  const micro::vector<micro::gpio_t, cfg::NUM_SENSORS / 8>& adcEnPins,
+                  const micro::gpio_t& LE_opto, const micro::gpio_t& OE_opto,
+                  const micro::gpio_t& LE_ind, const micro::gpio_t& OE_ind);
 
     void initialize();
 
@@ -25,11 +21,11 @@ public:
 
     void onTxFinished();
 
-private:
+  private:
     uint8_t readAdc(const uint8_t channel);
-    void exchangeData(const uint8_t *txBuf, uint8_t *rxBuf, const uint32_t size);
+    void exchangeData(const uint8_t* txBuf, uint8_t* rxBuf, const uint32_t size);
 
-private:
+  private:
     micro::semaphore_t semaphore_;
     const micro::spi_t spi_;
     const micro::vector<micro::gpio_t, cfg::NUM_SENSORS / 8> adcEnPins_;

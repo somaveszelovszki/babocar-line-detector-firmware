@@ -1,10 +1,8 @@
+#include <LinePatternCalculator.hpp>
 #include <LinePatternInfo.hpp>
-
 #include <micro/container/vector.hpp>
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/Line.hpp>
-
-#include <LinePatternCalculator.hpp>
 
 using namespace micro;
 
@@ -22,7 +20,7 @@ const micro::Lines& pastLines(const LinePatternCalculator::Measurements& measure
     const meter_t dist = measurements.back().distance - PEEK_BACK_DISTANCE;
 
     int32_t startIdx = 1;
-    int32_t endIdx = static_cast<int32_t>(measurements.size()) - 1;
+    int32_t endIdx   = static_cast<int32_t>(measurements.size()) - 1;
 
     while (startIdx < endIdx - 1) {
         const int32_t i = micro::avg(startIdx, endIdx);
@@ -40,7 +38,8 @@ bool isInJunctionCenter(const Lines& lines) {
     return 1 < lines.size() && micro::areClose(lines);
 }
 
-Lines::const_iterator expectedMainLine(const LinePattern& pattern, const Lines& lines, const Sign speedSign) {
+Lines::const_iterator expectedMainLine(const LinePattern& pattern, const Lines& lines,
+                                       const Sign speedSign) {
     Direction expectedMainLineDir = Direction::CENTER;
 
     if (LinePattern::LANE_CHANGE == pattern.type) {
@@ -77,253 +76,234 @@ Lines::const_iterator expectedMainLine(const LinePattern& pattern, const Lines& 
 }
 
 const micro::vector<LinePatternCalculator::LinePatternInfo, 10> PATTERN_INFO = {
-    { // NONE
-        centimeter_t(10),
-        micro::numeric_limits<meter_t>::infinity(),
-        [] (const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
-            return 0 == lines.size();
-        },
-        [] (const LinePattern&, const linePatternDomain_t domain) {
-            LinePatternCalculator::LinePatterns validPatterns;
-            if (linePatternDomain_t::Labyrinth == domain) {
-                validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
+    {// NONE
+     centimeter_t(10), micro::numeric_limits<meter_t>::infinity(),
+     [](const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines,
+        const Line&, meter_t, Sign) { return 0 == lines.size(); },
+     [](const LinePattern&, const linePatternDomain_t domain) {
+         LinePatternCalculator::LinePatterns validPatterns;
+         if (linePatternDomain_t::Labyrinth == domain) {
+             validPatterns.push_back({LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER});
 
-            } else if (linePatternDomain_t::Race == domain) {
-                validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
-                validPatterns.push_back({ LinePattern::ACCELERATE,  Sign::NEUTRAL, Direction::CENTER });
-                validPatterns.push_back({ LinePattern::BRAKE,       Sign::NEUTRAL, Direction::CENTER });
-            }
-            return validPatterns;
-        }
-    },
-    { // SINGLE_LINE
-        centimeter_t(5),
-        micro::numeric_limits<meter_t>::infinity(),
-        [] (const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines, const Line&, meter_t, Sign) {
-            return 1 == lines.size();
-        },
-        [] (const LinePattern&, const linePatternDomain_t domain) {
-            LinePatternCalculator::LinePatterns validPatterns;
-            if (linePatternDomain_t::Labyrinth == domain) {
-                validPatterns.push_back({ LinePattern::NONE,        Sign::NEUTRAL,  Direction::CENTER });
-                validPatterns.push_back({ LinePattern::JUNCTION_1,  Sign::NEGATIVE, Direction::CENTER });
-                validPatterns.push_back({ LinePattern::JUNCTION_2,  Sign::NEGATIVE, Direction::LEFT   });
-                validPatterns.push_back({ LinePattern::JUNCTION_2,  Sign::NEGATIVE, Direction::RIGHT  });
-                validPatterns.push_back({ LinePattern::JUNCTION_3,  Sign::NEGATIVE, Direction::LEFT   });
-                validPatterns.push_back({ LinePattern::JUNCTION_3,  Sign::NEGATIVE, Direction::CENTER });
-                validPatterns.push_back({ LinePattern::JUNCTION_3,  Sign::NEGATIVE, Direction::RIGHT  });
-                validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::POSITIVE, Direction::RIGHT  });
-                validPatterns.push_back({ LinePattern::LANE_CHANGE, Sign::NEGATIVE, Direction::LEFT   });
+         } else if (linePatternDomain_t::Race == domain) {
+             validPatterns.push_back({LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER});
+             validPatterns.push_back({LinePattern::ACCELERATE, Sign::NEUTRAL, Direction::CENTER});
+             validPatterns.push_back({LinePattern::BRAKE, Sign::NEUTRAL, Direction::CENTER});
+         }
+         return validPatterns;
+     }},
+    {// SINGLE_LINE
+     centimeter_t(5), micro::numeric_limits<meter_t>::infinity(),
+     [](const LinePatternCalculator::Measurements&, const LinePattern&, const Lines& lines,
+        const Line&, meter_t, Sign) { return 1 == lines.size(); },
+     [](const LinePattern&, const linePatternDomain_t domain) {
+         LinePatternCalculator::LinePatterns validPatterns;
+         if (linePatternDomain_t::Labyrinth == domain) {
+             validPatterns.push_back({LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER});
+             validPatterns.push_back({LinePattern::JUNCTION_1, Sign::NEGATIVE, Direction::CENTER});
+             validPatterns.push_back({LinePattern::JUNCTION_2, Sign::NEGATIVE, Direction::LEFT});
+             validPatterns.push_back({LinePattern::JUNCTION_2, Sign::NEGATIVE, Direction::RIGHT});
+             validPatterns.push_back({LinePattern::JUNCTION_3, Sign::NEGATIVE, Direction::LEFT});
+             validPatterns.push_back({LinePattern::JUNCTION_3, Sign::NEGATIVE, Direction::CENTER});
+             validPatterns.push_back({LinePattern::JUNCTION_3, Sign::NEGATIVE, Direction::RIGHT});
+             validPatterns.push_back({LinePattern::LANE_CHANGE, Sign::POSITIVE, Direction::RIGHT});
+             validPatterns.push_back({LinePattern::LANE_CHANGE, Sign::NEGATIVE, Direction::LEFT});
 
-            } else if (linePatternDomain_t::Race == domain) {
-                validPatterns.push_back({ LinePattern::NONE,       Sign::NEUTRAL, Direction::CENTER });
-                validPatterns.push_back({ LinePattern::ACCELERATE, Sign::NEUTRAL, Direction::CENTER });
-                validPatterns.push_back({ LinePattern::BRAKE,      Sign::NEUTRAL, Direction::CENTER });
-            }
-            return validPatterns;
-        }
-    },
-    { // ACCELERATE
-        centimeter_t(18),
-        centimeter_t(85),
-        [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
+         } else if (linePatternDomain_t::Race == domain) {
+             validPatterns.push_back({LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER});
+             validPatterns.push_back({LinePattern::ACCELERATE, Sign::NEUTRAL, Direction::CENTER});
+             validPatterns.push_back({LinePattern::BRAKE, Sign::NEUTRAL, Direction::CENTER});
+         }
+         return validPatterns;
+     }},
+    {// ACCELERATE
+     centimeter_t(18), centimeter_t(85),
+     [](const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines,
+        const Line&, meter_t currentDist, Sign) {
+         static const LinePatternDescriptor descriptor = {
+             {3, centimeter_t(8)}, {1, centimeter_t(8)}, {3, centimeter_t(8)},
+             {1, centimeter_t(8)}, {3, centimeter_t(8)}, {1, centimeter_t(8)},
+             {3, centimeter_t(8)}, {1, centimeter_t(8)}, {3, centimeter_t(8)}};
 
-            static const LinePatternDescriptor descriptor = {
-                { 3, centimeter_t(8) },
-                { 1, centimeter_t(8) },
-                { 3, centimeter_t(8) },
-                { 1, centimeter_t(8) },
-                { 3, centimeter_t(8) },
-                { 1, centimeter_t(8) },
-                { 3, centimeter_t(8) },
-                { 1, centimeter_t(8) },
-                { 3, centimeter_t(8) }
-            };
+         const auto validLines = descriptor.getValidLines(
+             pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
+         return areClose(lines) &&
+                std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end();
+     },
+     [](const LinePattern&, const linePatternDomain_t domain) {
+         LinePatternCalculator::LinePatterns validPatterns;
+         if (linePatternDomain_t::Race == domain) {
+             validPatterns.push_back({LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER});
+         }
+         return validPatterns;
+     }},
+    {// BRAKE
+     centimeter_t(12), centimeter_t(350),
+     [](const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines,
+        const Line&, meter_t currentDist, Sign) { return areClose(lines) && 3 == lines.size(); },
+     [](const LinePattern&, const linePatternDomain_t domain) {
+         LinePatternCalculator::LinePatterns validPatterns;
+         if (linePatternDomain_t::Race == domain) {
+             validPatterns.push_back({LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER});
+         }
+         return validPatterns;
+     }},
+    {// LANE_CHANGE
+     centimeter_t(35), centimeter_t(120),
+     [](const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines,
+        const Line& lastSingleLine, meter_t currentDist, Sign speedSign) {
+         static const LinePatternDescriptor descriptor = {
+             {2, centimeter_t(16)}, {1, centimeter_t(14)}, {2, centimeter_t(14)},
+             {1, centimeter_t(12)}, {2, centimeter_t(12)}, {1, centimeter_t(10)},
+             {2, centimeter_t(10)}, {1, centimeter_t(8)},  {2, centimeter_t(8)}};
 
-            const auto validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
-            return areClose(lines) && std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end();
-        },
-        [] (const LinePattern&, const linePatternDomain_t domain) {
-            LinePatternCalculator::LinePatterns validPatterns;
-            if (linePatternDomain_t::Race == domain) {
-                validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
-            }
-            return validPatterns;
-        }
-    },
-    { // BRAKE
-        centimeter_t(12),
-        centimeter_t(350),
-        [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
-            return areClose(lines) && 3 == lines.size();
-        },
-        [] (const LinePattern&, const linePatternDomain_t domain) {
-            LinePatternCalculator::LinePatterns validPatterns;
-            if (linePatternDomain_t::Race == domain) {
-                validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
-            }
-            return validPatterns;
-        }
-    },
-    { // LANE_CHANGE
-        centimeter_t(35),
-        centimeter_t(120),
-        [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t currentDist, Sign speedSign) {
+         const auto validLines = descriptor.getValidLines(
+             pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
 
-            static const LinePatternDescriptor descriptor = {
-                { 2, centimeter_t(16) },
-                { 1, centimeter_t(14) },
-                { 2, centimeter_t(14) },
-                { 1, centimeter_t(12) },
-                { 2, centimeter_t(12) },
-                { 1, centimeter_t(10) },
-                { 2, centimeter_t(10) },
-                { 1, centimeter_t(8)  },
-                { 2, centimeter_t(8)  }
-            };
+         return micro::areClose(lines) &&
+                std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end() &&
+                LinePatternCalculator::getMainLine(lines, lastSingleLine) ==
+                    expectedMainLine(pattern, lines, speedSign);
+     },
+     [](const LinePattern&, const linePatternDomain_t domain) {
+         LinePatternCalculator::LinePatterns validPatterns;
+         if (linePatternDomain_t::Labyrinth == domain) {
+             validPatterns.push_back({LinePattern::NONE, Sign::NEUTRAL, Direction::CENTER});
+             validPatterns.push_back({LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER});
+         }
+         return validPatterns;
+     }},
+    {// JUNCTION_1
+     centimeter_t(4), centimeter_t(80),
+     [](const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern,
+        const Lines& lines, const Line&, meter_t currentDist, Sign) {
+         switch (pattern.dir) {
+         case micro::Sign::NEGATIVE: {
+             if (lines.size() < 2 || lines.size() > 3) {
+                 return false;
+             }
 
-            const auto validLines = descriptor.getValidLines(pattern.dir, currentDist - pattern.startDist, centimeter_t(2.5f));
+             if (isInJunctionCenter(lines)) {
+                 return true;
+             }
 
-            return micro::areClose(lines)                                                            &&
-                   std::find(validLines.begin(), validLines.end(), lines.size()) != validLines.end() &&
-                   LinePatternCalculator::getMainLine(lines, lastSingleLine) == expectedMainLine(pattern, lines, speedSign);
-        },
-        [] (const LinePattern&, const linePatternDomain_t domain) {
-            LinePatternCalculator::LinePatterns validPatterns;
-            if (linePatternDomain_t::Labyrinth == domain) {
-                validPatterns.push_back({ LinePattern::NONE,        Sign::NEUTRAL, Direction::CENTER });
-                validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
-            }
-            return validPatterns;
-        }
-    },
-    { // JUNCTION_1
-        centimeter_t(4),
-        centimeter_t(80),
-        [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {     
+             const auto past = pastLines(measurements);
+             return (1 == past.size() || isInJunctionCenter(past));
+         }
 
-            switch (pattern.dir) {
-            case micro::Sign::NEGATIVE: {
-                if (lines.size() < 2 || lines.size() > 3) {
-                    return false;
-                }
+         case micro::Sign::POSITIVE:
+             return 1 == lines.size() && currentDist - pattern.startDist < centimeter_t(10);
 
-                if (isInJunctionCenter(lines)) {
-                    return true;
-                }
+         default:
+             return false;
+         }
+     },
+     [](const LinePattern& pattern, const linePatternDomain_t domain) {
+         LinePatternCalculator::LinePatterns validPatterns;
+         if (linePatternDomain_t::Labyrinth == domain) {
+             if (Sign::NEGATIVE == pattern.dir) {
+                 validPatterns.push_back(
+                     {LinePattern::JUNCTION_2, Sign::POSITIVE, Direction::RIGHT});
+                 validPatterns.push_back(
+                     {LinePattern::JUNCTION_3, Sign::POSITIVE, Direction::CENTER});
+             } else if (Sign::POSITIVE == pattern.dir) {
+                 validPatterns.push_back(
+                     {LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER});
+             }
+         }
+         return validPatterns;
+     }},
+    {// JUNCTION_2
+     centimeter_t(8), centimeter_t(80),
+     [](const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern,
+        const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
+         const auto areValidFarLines = [&pattern, &lastSingleLine, &speedSign](const Lines& lines) {
+             return 2 == lines.size() && areFar(lines) &&
+                    LinePatternCalculator::getMainLine(lines, lastSingleLine) ==
+                        expectedMainLine(pattern, lines, speedSign);
+         };
 
-                const auto past = pastLines(measurements);
-                return (1 == past.size() || isInJunctionCenter(past));
-            }
+         switch (pattern.dir) {
+         case micro::Sign::NEGATIVE:
+             return areValidFarLines(lines) || (2 == lines.size() && isInJunctionCenter(lines) &&
+                                                areValidFarLines(pastLines(measurements)));
 
-            case micro::Sign::POSITIVE:
-                return 1 == lines.size() && currentDist - pattern.startDist < centimeter_t(10);
+         case micro::Sign::POSITIVE:
+             return 2 == lines.size();
 
-            default:
-                return false;
-            }
-        },
-        [] (const LinePattern& pattern, const linePatternDomain_t domain) {
-            LinePatternCalculator::LinePatterns validPatterns;
-            if (linePatternDomain_t::Labyrinth == domain) {
-                if (Sign::NEGATIVE == pattern.dir) {
-                    validPatterns.push_back({ LinePattern::JUNCTION_2, Sign::POSITIVE, Direction::RIGHT  });
-                    validPatterns.push_back({ LinePattern::JUNCTION_3, Sign::POSITIVE, Direction::CENTER });
-                } else if (Sign::POSITIVE == pattern.dir) {
-                    validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
-                }
-            }
-            return validPatterns;
-        }
-    },
-    { // JUNCTION_2
-        centimeter_t(8),
-        centimeter_t(80),
-        [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
-            const auto areValidFarLines = [&pattern, &lastSingleLine, &speedSign](const Lines& lines) {
-                return 2 == lines.size() && areFar(lines) &&
-                    LinePatternCalculator::getMainLine(lines, lastSingleLine) == expectedMainLine(pattern, lines, speedSign);
-            };
-            
-
-            switch (pattern.dir) {
-            case micro::Sign::NEGATIVE:
-                return areValidFarLines(lines) ||
-                    (2 == lines.size() && isInJunctionCenter(lines) && areValidFarLines(pastLines(measurements)));
-
-            case micro::Sign::POSITIVE:
-                return 2 == lines.size();
-
-            default:
-                return false;
-            }
-        },
-        [] (const LinePattern& pattern, const linePatternDomain_t domain) {
-            LinePatternCalculator::LinePatterns validPatterns;
-            if (linePatternDomain_t::Labyrinth == domain) {
-                if (Sign::NEGATIVE == pattern.dir) {
-                    validPatterns.push_back({ LinePattern::JUNCTION_CENTER, Sign::NEUTRAL, Direction::CENTER });
-                } else if (Sign::POSITIVE == pattern.dir) {
-                    validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
-                }
-            }
-            return validPatterns;
-        }
-    },
-    { // JUNCTION_3
-        centimeter_t(8),
-        centimeter_t(80),
-        [] (const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern, const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
-            const auto areValidFarLines = [&pattern, &lastSingleLine, &speedSign](const Lines& lines) {
-                return 1 < lines.size() && micro::areFar(lines) &&
+         default:
+             return false;
+         }
+     },
+     [](const LinePattern& pattern, const linePatternDomain_t domain) {
+         LinePatternCalculator::LinePatterns validPatterns;
+         if (linePatternDomain_t::Labyrinth == domain) {
+             if (Sign::NEGATIVE == pattern.dir) {
+                 validPatterns.push_back(
+                     {LinePattern::JUNCTION_CENTER, Sign::NEUTRAL, Direction::CENTER});
+             } else if (Sign::POSITIVE == pattern.dir) {
+                 validPatterns.push_back(
+                     {LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER});
+             }
+         }
+         return validPatterns;
+     }},
+    {// JUNCTION_3
+     centimeter_t(8), centimeter_t(80),
+     [](const LinePatternCalculator::Measurements& measurements, const LinePattern& pattern,
+        const Lines& lines, const Line& lastSingleLine, meter_t, Sign speedSign) {
+         const auto areValidFarLines = [&pattern, &lastSingleLine, &speedSign](const Lines& lines) {
+             return 1 < lines.size() && micro::areFar(lines) &&
                     ((2 == lines.size() && Direction::CENTER == pattern.side) ||
-                    LinePatternCalculator::getMainLine(lines, lastSingleLine) == expectedMainLine(pattern, lines, speedSign));
-            };
-            
-            switch (pattern.dir) {
-            case micro::Sign::NEGATIVE:
-                return areValidFarLines(lines) ||
-                    (3 == lines.size() && isInJunctionCenter(lines) && areValidFarLines(pastLines(measurements)));
+                     LinePatternCalculator::getMainLine(lines, lastSingleLine) ==
+                         expectedMainLine(pattern, lines, speedSign));
+         };
 
-            case micro::Sign::POSITIVE:
-                return 3 == lines.size();
+         switch (pattern.dir) {
+         case micro::Sign::NEGATIVE:
+             return areValidFarLines(lines) || (3 == lines.size() && isInJunctionCenter(lines) &&
+                                                areValidFarLines(pastLines(measurements)));
 
-            default:
-                return false;
-            }
-        },
-        [] (const LinePattern& pattern, const linePatternDomain_t domain) {
-            LinePatternCalculator::LinePatterns validPatterns;
-            if (linePatternDomain_t::Labyrinth == domain) {
-                if (Sign::NEGATIVE == pattern.dir) {
-                    validPatterns.push_back({ LinePattern::JUNCTION_CENTER, Sign::NEUTRAL, Direction::CENTER });
-                } else if (Sign::POSITIVE == pattern.dir) {
-                    validPatterns.push_back({ LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER });
-                }
-            }
-            return validPatterns;
-        }
-    },
-    { // JUNCTION_CENTER
-        centimeter_t(4),
-        centimeter_t(100),
-        [] (const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines, const Line&, meter_t currentDist, Sign) {
-            return (1 == lines.size() || 4 == lines.size()) && currentDist - pattern.startDist < centimeter_t(80);
-        },
-        [] (const LinePattern& pattern, const linePatternDomain_t domain) {
-            LinePatternCalculator::LinePatterns validPatterns;
-            if (linePatternDomain_t::Labyrinth == domain) {
-                validPatterns.push_back({ LinePattern::JUNCTION_1, Sign::POSITIVE, Direction::CENTER });
-                validPatterns.push_back({ LinePattern::JUNCTION_2, Sign::POSITIVE, Direction::RIGHT  });
-                validPatterns.push_back({ LinePattern::JUNCTION_3, Sign::POSITIVE, Direction::CENTER });
-            }
-            return validPatterns;
-        }
-    }
-};
+         case micro::Sign::POSITIVE:
+             return 3 == lines.size();
+
+         default:
+             return false;
+         }
+     },
+     [](const LinePattern& pattern, const linePatternDomain_t domain) {
+         LinePatternCalculator::LinePatterns validPatterns;
+         if (linePatternDomain_t::Labyrinth == domain) {
+             if (Sign::NEGATIVE == pattern.dir) {
+                 validPatterns.push_back(
+                     {LinePattern::JUNCTION_CENTER, Sign::NEUTRAL, Direction::CENTER});
+             } else if (Sign::POSITIVE == pattern.dir) {
+                 validPatterns.push_back(
+                     {LinePattern::SINGLE_LINE, Sign::NEUTRAL, Direction::CENTER});
+             }
+         }
+         return validPatterns;
+     }},
+    {// JUNCTION_CENTER
+     centimeter_t(4), centimeter_t(100),
+     [](const LinePatternCalculator::Measurements&, const LinePattern& pattern, const Lines& lines,
+        const Line&, meter_t currentDist, Sign) {
+         return (1 == lines.size() || 4 == lines.size()) &&
+                currentDist - pattern.startDist < centimeter_t(80);
+     },
+     [](const LinePattern& pattern, const linePatternDomain_t domain) {
+         LinePatternCalculator::LinePatterns validPatterns;
+         if (linePatternDomain_t::Labyrinth == domain) {
+             validPatterns.push_back({LinePattern::JUNCTION_1, Sign::POSITIVE, Direction::CENTER});
+             validPatterns.push_back({LinePattern::JUNCTION_2, Sign::POSITIVE, Direction::RIGHT});
+             validPatterns.push_back({LinePattern::JUNCTION_3, Sign::POSITIVE, Direction::CENTER});
+         }
+         return validPatterns;
+     }}};
 
 } // namespace
 
-const LinePatternCalculator::LinePatternInfo& getLinePatternInfo(const micro::LinePattern::type_t type) {
+const LinePatternCalculator::LinePatternInfo&
+getLinePatternInfo(const micro::LinePattern::type_t type) {
     return PATTERN_INFO[static_cast<size_t>(type)];
 }

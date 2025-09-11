@@ -1,17 +1,14 @@
 #pragma once
 
+#include <SensorData.hpp>
+#include <cfg_sensor.hpp>
 #include <cmath>
-#include <utility>
-
 #include <micro/container/set.hpp>
 #include <micro/container/vector.hpp>
 #include <micro/math/numeric.hpp>
 #include <micro/utils/Line.hpp>
 #include <micro/utils/units.hpp>
-
-#include <cfg_sensor.hpp>
-#include <SensorData.hpp>
-
+#include <utility>
 
 struct WeightCalculator {
     int8_t radius    = 0;
@@ -19,9 +16,9 @@ struct WeightCalculator {
     float sumWeight  = 0.0f;
 
     constexpr WeightCalculator(const float radius)
-        : radius(static_cast<int8_t>(std::ceil(radius)))
-        , lastWeight(radius - std::floor(radius - 0.001f))
-        , sumWeight(1.0f + 2 * (this->radius - 1 + this->lastWeight)) {}
+        : radius(static_cast<int8_t>(micro::ceil(radius))),
+          lastWeight(radius - micro::floor(radius - 0.001f)),
+          sumWeight(1.0f + 2 * (this->radius - 1 + this->lastWeight)) {}
 
     constexpr WeightCalculator(const float radius, const uint8_t centerIdx)
         : WeightCalculator(radius <= centerIdx ? radius : static_cast<float>(centerIdx)) {}
@@ -42,7 +39,7 @@ struct LinePosition {
 using LinePositions = micro::set<LinePosition, micro::Line::MAX_NUM_LINES>;
 
 class LinePosCalculator {
-public:
+  public:
     explicit LinePosCalculator(const bool whiteLevelCalibrationEnabled);
 
     LinePositions calculate(const Measurements& measurements, const size_t maxLines);
@@ -50,18 +47,23 @@ public:
     static micro::millimeter_t optoIdxToLinePos(const float optoIdx);
     static float linePosToOptoPos(const micro::millimeter_t linePos);
 
-private:
+  private:
     struct groupIntensity_t {
         uint8_t centerIdx;
         float intensity;
 
-        bool operator<(const groupIntensity_t& other) const { return this->intensity < other.intensity; }
-        bool operator>(const groupIntensity_t& other) const { return this->intensity > other.intensity; }
+        bool operator<(const groupIntensity_t& other) const {
+            return this->intensity < other.intensity;
+        }
+        bool operator>(const groupIntensity_t& other) const {
+            return this->intensity > other.intensity;
+        }
     };
 
-    using groupIntensities_t = micro::vector<
-        groupIntensity_t,
-        cfg::NUM_SENSORS - 2 * static_cast<size_t>(std::ceil(cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS))>;
+    using groupIntensities_t =
+        micro::vector<groupIntensity_t,
+                      cfg::NUM_SENSORS - 2 * static_cast<size_t>(micro::ceil(
+                                                 cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS))>;
 
     LinePositions runCalculation(const Measurements& measurements, const size_t maxLines);
 
@@ -69,10 +71,11 @@ private:
 
     void updateInvalidWhiteLevels(const LinePositions& linePositions);
 
-    void normalize(const Measurements& measurements, float * const OUT result);
+    void normalize(const Measurements& measurements, float* const OUT result);
 
-    static groupIntensities_t calculateGroupIntensities(const float * const intensities);
-    static micro::millimeter_t calculateLinePos(const float * const intensities, const uint8_t centerIdx);
+    static groupIntensities_t calculateGroupIntensities(const float* const intensities);
+    static micro::millimeter_t calculateLinePos(const float* const intensities,
+                                                const uint8_t centerIdx);
 
     bool whiteLevelCalibrationEnabled_;
     Measurements whiteLevels_;
