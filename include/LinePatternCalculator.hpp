@@ -1,7 +1,9 @@
 #pragma once
 
-#include <etl/circular_buffer.h>
 #include <functional>
+
+#include <etl/circular_buffer.h>
+
 #include <micro/container/map.hpp>
 #include <micro/container/set.hpp>
 #include <micro/container/vector.hpp>

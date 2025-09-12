@@ -1,4 +1,5 @@
 #include <LinePosCalculator.hpp>
+
 #include <micro/container/vector.hpp>
 #include <micro/math/numeric.hpp>
 #include <micro/test/utils.hpp>

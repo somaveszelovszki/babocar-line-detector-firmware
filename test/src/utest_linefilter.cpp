@@ -1,4 +1,5 @@
 #include <LineFilter.hpp>
+
 #include <micro/math/numeric.hpp>
 #include <micro/test/utils.hpp>
 

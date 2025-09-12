@@ -3,13 +3,14 @@
 #include <LinePosCalculator.hpp>
 #include <SensorData.hpp>
 #include <cfg_board.hpp>
+#include <numeric>
+
 #include <micro/panel/CanManager.hpp>
 #include <micro/panel/panelVersion.hpp>
 #include <micro/port/queue.hpp>
 #include <micro/port/task.hpp>
 #include <micro/utils/algorithm.hpp>
 #include <micro/utils/timer.hpp>
-#include <numeric>
 
 using namespace micro;
 

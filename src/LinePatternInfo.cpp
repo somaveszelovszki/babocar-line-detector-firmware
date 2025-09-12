@@ -1,5 +1,6 @@
 #include <LinePatternCalculator.hpp>
 #include <LinePatternInfo.hpp>
+
 #include <micro/container/vector.hpp>
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/Line.hpp>

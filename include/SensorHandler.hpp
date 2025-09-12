@@ -1,11 +1,12 @@
 #pragma once
 
 #include <SensorData.hpp>
+#include <utility>
+
 #include <micro/container/vector.hpp>
 #include <micro/port/gpio.hpp>
 #include <micro/port/semaphore.hpp>
 #include <micro/port/spi.hpp>
-#include <utility>
 
 class SensorHandler {
   public:

@@ -1,8 +1,9 @@
 #include <SensorHandler.hpp>
 #include <cfg_sensor.hpp>
+#include <utility>
+
 #include <micro/container/vector.hpp>
 #include <micro/math/numeric.hpp>
-#include <utility>
 
 using namespace micro;
 

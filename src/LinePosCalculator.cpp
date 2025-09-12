@@ -1,7 +1,8 @@
 #include <LinePosCalculator.hpp>
+#include <numeric>
+
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/algorithm.hpp>
-#include <numeric>
 
 using namespace micro;
 

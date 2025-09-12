@@ -1,14 +1,16 @@
 #pragma once
 
+#include <cmath>
+
 #include <SensorData.hpp>
 #include <cfg_sensor.hpp>
-#include <cmath>
+#include <utility>
+
 #include <micro/container/set.hpp>
 #include <micro/container/vector.hpp>
 #include <micro/math/numeric.hpp>
 #include <micro/utils/Line.hpp>
 #include <micro/utils/units.hpp>
-#include <utility>
 
 struct WeightCalculator {
     int8_t radius    = 0;

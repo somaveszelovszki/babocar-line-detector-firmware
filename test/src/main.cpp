@@ -1,6 +1,7 @@
-#include "gtest/gtest.h"
 #include <cstdlib>
 #include <ctime>
+
+#include <gtest/gtest.h>
 
 int main(int argc, char** argv) {
     srand(time(nullptr));

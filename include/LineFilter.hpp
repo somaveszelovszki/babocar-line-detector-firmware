@@ -2,7 +2,9 @@
 
 #include <LinePosCalculator.hpp>
 #include <cfg_sensor.hpp>
+
 #include <etl/circular_buffer.h>
+
 #include <micro/container/set.hpp>
 #include <micro/math/unit_utils.hpp>
 #include <micro/utils/Line.hpp>
