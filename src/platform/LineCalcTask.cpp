@@ -12,6 +12,8 @@
 #include <micro/utils/algorithm.hpp>
 #include <micro/utils/timer.hpp>
 
+#define REPORT_STATISTICS false
+
 using namespace micro;
 
 extern queue_t<Measurements, 1> measurementsQueue;
@@ -35,6 +37,13 @@ SensorControlData sensorControl;
 
 CanFrameHandler vehicleCanFrameHandler;
 CanSubscriber::Id vehicleCanSubscriberId = CanSubscriber::INVALID_ID;
+
+#if REPORT_STATISTICS
+// Statistics tracking variables
+uint32_t statisticsCounter                    = 0;
+millisecond_t statisticsStartTime             = millisecond_t(0);
+constexpr uint16_t STATISTICS_ITERATION_COUNT = 1000;
+#endif
 
 const Leds& updateFailureLeds() {
     static constexpr float SENSOR_OFFSET = cfg::NUM_SENSORS / 2.0f - 0.5f;
@@ -106,10 +115,17 @@ void initializeVehicleCan() {
         });
 
     const CanFrameIds rxFilter = vehicleCanFrameHandler.identifiers();
-    const CanFrameIds txFilter = {
-        PANEL_VERSION_FRONT == getPanelVersion() ? can::FrontLines::id() : can::RearLines::id(),
-        PANEL_VERSION_FRONT == getPanelVersion() ? can::FrontLinePattern::id()
-                                                 : can::RearLinePattern::id()};
+    CanFrameIds txFilter       = {PANEL_VERSION_FRONT == getPanelVersion() ? can::FrontLines::id()
+                                                                           : can::RearLines::id(),
+                            PANEL_VERSION_FRONT == getPanelVersion() ? can::FrontLinePattern::id()
+                                                                           : can::RearLinePattern::id()};
+#if REPORT_STATISTICS
+    if (PANEL_VERSION_FRONT == getPanelVersion()) {
+        txFilter.insert(can::FrontLineStatistics::id());
+    } else if (PANEL_VERSION_REAR == getPanelVersion()) {
+        txFilter.insert(can::RearLineStatistics::id());
+    }
+#endif
     vehicleCanSubscriberId = vehicleCanManager.registerSubscriber(rxFilter, txFilter);
 }
 
@@ -121,6 +137,10 @@ extern "C" void runLineCalcTask(void) {
     for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
         measurements[i] = 0;
     }
+
+#if REPORT_STATISTICS
+    statisticsStartTime = getTime();
+#endif
 
     while (true) {
         measurementsQueue.receive(measurements);
@@ -140,6 +160,26 @@ extern "C" void runLineCalcTask(void) {
             vehicleCanManager.send<can::RearLinePattern>(vehicleCanSubscriberId,
                                                          linePatternCalc.pattern());
         }
+
+#if REPORT_STATISTICS
+        statisticsCounter++;
+        if (statisticsCounter == STATISTICS_ITERATION_COUNT) {
+            const millisecond_t endTime = getTime();
+            const uint32_t processingTime_ms =
+                static_cast<uint32_t>((endTime - statisticsStartTime).get());
+
+            if (PANEL_VERSION_FRONT == getPanelVersion()) {
+                vehicleCanManager.send<can::FrontLineStatistics>(
+                    vehicleCanSubscriberId, processingTime_ms, STATISTICS_ITERATION_COUNT);
+            } else if (PANEL_VERSION_REAR == getPanelVersion()) {
+                vehicleCanManager.send<can::RearLineStatistics>(
+                    vehicleCanSubscriberId, processingTime_ms, STATISTICS_ITERATION_COUNT);
+            }
+
+            statisticsCounter   = 0;
+            statisticsStartTime = endTime;
+        }
+#endif
 
         while (const auto frame = vehicleCanManager.read(vehicleCanSubscriberId)) {
             vehicleCanFrameHandler.handleFrame(*frame);
