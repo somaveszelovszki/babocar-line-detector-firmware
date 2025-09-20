@@ -7,15 +7,59 @@
 
 using namespace micro;
 
+/**
+ * Sensor Lighting Mode Configuration
+ *
+ * 6 sensor mode:
+ * - Lights up 6 sensors at once (every 8th sensor across the 48-sensor array)
+ * - Creates 8 groups of 6 sensors each:
+ *   Group 0: sensors 0, 8, 16, 24, 32, 40
+ *   Group 1: sensors 1, 9, 17, 25, 33, 41
+ *   ...and so on
+ * - Requires 8 iterations to read all 48 sensors
+ *
+ * 3 sensor mode:
+ * - Lights up 3 sensors at once (every 16th sensor across the 48-sensor array)
+ * - Creates 16 groups of 3 sensors each:
+ *   Group 0: sensors 0, 16, 32
+ *   Group 1: sensors 1, 17, 33
+ *   ...and so on
+ * - Requires 16 iterations to read all 48 sensors
+ */
+#define NUM_PARALLEL_SENSORS 6
+
+constexpr uint8_t NUM_ITERATIONS = cfg::NUM_SENSORS / NUM_PARALLEL_SENSORS;
+
 namespace {
+#if NUM_PARALLEL_SENSORS == 6
 
-constexpr uint8_t SENSOR_POSITIONS[16] = {0, 8, 4, 12, 1, 9, 5, 13, 2, 10, 6, 14, 3, 11, 7, 15};
+// Optimized for highest minimum distance between two measurements: 3
+constexpr uint8_t SENSOR_GROUPS[NUM_ITERATIONS] = {0, 3, 6, 1, 4, 7, 2, 5};
 
-constexpr uint8_t SENSOR_SELECTORS[16][cfg::NUM_SENSORS / 8] = {
+constexpr uint8_t SENSOR_SELECTORS[NUM_ITERATIONS][cfg::NUM_SENSORS / 8] = {
+    {1, 1, 1, 1, 1, 1},
+    {2, 2, 2, 2, 2, 2},
+    {4, 4, 4, 4, 4, 4},
+    {8, 8, 8, 8, 8, 8},
+    {16, 16, 16, 16, 16, 16},
+    {32, 32, 32, 32, 32, 32},
+    {64, 64, 64, 64, 64, 64},
+    {128, 128, 128, 128, 128, 128}
+};
+
+#elif NUM_PARALLEL_SENSORS == 3
+
+// Optimized for highest minimum distance between two measurements: 5
+constexpr uint8_t SENSOR_GROUPS[NUM_ITERATIONS] = {0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11};
+
+constexpr uint8_t SENSOR_SELECTORS[NUM_ITERATIONS][cfg::NUM_SENSORS / 8] = {
     {0, 1, 0, 1, 0, 1},    {0, 2, 0, 2, 0, 2},    {0, 4, 0, 4, 0, 4},    {0, 8, 0, 8, 0, 8},
     {0, 16, 0, 16, 0, 16}, {0, 32, 0, 32, 0, 32}, {0, 64, 0, 64, 0, 64}, {0, 128, 0, 128, 0, 128},
     {1, 0, 1, 0, 1, 0},    {2, 0, 2, 0, 2, 0},    {4, 0, 4, 0, 4, 0},    {8, 0, 8, 0, 8, 0},
     {16, 0, 16, 0, 16, 0}, {32, 0, 32, 0, 32, 0}, {64, 0, 64, 0, 64, 0}, {128, 0, 128, 0, 128, 0}};
+
+
+#endif // NUM_PARALLEL_SENSORS
 
 } // namespace
 
@@ -41,9 +85,9 @@ void SensorHandler::initialize() {
 
 void SensorHandler::readSensors(Measurements& OUT measurements,
                                 const std::pair<uint8_t, uint8_t>& scanRange) {
-    for (uint8_t i = 0; i < 16; ++i) {
-        const uint8_t optoIdx = SENSOR_POSITIONS[i];
-        this->exchangeData(SENSOR_SELECTORS[optoIdx], nullptr, cfg::NUM_SENSORS / 8);
+    for (uint8_t i = 0; i < NUM_ITERATIONS; ++i) {
+        const uint8_t groupIdx = SENSOR_GROUPS[i];
+        this->exchangeData(SENSOR_SELECTORS[groupIdx], nullptr, cfg::NUM_SENSORS / 8);
 
         gpio_write(this->LE_opto_, gpioPinState_t::SET);
         gpio_write(this->LE_opto_, gpioPinState_t::RESET);
@@ -52,14 +96,14 @@ void SensorHandler::readSensors(Measurements& OUT measurements,
         for (volatile uint32_t t = 0; t < 800; ++t) {
         } // waits between the LED light-up and the ADC read
 
-        for (uint8_t adcIdx = optoIdx / 8; adcIdx < cfg::NUM_SENSORS / 8; adcIdx += 2) {
-            const uint8_t absPos = adcIdx * 8 + (optoIdx % 8);
+        for (uint8_t adcIdx = groupIdx / 8; adcIdx < cfg::NUM_SENSORS / 8; adcIdx += NUM_ITERATIONS / 8) {
+            const uint8_t absPos = (adcIdx * 8) + (groupIdx % 8);
 
             if (micro::isBtw(absPos, scanRange.first, scanRange.second)) {
                 const gpio_t& adcEnPin = this->adcEnPins_[adcIdx];
 
                 gpio_write(adcEnPin, gpioPinState_t::RESET);
-                measurements[absPos] = this->readAdc(optoIdx);
+                measurements[absPos] = this->readAdc(groupIdx);
                 gpio_write(adcEnPin, gpioPinState_t::SET);
             }
         }
