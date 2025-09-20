@@ -2,3 +2,4 @@
 /Release/
 NUCLEO-F446RE.xml
 .settings/
+build/
