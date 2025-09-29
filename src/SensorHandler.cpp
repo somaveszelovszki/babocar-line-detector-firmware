@@ -37,27 +37,22 @@ namespace {
 constexpr uint8_t SENSOR_GROUPS[NUM_ITERATIONS] = {0, 3, 6, 1, 4, 7, 2, 5};
 
 constexpr uint8_t SENSOR_SELECTORS[NUM_ITERATIONS][cfg::NUM_SENSORS / 8] = {
-    {1, 1, 1, 1, 1, 1},
-    {2, 2, 2, 2, 2, 2},
-    {4, 4, 4, 4, 4, 4},
-    {8, 8, 8, 8, 8, 8},
-    {16, 16, 16, 16, 16, 16},
-    {32, 32, 32, 32, 32, 32},
-    {64, 64, 64, 64, 64, 64},
-    {128, 128, 128, 128, 128, 128}
-};
+    {1, 1, 1, 1, 1, 1},       {2, 2, 2, 2, 2, 2},
+    {4, 4, 4, 4, 4, 4},       {8, 8, 8, 8, 8, 8},
+    {16, 16, 16, 16, 16, 16}, {32, 32, 32, 32, 32, 32},
+    {64, 64, 64, 64, 64, 64}, {128, 128, 128, 128, 128, 128}};
 
 #elif NUM_PARALLEL_SENSORS == 3
 
 // Optimized for highest minimum distance between two measurements: 5
-constexpr uint8_t SENSOR_GROUPS[NUM_ITERATIONS] = {0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11};
+constexpr uint8_t SENSOR_GROUPS[NUM_ITERATIONS] = {0, 5,  10, 15, 4,  9, 14, 3,
+                                                   8, 13, 2,  7,  12, 1, 6,  11};
 
 constexpr uint8_t SENSOR_SELECTORS[NUM_ITERATIONS][cfg::NUM_SENSORS / 8] = {
     {0, 1, 0, 1, 0, 1},    {0, 2, 0, 2, 0, 2},    {0, 4, 0, 4, 0, 4},    {0, 8, 0, 8, 0, 8},
     {0, 16, 0, 16, 0, 16}, {0, 32, 0, 32, 0, 32}, {0, 64, 0, 64, 0, 64}, {0, 128, 0, 128, 0, 128},
     {1, 0, 1, 0, 1, 0},    {2, 0, 2, 0, 2, 0},    {4, 0, 4, 0, 4, 0},    {8, 0, 8, 0, 8, 0},
     {16, 0, 16, 0, 16, 0}, {32, 0, 32, 0, 32, 0}, {64, 0, 64, 0, 64, 0}, {128, 0, 128, 0, 128, 0}};
-
 
 #endif // NUM_PARALLEL_SENSORS
 
@@ -83,8 +78,9 @@ void SensorHandler::initialize() {
     }
 }
 
-void SensorHandler::readSensors(Measurements& OUT measurements,
-                                const std::pair<uint8_t, uint8_t>& scanRange) {
+auto SensorHandler::readSensors(const std::pair<uint8_t, uint8_t>& scanRange) -> Measurements {
+    Measurements measurements;
+
     for (uint8_t i = 0; i < NUM_ITERATIONS; ++i) {
         const uint8_t groupIdx = SENSOR_GROUPS[i];
         this->exchangeData(SENSOR_SELECTORS[groupIdx], nullptr, cfg::NUM_SENSORS / 8);
@@ -93,10 +89,11 @@ void SensorHandler::readSensors(Measurements& OUT measurements,
         gpio_write(this->LE_opto_, gpioPinState_t::RESET);
         gpio_write(this->OE_opto_, gpioPinState_t::RESET);
 
-        for (volatile uint32_t t = 0; t < 800; ++t) {
+        for (volatile uint32_t t = 0; t < 1500; ++t) {
         } // waits between the LED light-up and the ADC read
 
-        for (uint8_t adcIdx = groupIdx / 8; adcIdx < cfg::NUM_SENSORS / 8; adcIdx += NUM_ITERATIONS / 8) {
+        for (uint8_t adcIdx = groupIdx / 8; adcIdx < cfg::NUM_SENSORS / 8;
+             adcIdx += NUM_ITERATIONS / 8) {
             const uint8_t absPos = (adcIdx * 8) + (groupIdx % 8);
 
             if (micro::isBtw(absPos, scanRange.first, scanRange.second)) {
@@ -110,6 +107,8 @@ void SensorHandler::readSensors(Measurements& OUT measurements,
 
         gpio_write(this->OE_opto_, gpioPinState_t::SET);
     }
+
+    return measurements;
 }
 
 void SensorHandler::writeLeds(const Leds& leds) {
@@ -127,10 +126,6 @@ void SensorHandler::writeLeds(const Leds& leds) {
     gpio_write(this->LE_ind_, gpioPinState_t::SET);
     gpio_write(this->LE_ind_, gpioPinState_t::RESET);
     gpio_write(this->OE_ind_, gpioPinState_t::RESET);
-}
-
-void SensorHandler::onTxFinished() {
-    this->semaphore_.give();
 }
 
 uint8_t SensorHandler::readAdc(const uint8_t channel) {
@@ -152,5 +147,4 @@ uint8_t SensorHandler::readAdc(const uint8_t channel) {
 
 void SensorHandler::exchangeData(const uint8_t* txBuf, uint8_t* rxBuf, const uint32_t size) {
     micro::spi_exchange(this->spi_, txBuf, rxBuf, size);
-    this->semaphore_.take(millisecond_t(2));
 }

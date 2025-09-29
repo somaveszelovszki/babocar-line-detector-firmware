@@ -14,19 +14,19 @@
 
 struct WeightCalculator {
     int8_t radius    = 0;
-    float lastWeight = 0.0f;
+    float edgeWeight = 0.0f;
     float sumWeight  = 0.0f;
 
     constexpr WeightCalculator(const float radius)
         : radius(static_cast<int8_t>(micro::ceil(radius))),
-          lastWeight(radius - micro::floor(radius - 0.001f)),
-          sumWeight(1.0f + 2 * (this->radius - 1 + this->lastWeight)) {}
+          edgeWeight(radius - micro::floor(radius - 0.001f)),
+          sumWeight(1.0f + 2 * (this->radius - 1 + this->edgeWeight)) {}
 
     constexpr WeightCalculator(const float radius, const uint8_t centerIdx)
         : WeightCalculator(radius <= centerIdx ? radius : static_cast<float>(centerIdx)) {}
 
     constexpr float weight(const int8_t subIdx) const {
-        return micro::abs(subIdx) == this->radius ? this->lastWeight : 1.0f;
+        return micro::abs(subIdx) == this->radius ? this->edgeWeight : 1.0f;
     }
 };
 
@@ -50,20 +50,22 @@ class LinePosCalculator {
     static float linePosToOptoPos(const micro::millimeter_t linePos);
 
   private:
-    struct groupIntensity_t {
+    using Intensities = std::array<float, cfg::NUM_SENSORS>;
+
+    struct GroupIntensity {
         uint8_t centerIdx;
         float intensity;
 
-        bool operator<(const groupIntensity_t& other) const {
+        bool operator<(const GroupIntensity& other) const {
             return this->intensity < other.intensity;
         }
-        bool operator>(const groupIntensity_t& other) const {
+        bool operator>(const GroupIntensity& other) const {
             return this->intensity > other.intensity;
         }
     };
 
-    using groupIntensities_t =
-        micro::vector<groupIntensity_t,
+    using GroupIntensities =
+        micro::vector<GroupIntensity,
                       cfg::NUM_SENSORS - 2 * static_cast<size_t>(micro::ceil(
                                                  cfg::LINE_POS_CALC_INTENSITY_GROUP_RADIUS))>;
 
@@ -73,10 +75,10 @@ class LinePosCalculator {
 
     void updateInvalidWhiteLevels(const LinePositions& linePositions);
 
-    void normalize(const Measurements& measurements, float* const OUT result);
+    Intensities normalize(const Measurements& measurements);
 
-    static groupIntensities_t calculateGroupIntensities(const float* const intensities);
-    static micro::millimeter_t calculateLinePos(const float* const intensities,
+    static GroupIntensities calculateGroupIntensities(const Intensities& intensities);
+    static micro::millimeter_t calculateLinePos(const Intensities& intensities,
                                                 const uint8_t centerIdx);
 
     bool whiteLevelCalibrationEnabled_;

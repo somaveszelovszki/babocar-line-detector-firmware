@@ -19,7 +19,6 @@ SensorHandler sensorHandler(spi_Sensor,
                              gpio_SS_ADC5},
                             gpio_LE_OPTO, gpio_OE_OPTO, gpio_LE_IND, gpio_LE_IND);
 
-Measurements measurements;
 SensorControlData sensorControl;
 
 std::pair<uint8_t, uint8_t> getScanRange() {
@@ -42,24 +41,10 @@ extern "C" void runSensorTask(void) {
 
     while (true) {
         sensorHandler.writeLeds(sensorControl.leds);
-
-        for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
-            measurements[i] = 0;
-        }
-
-        if (sensorControl.scanEnabled) {
-            sensorHandler.readSensors(measurements, getScanRange());
-        }
+        const auto measurements = sensorHandler.readSensors(getScanRange());
+        ;
 
         measurementsQueue.send(measurements);
         sensorControlDataQueue.receive(sensorControl);
     }
-}
-
-extern void spi_SensorTxCpltCallback() {
-    sensorHandler.onTxFinished();
-}
-
-extern void spi_SensorTxRxCpltCallback() {
-    sensorHandler.onTxFinished();
 }

@@ -17,10 +17,8 @@ class SensorHandler {
 
     void initialize();
 
-    void readSensors(Measurements& OUT measurements, const std::pair<uint8_t, uint8_t>& scanRange);
+    Measurements readSensors(const std::pair<uint8_t, uint8_t>& scanRange);
     void writeLeds(const Leds& leds);
-
-    void onTxFinished();
 
   private:
     uint8_t readAdc(const uint8_t channel);

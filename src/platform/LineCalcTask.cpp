@@ -86,8 +86,6 @@ void updateSensorControl(const Lines& lines, const bool isOk) {
         sensorControl.leds = updateFailureLeds();
     }
 
-    sensorControl.scanEnabled = true;
-
     if (lines.size()) {
         const millimeter_t avgLinePos =
             std::accumulate(
