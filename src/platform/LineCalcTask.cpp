@@ -2,12 +2,12 @@
 #include <LinePatternCalculator.hpp>
 #include <LinePosCalculator.hpp>
 #include <SensorData.hpp>
+#include <SensorHandler.hpp>
 #include <cfg_board.hpp>
 #include <numeric>
 
 #include <micro/panel/CanManager.hpp>
 #include <micro/panel/panelVersion.hpp>
-#include <micro/port/queue.hpp>
 #include <micro/port/task.hpp>
 #include <micro/utils/algorithm.hpp>
 #include <micro/utils/timer.hpp>
@@ -16,12 +16,29 @@
 
 using namespace micro;
 
-extern queue_t<Measurements, 1> measurementsQueue;
-
 CanManager vehicleCanManager(can_Vehicle);
-queue_t<SensorControlData, 1> sensorControlDataQueue;
 
 namespace {
+
+SensorHandler sensorHandler(spi_Sensor,
+                            {gpio_SS_ADC0, gpio_SS_ADC1, gpio_SS_ADC2, gpio_SS_ADC3, gpio_SS_ADC4,
+                             gpio_SS_ADC5},
+                            gpio_LE_OPTO, gpio_OE_OPTO, gpio_LE_IND, gpio_LE_IND);
+
+SensorControlData sensorControl;
+
+std::pair<uint8_t, uint8_t> getScanRange() {
+    std::pair<uint8_t, uint8_t> range = {0, cfg::NUM_SENSORS - 1};
+
+    if (sensorControl.scanRangeRadius > 0) {
+        range.first = micro::max(sensorControl.scanRangeCenter, sensorControl.scanRangeRadius) -
+                      sensorControl.scanRangeRadius;
+        range.second = micro::min(sensorControl.scanRangeCenter + sensorControl.scanRangeRadius,
+                                  cfg::NUM_SENSORS - 1);
+    }
+
+    return range;
+}
 
 LinePosCalculator linePosCalc(true);
 LineFilter lineFilter;
@@ -31,9 +48,6 @@ linePatternDomain_t domain = linePatternDomain_t::Labyrinth;
 m_per_sec_t speed;
 meter_t distance;
 bool indicatorLedsEnabled = true;
-
-Measurements measurements;
-SensorControlData sensorControl;
 
 CanFrameHandler vehicleCanFrameHandler;
 CanSubscriber::Id vehicleCanSubscriberId = CanSubscriber::INVALID_ID;
@@ -131,18 +145,16 @@ void initializeVehicleCan() {
 
 extern "C" void runLineCalcTask(void) {
     initializeVehicleCan();
-
-    for (uint8_t i = 0; i < cfg::NUM_SENSORS; ++i) {
-        measurements[i] = 0;
-    }
+    sensorHandler.initialize();
 
 #if REPORT_STATISTICS
     statisticsStartTime = getTime();
 #endif
 
     while (true) {
-        measurementsQueue.receive(measurements);
+        sensorHandler.writeLeds(sensorControl.leds);
 
+        const auto measurements           = sensorHandler.readSensors(getScanRange());
         const auto maxLines               = domain == linePatternDomain_t::Labyrinth ? 4 : 3;
         const LinePositions linePositions = linePosCalc.calculate(measurements, maxLines);
         const Lines lines                 = lineFilter.update(linePositions, maxLines);
@@ -185,7 +197,6 @@ extern "C" void runLineCalcTask(void) {
 
         const bool isOk = !vehicleCanManager.hasTimedOut(vehicleCanSubscriberId);
         updateSensorControl(lines, isOk);
-        sensorControlDataQueue.send(sensorControl);
     }
 }
 
