@@ -25,20 +25,8 @@ SensorHandler sensorHandler(spi_Sensor,
                              gpio_SS_ADC5},
                             gpio_LE_OPTO, gpio_OE_OPTO, gpio_LE_IND, gpio_LE_IND);
 
-SensorControlData sensorControl;
-
-std::pair<uint8_t, uint8_t> getScanRange() {
-    std::pair<uint8_t, uint8_t> range = {0, cfg::NUM_SENSORS - 1};
-
-    if (sensorControl.scanRangeRadius > 0) {
-        range.first = micro::max(sensorControl.scanRangeCenter, sensorControl.scanRangeRadius) -
-                      sensorControl.scanRangeRadius;
-        range.second = micro::min(sensorControl.scanRangeCenter + sensorControl.scanRangeRadius,
-                                  cfg::NUM_SENSORS - 1);
-    }
-
-    return range;
-}
+Leds ledsControl;
+std::pair<uint8_t, uint8_t> scanRange{0, cfg::NUM_SENSORS};
 
 LinePosCalculator linePosCalc(true);
 LineFilter lineFilter;
@@ -59,8 +47,8 @@ millisecond_t statisticsStartTime             = millisecond_t(0);
 constexpr uint16_t STATISTICS_ITERATION_COUNT = 1000;
 #endif
 
-const Leds& updateFailureLeds() {
-    static constexpr float SENSOR_OFFSET = cfg::NUM_SENSORS / 2.0f - 0.5f;
+Leds getFailureLedsControl() {
+    constexpr float SENSOR_OFFSET = cfg::NUM_SENSORS / 2.0f - 0.5f;
 
     static Leds leds;
     static Timer animationTimer(millisecond_t(1200));
@@ -77,53 +65,65 @@ const Leds& updateFailureLeds() {
     return leds;
 }
 
-void updateSensorControl(const Lines& lines, const bool isOk) {
-    static constexpr uint8_t LED_RADIUS = 1;
-
-    if (isOk) {
-        sensorControl.leds.fill(false);
-
-        if (indicatorLedsEnabled) {
-            for (const Line& l : lines) {
-                const uint8_t centerIdx =
-                    static_cast<uint8_t>(std::lround(LinePosCalculator::linePosToOptoPos(l.pos)));
-
-                const uint8_t startIdx = max<uint8_t>(centerIdx, LED_RADIUS) - LED_RADIUS;
-                const uint8_t endIdx   = min<uint8_t>(centerIdx + LED_RADIUS + 1, cfg::NUM_SENSORS);
-
-                for (uint8_t i = startIdx; i < endIdx; ++i) {
-                    sensorControl.leds[i] = true;
-                }
-            }
-        }
-    } else {
-        sensorControl.leds = updateFailureLeds();
+Leds getLedsControl(const Lines& lines, const bool isOk) {
+    if (!isOk) {
+        return getFailureLedsControl();
     }
 
-    if (lines.size()) {
-        const millimeter_t avgLinePos =
-            std::accumulate(
-                lines.begin(), lines.end(), millimeter_t(0),
-                [](const millimeter_t& sum, const Line& line) { return sum + line.pos; }) /
-            lines.size();
+    Leds leds;
+    leds.fill(false);
 
-        sensorControl.scanRangeCenter =
-            static_cast<uint8_t>(std::lround(LinePosCalculator::linePosToOptoPos(avgLinePos)));
+    if (!indicatorLedsEnabled) {
+        return leds;
+    }
+
+    for (const Line& l : lines) {
+        const uint8_t centerIdx =
+            static_cast<uint8_t>(std::lround(LinePosCalculator::linePosToOptoPos(l.pos)));
+
+        const uint8_t startIdx =
+            max<uint8_t>(centerIdx, cfg::INDICATOR_LED_RADIUS) - cfg::INDICATOR_LED_RADIUS;
+        const uint8_t endIdx =
+            min<uint8_t>(centerIdx + cfg::INDICATOR_LED_RADIUS + 1, cfg::NUM_SENSORS);
+
+        for (uint8_t i = startIdx; i < endIdx; ++i) {
+            leds[i] = true;
+        }
+    }
+
+    return leds;
+}
+
+std::pair<uint8_t, uint8_t> getScanRange(const Lines& lines, const LinePattern& linePattern) {
+    if (lines.size() != 1 || linePattern.type != LinePattern::SINGLE_LINE) {
+        return {0, cfg::NUM_SENSORS};
+    }
+
+    const uint8_t center =
+        static_cast<uint8_t>(std::lround(LinePosCalculator::linePosToOptoPos(lines.begin()->pos)));
+
+    if (center < cfg::REDUCED_SCAN_RANGE / 2) {
+        return {0, cfg::REDUCED_SCAN_RANGE};
+    } else if (center > cfg::NUM_SENSORS - cfg::REDUCED_SCAN_RANGE / 2) {
+        return {cfg::NUM_SENSORS - cfg::REDUCED_SCAN_RANGE, cfg::NUM_SENSORS};
+    } else {
+        return {center - cfg::REDUCED_SCAN_RANGE / 2, center + cfg::REDUCED_SCAN_RANGE / 2};
     }
 }
 
 void initializeVehicleCan() {
     vehicleCanFrameHandler.registerHandler(
         can::LongitudinalState::id(), [](const uint8_t* const data) {
-            bool isRemoteControlled;
+            bool isRemoteControlledPlaceholder;
             reinterpret_cast<const can::LongitudinalState*>(data)->acquire(
-                speed, isRemoteControlled, distance);
+                speed, isRemoteControlledPlaceholder, distance);
         });
 
     vehicleCanFrameHandler.registerHandler(
         can::LineDetectControl::id(), [](const uint8_t* const data) {
+            uint8_t scanRangeRadiusPlaceholder;
             reinterpret_cast<const can::LineDetectControl*>(data)->acquire(
-                indicatorLedsEnabled, sensorControl.scanRangeRadius, domain);
+                indicatorLedsEnabled, scanRangeRadiusPlaceholder, domain);
         });
 
     const CanFrameIds rxFilter = vehicleCanFrameHandler.identifiers();
@@ -137,7 +137,8 @@ void initializeVehicleCan() {
     } else if (PANEL_VERSION_REAR == getPanelVersion()) {
         txFilter.insert(can::RearLineStatistics::id());
     }
-#endif
+#endif // REPORT_STATISTICS
+
     vehicleCanSubscriberId = vehicleCanManager.registerSubscriber(rxFilter, txFilter);
 }
 
@@ -152,9 +153,9 @@ extern "C" void runLineCalcTask(void) {
 #endif
 
     while (true) {
-        sensorHandler.writeLeds(sensorControl.leds);
+        sensorHandler.writeLeds(ledsControl);
 
-        const auto measurements           = sensorHandler.readSensors(getScanRange());
+        const auto measurements           = sensorHandler.readSensors(scanRange);
         const auto maxLines               = domain == linePatternDomain_t::Labyrinth ? 4 : 3;
         const LinePositions linePositions = linePosCalc.calculate(measurements, maxLines);
         const Lines lines                 = lineFilter.update(linePositions, maxLines);
@@ -196,7 +197,9 @@ extern "C" void runLineCalcTask(void) {
         }
 
         const bool isOk = !vehicleCanManager.hasTimedOut(vehicleCanSubscriberId);
-        updateSensorControl(lines, isOk);
+
+        ledsControl = getLedsControl(lines, isOk);
+        scanRange   = getScanRange(lines, linePatternCalc.pattern());
     }
 }
 

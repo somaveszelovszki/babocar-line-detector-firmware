@@ -96,7 +96,7 @@ auto SensorHandler::readSensors(const std::pair<uint8_t, uint8_t>& scanRange) ->
              adcIdx += NUM_ITERATIONS / 8) {
             const uint8_t absPos = (adcIdx * 8) + (groupIdx % 8);
 
-            if (micro::isBtw(absPos, scanRange.first, scanRange.second)) {
+            if (absPos >= scanRange.first && absPos < scanRange.second) {
                 const gpio_t& adcEnPin = this->adcEnPins_[adcIdx];
 
                 gpio_write(adcEnPin, gpioPinState_t::RESET);
