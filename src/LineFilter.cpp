@@ -18,10 +18,9 @@ Lines LineFilter::update(const LinePositions& detectedLines, const size_t maxLin
     FilteredLineIters unmatchedFilteredLines;
     for (FilteredLines::iterator it = lines_.begin(); it != lines_.end(); ++it) {
         unmatchedFilteredLines.push_back(it);
-    }
+        auto& l = *it;
 
-    // updates estimated positions for all filtered lines
-    for (FilteredLine& l : lines_) {
+        // updates estimated position for filtered line
         const millimeter_t current = l.current_raw();
 
         l.estimated = l.samples.size() >= cfg::LINE_VELO_FILTER_SIZE
@@ -31,42 +30,35 @@ Lines LineFilter::update(const LinePositions& detectedLines, const size_t maxLin
                           : current;
     }
 
-    struct posMapping_t {
-        LinePositionIters::iterator detectedLine;
-        FilteredLineIters::iterator filteredLine;
-        millimeter_t diff;
-    };
-
-    typedef micro::vector<posMapping_t, Line::MAX_NUM_LINES * cfg::MAX_NUM_FILTERED_LINES>
-        posMappings_t;
-
     // finds all close position pairs from the current and the previous measurements (expected
     // positions), and updates filtered lines
     while (unmatchedDetectedLines.size() && unmatchedFilteredLines.size()) {
-        // maps all previous and current line positions to each other
-        posMappings_t posMappings;
+        // find the closest pair directly without storing all pairs
+        millimeter_t minDiff = millimeter_t(std::numeric_limits<float>::max());
+        LinePositionIters::iterator closestDetected;
+        FilteredLineIters::iterator closestFiltered;
+
         for (LinePositionIters::iterator detectedLine = unmatchedDetectedLines.begin();
              detectedLine != unmatchedDetectedLines.end(); ++detectedLine) {
             for (FilteredLineIters::iterator filteredLine = unmatchedFilteredLines.begin();
                  filteredLine != unmatchedFilteredLines.end(); ++filteredLine) {
-                posMappings.push_back({detectedLine, filteredLine,
-                                       abs((*detectedLine)->pos - (*filteredLine)->estimated)});
+                const millimeter_t diff = abs((*detectedLine)->pos - (*filteredLine)->estimated);
+                if (diff < minDiff) {
+                    minDiff         = diff;
+                    closestDetected = detectedLine;
+                    closestFiltered = filteredLine;
+                }
             }
         }
 
-        // finds closest pair in the line position map
-        const posMappings_t::iterator closest = std::min_element(
-            posMappings.begin(), posMappings.end(),
-            [](const posMapping_t& a, const posMapping_t& b) { return a.diff < b.diff; });
-
         // will be accepted as valid position pairs of the previous and the current measurement if
         // they are close enough to each other
-        if (closest->diff < cfg::MAX_LINE_JUMP) {
-            auto& it = *closest->filteredLine;
+        if (minDiff < cfg::MAX_LINE_JUMP) {
+            auto& it = *closestFiltered;
             if (it->samples.full()) {
                 it->samples.pop();
             }
-            it->samples.push((*closest->detectedLine)->pos);
+            it->samples.push((*closestDetected)->pos);
             it->increaseCntr();
         } else {
             // no more close pairs found
@@ -74,8 +66,8 @@ Lines LineFilter::update(const LinePositions& detectedLines, const size_t maxLin
         }
 
         // pair has been handled, removes them from their correspondent list
-        unmatchedDetectedLines.erase(closest->detectedLine);
-        unmatchedFilteredLines.erase(closest->filteredLine);
+        unmatchedDetectedLines.erase(closestDetected);
+        unmatchedFilteredLines.erase(closestFiltered);
     }
 
     // decreases counters for unmatched previous lines
